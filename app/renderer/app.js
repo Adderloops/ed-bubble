@@ -343,7 +343,7 @@ function screenVuelo(s, v) {
       <span class="va" style="font-size:20px;align-self:flex-start">${esc(siteName(dock.station) || '—')}</span>
       ${showDiagram ? `${dockingSvg(dock.pad, 430, v.dockPadHour)}
         ${v.dockPadHour ? '' : '<span class="eb yellow">Posición de esta plataforma aún sin mapear</span>'}
-        <div style="display:flex;justify-content:space-between;width:430px"><span class="eb" style="color:#3be37a">● Luz verde</span><span class="eb dim">Vista desde dentro</span><span class="eb" style="color:#ff6b6b">Luz roja ●</span></div>`
+        <div style="display:flex;justify-content:space-between;width:430px"><span class="eb" style="color:#ff6b6b">● Luz roja</span><span class="eb dim">Vista al entrar</span><span class="eb" style="color:#3be37a">Luz verde ●</span></div>`
       : `<div class="empty" style="flex-direction:column;gap:10px"><span class="eb">Plataforma</span><span class="num amber" style="font-size:120px;line-height:1">${String(Number(dock.pad) || 0).padStart(2, '0')}</span><span style="font-size:14px">Sin esquema para este tipo de estación.</span></div>`}
     </section>` : '';
   const approachCard = `
@@ -713,10 +713,10 @@ function dockingSvg(padNum, width, hour) {
     <text x="${C}" y="172" text-anchor="middle" font-family="Share Tech Mono" font-size="38" fill="#f0a443" filter="url(#glow)">${String(pad).padStart(2, '0')}</text>
     <path d="M${C - 6} 6l6 9l6 -9z" fill="#49c7e8"/>
     <path d="M${C - 6} 294l6 -9l6 9z" fill="#49c7e8"/>
-    <line x1="4" y1="${C}" x2="22" y2="${C}" stroke="#3be37a" stroke-width="2"/>
-    <circle cx="16" cy="${C}" r="7" fill="#3be37a" filter="url(#glow)"/>
-    <line x1="278" y1="${C}" x2="296" y2="${C}" stroke="#ff4b4b" stroke-width="2"/>
-    <circle cx="284" cy="${C}" r="7" fill="#ff4b4b" filter="url(#glow)"/>
+    <line x1="4" y1="${C}" x2="22" y2="${C}" stroke="#ff4b4b" stroke-width="2"/>
+    <circle cx="16" cy="${C}" r="7" fill="#ff4b4b" filter="url(#glow)"/>
+    <line x1="278" y1="${C}" x2="296" y2="${C}" stroke="#3be37a" stroke-width="2"/>
+    <circle cx="284" cy="${C}" r="7" fill="#3be37a" filter="url(#glow)"/>
     </g>
     <text x="${C}" y="10" text-anchor="middle" font-family="Rajdhani" font-weight="700" font-size="11" letter-spacing="3" fill="#49c7e8">ARRIBA</text>
     <text x="${C}" y="328" text-anchor="middle" font-family="Rajdhani" font-weight="700" font-size="11" letter-spacing="3" fill="#49c7e8">ABAJO</text>
