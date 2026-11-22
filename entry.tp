@@ -1,0 +1,3603 @@
+{
+  "sdk": 6,
+  "version": 1,
+  "name": "ED BUBBLE",
+  "id": "com.adder.edbubble",
+  "plugin_start_cmd": "node ./plugin.js start",
+  "settings": [
+    {
+      "name": "Language (en / es)",
+      "type": "text",
+      "default": "en",
+      "maxLength": 10,
+      "readOnly": false
+    },
+    {
+      "name": "Tracked system (blank = current system)",
+      "type": "text",
+      "default": "",
+      "maxLength": 80,
+      "readOnly": false
+    }
+  ],
+  "configuration": {
+    "colorDark": "#0b0f14",
+    "colorLight": "#e67e22"
+  },
+  "categories": [
+    {
+      "id": "edb.ship",
+      "name": "Ship Status",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [
+        {
+          "id": "edb.ship.action.recallShipPressed",
+          "name": "Ship: notify Recall/Dismiss button press (internal use)",
+          "prefix": "Ship Status",
+          "type": "communicate",
+          "format": "Ship: flag a possible Dismiss when the Recall/Dismiss Ship button is pressed"
+        }
+      ],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.ship.fuelMain",
+          "type": "text",
+          "desc": "Main tank fuel (t)",
+          "default": "0"
+        },
+        {
+          "id": "edb.ship.fuelReservoir",
+          "type": "text",
+          "desc": "Reservoir fuel (t)",
+          "default": "0"
+        },
+        {
+          "id": "edb.ship.cargoMass",
+          "type": "text",
+          "desc": "Current cargo (t)",
+          "default": "0"
+        },
+        {
+          "id": "edb.ship.legalState",
+          "type": "text",
+          "desc": "Legal state",
+          "default": "Clean"
+        },
+        {
+          "id": "edb.ship.guiFocus",
+          "type": "text",
+          "desc": "Currently focused panel",
+          "default": "NoFocus"
+        },
+        {
+          "id": "edb.ship.fireGroup",
+          "type": "text",
+          "desc": "Active fire group",
+          "default": "0"
+        },
+        {
+          "id": "edb.ship.pipsSystems",
+          "type": "text",
+          "desc": "Systems pips",
+          "default": "0"
+        },
+        {
+          "id": "edb.ship.pipsEngines",
+          "type": "text",
+          "desc": "Engines pips",
+          "default": "0"
+        },
+        {
+          "id": "edb.ship.pipsWeapons",
+          "type": "text",
+          "desc": "Weapons pips",
+          "default": "0"
+        },
+        {
+          "id": "edb.ship.selectedWeapon",
+          "type": "text",
+          "desc": "Selected weapon/module",
+          "default": ""
+        },
+        {
+          "id": "edb.ship.gravity",
+          "type": "text",
+          "desc": "Local gravity (G)",
+          "default": ""
+        },
+        {
+          "id": "edb.ship.shipRecallLabel",
+          "type": "text",
+          "desc": "Recall/Dismiss Ship button label based on the last detected signal",
+          "default": "RECALL\nSHIP"
+        },
+        {
+          "id": "edb.ship.loadoutHardpoints",
+          "type": "text",
+          "desc": "Equipped weapon hardpoints (Small/Medium/Large/Huge)",
+          "default": "No data yet"
+        },
+        {
+          "id": "edb.ship.loadoutUtility",
+          "type": "text",
+          "desc": "Equipped utility mounts (Tiny)",
+          "default": "No data yet"
+        },
+        {
+          "id": "edb.ship.loadoutCoreInternals",
+          "type": "text",
+          "desc": "Core internal modules (the 8 fixed slots of every ship)",
+          "default": "No data yet"
+        },
+        {
+          "id": "edb.ship.loadoutOptionalInternals",
+          "type": "text",
+          "desc": "Equipped optional internal modules",
+          "default": "No data yet"
+        },
+        {
+          "id": "edb.ship.loadoutMass",
+          "type": "text",
+          "desc": "Unladen / laden mass (tons, calculated from Loadout)",
+          "default": "No data yet"
+        },
+        {
+          "id": "edb.ship.loadoutJumpRangeMax",
+          "type": "text",
+          "desc": "Max jump range (ly, from the Loadout event)",
+          "default": "No data yet"
+        },
+        {
+          "id": "edb.ship.loadoutShipValue",
+          "type": "text",
+          "desc": "Total ship value (hull + modules, credits, from the Loadout event)",
+          "default": "No data yet"
+        },
+        {
+          "id": "edb.ship.loadoutInsurance",
+          "type": "text",
+          "desc": "Insurance / rebuy cost (credits, from the Loadout event)",
+          "default": "No data yet"
+        },
+        {
+          "id": "edb.ship.isDocked",
+          "type": "text",
+          "desc": "Docked",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isLanded",
+          "type": "text",
+          "desc": "Landed on a surface",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isLandingGearDown",
+          "type": "text",
+          "desc": "Landing gear down",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.areShieldsUp",
+          "type": "text",
+          "desc": "Shields up",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isSupercruise",
+          "type": "text",
+          "desc": "In supercruise",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isFlightAssistOff",
+          "type": "text",
+          "desc": "Flight Assist off",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.areHardpointsDeployed",
+          "type": "text",
+          "desc": "Hardpoints deployed",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isInWing",
+          "type": "text",
+          "desc": "In a Wing",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.areLightsOn",
+          "type": "text",
+          "desc": "Lights on",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isCargoScoopDeployed",
+          "type": "text",
+          "desc": "Cargo scoop deployed",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isSilentRunning",
+          "type": "text",
+          "desc": "Silent Running on",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isScoopingFuel",
+          "type": "text",
+          "desc": "Scooping fuel",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isSRVHandbrake",
+          "type": "text",
+          "desc": "SRV handbrake on",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isSRVUsingTurretView",
+          "type": "text",
+          "desc": "SRV using turret view",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isSRVTurretRetracted",
+          "type": "text",
+          "desc": "SRV turret retracted",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isSRVDriveAssist",
+          "type": "text",
+          "desc": "SRV Drive Assist on",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isFSDMassLocked",
+          "type": "text",
+          "desc": "FSD mass locked",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isFSDCharging",
+          "type": "text",
+          "desc": "FSD charging",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isFSDCooldown",
+          "type": "text",
+          "desc": "FSD cooldown",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isLowFuel",
+          "type": "text",
+          "desc": "Low fuel (<25%)",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isOverHeating",
+          "type": "text",
+          "desc": "Overheating (>100%)",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.hasLatLong",
+          "type": "text",
+          "desc": "Has valid surface coordinates",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isInDanger",
+          "type": "text",
+          "desc": "In danger",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isBeingInterdicted",
+          "type": "text",
+          "desc": "Being interdicted",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isInMainShip",
+          "type": "text",
+          "desc": "In main ship",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isInFighter",
+          "type": "text",
+          "desc": "In fighter",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isInSRV",
+          "type": "text",
+          "desc": "In SRV",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isHUDInAnalysisMode",
+          "type": "text",
+          "desc": "HUD in Analysis mode",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isNightVision",
+          "type": "text",
+          "desc": "Night vision on",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isAltitudeFromAverageRadius",
+          "type": "text",
+          "desc": "Altitude from average radius",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isFSDJump",
+          "type": "text",
+          "desc": "FSD jump (hyperspace)",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.isSRVHighBeam",
+          "type": "text",
+          "desc": "SRV high beam on",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutHp1",
+          "type": "text",
+          "desc": "Hardpoint 1: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutHp1Eng",
+          "type": "text",
+          "desc": "Hardpoint 1: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutHp2",
+          "type": "text",
+          "desc": "Hardpoint 2: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutHp2Eng",
+          "type": "text",
+          "desc": "Hardpoint 2: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutHp3",
+          "type": "text",
+          "desc": "Hardpoint 3: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutHp3Eng",
+          "type": "text",
+          "desc": "Hardpoint 3: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutHp4",
+          "type": "text",
+          "desc": "Hardpoint 4: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutHp4Eng",
+          "type": "text",
+          "desc": "Hardpoint 4: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutHp5",
+          "type": "text",
+          "desc": "Hardpoint 5: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutHp5Eng",
+          "type": "text",
+          "desc": "Hardpoint 5: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutHp6",
+          "type": "text",
+          "desc": "Hardpoint 6: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutHp6Eng",
+          "type": "text",
+          "desc": "Hardpoint 6: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutHp7",
+          "type": "text",
+          "desc": "Hardpoint 7: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutHp7Eng",
+          "type": "text",
+          "desc": "Hardpoint 7: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutHp8",
+          "type": "text",
+          "desc": "Hardpoint 8: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutHp8Eng",
+          "type": "text",
+          "desc": "Hardpoint 8: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutUt1",
+          "type": "text",
+          "desc": "Utility 1: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutUt1Eng",
+          "type": "text",
+          "desc": "Utility 1: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutUt2",
+          "type": "text",
+          "desc": "Utility 2: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutUt2Eng",
+          "type": "text",
+          "desc": "Utility 2: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutUt3",
+          "type": "text",
+          "desc": "Utility 3: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutUt3Eng",
+          "type": "text",
+          "desc": "Utility 3: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutUt4",
+          "type": "text",
+          "desc": "Utility 4: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutUt4Eng",
+          "type": "text",
+          "desc": "Utility 4: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutUt5",
+          "type": "text",
+          "desc": "Utility 5: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutUt5Eng",
+          "type": "text",
+          "desc": "Utility 5: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutUt6",
+          "type": "text",
+          "desc": "Utility 6: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutUt6Eng",
+          "type": "text",
+          "desc": "Utility 6: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutUt7",
+          "type": "text",
+          "desc": "Utility 7: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutUt7Eng",
+          "type": "text",
+          "desc": "Utility 7: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutUt8",
+          "type": "text",
+          "desc": "Utility 8: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutUt8Eng",
+          "type": "text",
+          "desc": "Utility 8: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutCorePowerPlant",
+          "type": "text",
+          "desc": "Power Plant: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutCorePowerPlantEng",
+          "type": "text",
+          "desc": "Power Plant: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutCoreMainEngines",
+          "type": "text",
+          "desc": "Thrusters: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutCoreMainEnginesEng",
+          "type": "text",
+          "desc": "Thrusters: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutCoreFrameShiftDrive",
+          "type": "text",
+          "desc": "FSD: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutCoreFrameShiftDriveEng",
+          "type": "text",
+          "desc": "FSD: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutCoreLifeSupport",
+          "type": "text",
+          "desc": "Life Support: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutCoreLifeSupportEng",
+          "type": "text",
+          "desc": "Life Support: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutCorePowerDistributor",
+          "type": "text",
+          "desc": "Power Distributor: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutCorePowerDistributorEng",
+          "type": "text",
+          "desc": "Power Distributor: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutCoreRadar",
+          "type": "text",
+          "desc": "Sensors: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutCoreRadarEng",
+          "type": "text",
+          "desc": "Sensors: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutCoreFuelTank",
+          "type": "text",
+          "desc": "Fuel Tank: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutCoreFuelTankEng",
+          "type": "text",
+          "desc": "Fuel Tank: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutCoreArmour",
+          "type": "text",
+          "desc": "Armour: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutCoreArmourEng",
+          "type": "text",
+          "desc": "Armour: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt1",
+          "type": "text",
+          "desc": "Optional Internal 1: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt1Eng",
+          "type": "text",
+          "desc": "Optional Internal 1: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt2",
+          "type": "text",
+          "desc": "Optional Internal 2: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt2Eng",
+          "type": "text",
+          "desc": "Optional Internal 2: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt3",
+          "type": "text",
+          "desc": "Optional Internal 3: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt3Eng",
+          "type": "text",
+          "desc": "Optional Internal 3: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt4",
+          "type": "text",
+          "desc": "Optional Internal 4: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt4Eng",
+          "type": "text",
+          "desc": "Optional Internal 4: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt5",
+          "type": "text",
+          "desc": "Optional Internal 5: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt5Eng",
+          "type": "text",
+          "desc": "Optional Internal 5: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt6",
+          "type": "text",
+          "desc": "Optional Internal 6: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt6Eng",
+          "type": "text",
+          "desc": "Optional Internal 6: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt7",
+          "type": "text",
+          "desc": "Optional Internal 7: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt7Eng",
+          "type": "text",
+          "desc": "Optional Internal 7: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt8",
+          "type": "text",
+          "desc": "Optional Internal 8: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt8Eng",
+          "type": "text",
+          "desc": "Optional Internal 8: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt9",
+          "type": "text",
+          "desc": "Optional Internal 9: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt9Eng",
+          "type": "text",
+          "desc": "Optional Internal 9: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt10",
+          "type": "text",
+          "desc": "Optional Internal 10: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt10Eng",
+          "type": "text",
+          "desc": "Optional Internal 10: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt11",
+          "type": "text",
+          "desc": "Optional Internal 11: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt11Eng",
+          "type": "text",
+          "desc": "Optional Internal 11: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt12",
+          "type": "text",
+          "desc": "Optional Internal 12: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt12Eng",
+          "type": "text",
+          "desc": "Optional Internal 12: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt13",
+          "type": "text",
+          "desc": "Optional Internal 13: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt13Eng",
+          "type": "text",
+          "desc": "Optional Internal 13: engineered?",
+          "default": "false"
+        },
+        {
+          "id": "edb.ship.loadoutOpt14",
+          "type": "text",
+          "desc": "Optional Internal 14: equipped module (name/grade/engineering type)",
+          "default": "— empty —"
+        },
+        {
+          "id": "edb.ship.loadoutOpt14Eng",
+          "type": "text",
+          "desc": "Optional Internal 14: engineered?",
+          "default": "false"
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.ship.event.legalState",
+          "type": "communicate",
+          "name": "When the Legal State changes",
+          "format": "When the Legal State becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "Clean",
+            "IllegalCargo",
+            "Speeding",
+            "Wanted",
+            "Hostile",
+            "PassengerWanted",
+            "Warrant"
+          ],
+          "valueStateId": "edb.ship.legalState"
+        },
+        {
+          "id": "edb.ship.event.guiFocus",
+          "type": "communicate",
+          "name": "When the Focused Panel changes",
+          "format": "When the Focused Panel becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "NoFocus",
+            "InternalPanel",
+            "ExternalPanel",
+            "CommsPanel",
+            "RolePanel",
+            "StationServices",
+            "GalaxyMap",
+            "SystemMap",
+            "Orrery",
+            "FSS mode",
+            "SAA mode",
+            "Codex"
+          ],
+          "valueStateId": "edb.ship.guiFocus"
+        },
+        {
+          "id": "edb.ship.event.isDocked",
+          "type": "communicate",
+          "name": "When it changes: Docked",
+          "format": "When \"Docked\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isDocked"
+        },
+        {
+          "id": "edb.ship.event.isLanded",
+          "type": "communicate",
+          "name": "When it changes: Landed on a surface",
+          "format": "When \"Landed on a surface\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isLanded"
+        },
+        {
+          "id": "edb.ship.event.isLandingGearDown",
+          "type": "communicate",
+          "name": "When it changes: Landing gear down",
+          "format": "When \"Landing gear down\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isLandingGearDown"
+        },
+        {
+          "id": "edb.ship.event.areShieldsUp",
+          "type": "communicate",
+          "name": "When it changes: Shields up",
+          "format": "When \"Shields up\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.areShieldsUp"
+        },
+        {
+          "id": "edb.ship.event.isSupercruise",
+          "type": "communicate",
+          "name": "When it changes: In supercruise",
+          "format": "When \"In supercruise\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isSupercruise"
+        },
+        {
+          "id": "edb.ship.event.isFlightAssistOff",
+          "type": "communicate",
+          "name": "When it changes: Flight Assist off",
+          "format": "When \"Flight Assist off\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isFlightAssistOff"
+        },
+        {
+          "id": "edb.ship.event.areHardpointsDeployed",
+          "type": "communicate",
+          "name": "When it changes: Hardpoints deployed",
+          "format": "When \"Hardpoints deployed\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.areHardpointsDeployed"
+        },
+        {
+          "id": "edb.ship.event.isInWing",
+          "type": "communicate",
+          "name": "When it changes: In a Wing",
+          "format": "When \"In a Wing\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isInWing"
+        },
+        {
+          "id": "edb.ship.event.areLightsOn",
+          "type": "communicate",
+          "name": "When it changes: Lights on",
+          "format": "When \"Lights on\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.areLightsOn"
+        },
+        {
+          "id": "edb.ship.event.isCargoScoopDeployed",
+          "type": "communicate",
+          "name": "When it changes: Cargo scoop deployed",
+          "format": "When \"Cargo scoop deployed\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isCargoScoopDeployed"
+        },
+        {
+          "id": "edb.ship.event.isSilentRunning",
+          "type": "communicate",
+          "name": "When it changes: Silent Running on",
+          "format": "When \"Silent Running on\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isSilentRunning"
+        },
+        {
+          "id": "edb.ship.event.isScoopingFuel",
+          "type": "communicate",
+          "name": "When it changes: Scooping fuel",
+          "format": "When \"Scooping fuel\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isScoopingFuel"
+        },
+        {
+          "id": "edb.ship.event.isSRVHandbrake",
+          "type": "communicate",
+          "name": "When it changes: SRV handbrake on",
+          "format": "When \"SRV handbrake on\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isSRVHandbrake"
+        },
+        {
+          "id": "edb.ship.event.isSRVUsingTurretView",
+          "type": "communicate",
+          "name": "When it changes: SRV using turret view",
+          "format": "When \"SRV using turret view\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isSRVUsingTurretView"
+        },
+        {
+          "id": "edb.ship.event.isSRVTurretRetracted",
+          "type": "communicate",
+          "name": "When it changes: SRV turret retracted",
+          "format": "When \"SRV turret retracted\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isSRVTurretRetracted"
+        },
+        {
+          "id": "edb.ship.event.isSRVDriveAssist",
+          "type": "communicate",
+          "name": "When it changes: SRV Drive Assist on",
+          "format": "When \"SRV Drive Assist on\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isSRVDriveAssist"
+        },
+        {
+          "id": "edb.ship.event.isFSDMassLocked",
+          "type": "communicate",
+          "name": "When it changes: FSD mass locked",
+          "format": "When \"FSD mass locked\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isFSDMassLocked"
+        },
+        {
+          "id": "edb.ship.event.isFSDCharging",
+          "type": "communicate",
+          "name": "When it changes: FSD charging",
+          "format": "When \"FSD charging\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isFSDCharging"
+        },
+        {
+          "id": "edb.ship.event.isFSDCooldown",
+          "type": "communicate",
+          "name": "When it changes: FSD cooldown",
+          "format": "When \"FSD cooldown\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isFSDCooldown"
+        },
+        {
+          "id": "edb.ship.event.isLowFuel",
+          "type": "communicate",
+          "name": "When it changes: Low fuel (<25%)",
+          "format": "When \"Low fuel (<25%)\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isLowFuel"
+        },
+        {
+          "id": "edb.ship.event.isOverHeating",
+          "type": "communicate",
+          "name": "When it changes: Overheating (>100%)",
+          "format": "When \"Overheating (>100%)\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isOverHeating"
+        },
+        {
+          "id": "edb.ship.event.hasLatLong",
+          "type": "communicate",
+          "name": "When it changes: Has valid surface coordinates",
+          "format": "When \"Has valid surface coordinates\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.hasLatLong"
+        },
+        {
+          "id": "edb.ship.event.isInDanger",
+          "type": "communicate",
+          "name": "When it changes: In danger",
+          "format": "When \"In danger\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isInDanger"
+        },
+        {
+          "id": "edb.ship.event.isBeingInterdicted",
+          "type": "communicate",
+          "name": "When it changes: Being interdicted",
+          "format": "When \"Being interdicted\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isBeingInterdicted"
+        },
+        {
+          "id": "edb.ship.event.isInMainShip",
+          "type": "communicate",
+          "name": "When it changes: In main ship",
+          "format": "When \"In main ship\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isInMainShip"
+        },
+        {
+          "id": "edb.ship.event.isInFighter",
+          "type": "communicate",
+          "name": "When it changes: In fighter",
+          "format": "When \"In fighter\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isInFighter"
+        },
+        {
+          "id": "edb.ship.event.isInSRV",
+          "type": "communicate",
+          "name": "When it changes: In SRV",
+          "format": "When \"In SRV\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isInSRV"
+        },
+        {
+          "id": "edb.ship.event.isHUDInAnalysisMode",
+          "type": "communicate",
+          "name": "When it changes: HUD in Analysis mode",
+          "format": "When \"HUD in Analysis mode\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isHUDInAnalysisMode"
+        },
+        {
+          "id": "edb.ship.event.isNightVision",
+          "type": "communicate",
+          "name": "When it changes: Night vision on",
+          "format": "When \"Night vision on\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isNightVision"
+        },
+        {
+          "id": "edb.ship.event.isAltitudeFromAverageRadius",
+          "type": "communicate",
+          "name": "When it changes: Altitude from average radius",
+          "format": "When \"Altitude from average radius\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isAltitudeFromAverageRadius"
+        },
+        {
+          "id": "edb.ship.event.isFSDJump",
+          "type": "communicate",
+          "name": "When it changes: FSD jump (hyperspace)",
+          "format": "When \"FSD jump (hyperspace)\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isFSDJump"
+        },
+        {
+          "id": "edb.ship.event.isSRVHighBeam",
+          "type": "communicate",
+          "name": "When it changes: SRV high beam on",
+          "format": "When \"SRV high beam on\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.isSRVHighBeam"
+        },
+        {
+          "id": "edb.ship.event.loadoutHp1Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Hardpoint 1)",
+          "format": "When \"Hardpoint 1\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutHp1Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutHp2Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Hardpoint 2)",
+          "format": "When \"Hardpoint 2\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutHp2Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutHp3Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Hardpoint 3)",
+          "format": "When \"Hardpoint 3\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutHp3Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutHp4Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Hardpoint 4)",
+          "format": "When \"Hardpoint 4\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutHp4Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutHp5Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Hardpoint 5)",
+          "format": "When \"Hardpoint 5\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutHp5Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutHp6Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Hardpoint 6)",
+          "format": "When \"Hardpoint 6\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutHp6Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutHp7Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Hardpoint 7)",
+          "format": "When \"Hardpoint 7\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutHp7Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutHp8Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Hardpoint 8)",
+          "format": "When \"Hardpoint 8\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutHp8Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutUt1Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Utility 1)",
+          "format": "When \"Utility 1\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutUt1Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutUt2Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Utility 2)",
+          "format": "When \"Utility 2\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutUt2Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutUt3Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Utility 3)",
+          "format": "When \"Utility 3\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutUt3Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutUt4Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Utility 4)",
+          "format": "When \"Utility 4\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutUt4Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutUt5Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Utility 5)",
+          "format": "When \"Utility 5\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutUt5Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutUt6Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Utility 6)",
+          "format": "When \"Utility 6\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutUt6Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutUt7Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Utility 7)",
+          "format": "When \"Utility 7\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutUt7Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutUt8Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Utility 8)",
+          "format": "When \"Utility 8\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutUt8Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutCorePowerPlantEng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Power Plant)",
+          "format": "When \"Power Plant\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutCorePowerPlantEng"
+        },
+        {
+          "id": "edb.ship.event.loadoutCoreMainEnginesEng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Thrusters)",
+          "format": "When \"Thrusters\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutCoreMainEnginesEng"
+        },
+        {
+          "id": "edb.ship.event.loadoutCoreFrameShiftDriveEng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (FSD)",
+          "format": "When \"FSD\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutCoreFrameShiftDriveEng"
+        },
+        {
+          "id": "edb.ship.event.loadoutCoreLifeSupportEng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Life Support)",
+          "format": "When \"Life Support\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutCoreLifeSupportEng"
+        },
+        {
+          "id": "edb.ship.event.loadoutCorePowerDistributorEng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Power Distributor)",
+          "format": "When \"Power Distributor\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutCorePowerDistributorEng"
+        },
+        {
+          "id": "edb.ship.event.loadoutCoreRadarEng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Sensors)",
+          "format": "When \"Sensors\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutCoreRadarEng"
+        },
+        {
+          "id": "edb.ship.event.loadoutCoreFuelTankEng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Fuel Tank)",
+          "format": "When \"Fuel Tank\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutCoreFuelTankEng"
+        },
+        {
+          "id": "edb.ship.event.loadoutCoreArmourEng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Armour)",
+          "format": "When \"Armour\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutCoreArmourEng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt1Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 1)",
+          "format": "When \"Optional Internal 1\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt1Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt2Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 2)",
+          "format": "When \"Optional Internal 2\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt2Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt3Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 3)",
+          "format": "When \"Optional Internal 3\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt3Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt4Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 4)",
+          "format": "When \"Optional Internal 4\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt4Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt5Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 5)",
+          "format": "When \"Optional Internal 5\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt5Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt6Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 6)",
+          "format": "When \"Optional Internal 6\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt6Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt7Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 7)",
+          "format": "When \"Optional Internal 7\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt7Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt8Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 8)",
+          "format": "When \"Optional Internal 8\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt8Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt9Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 9)",
+          "format": "When \"Optional Internal 9\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt9Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt10Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 10)",
+          "format": "When \"Optional Internal 10\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt10Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt11Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 11)",
+          "format": "When \"Optional Internal 11\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt11Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt12Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 12)",
+          "format": "When \"Optional Internal 12\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt12Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt13Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 13)",
+          "format": "When \"Optional Internal 13\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt13Eng"
+        },
+        {
+          "id": "edb.ship.event.loadoutOpt14Eng",
+          "type": "communicate",
+          "name": "When it changes: engineered? (Optional Internal 14)",
+          "format": "When \"Optional Internal 14\" engineered becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.ship.loadoutOpt14Eng"
+        }
+      ]
+    },
+    {
+      "id": "edb.cmdr",
+      "name": "CMDR / Pilot",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.cmdr.name",
+          "type": "text",
+          "desc": "Commander name",
+          "default": ""
+        },
+        {
+          "id": "edb.cmdr.credits",
+          "type": "text",
+          "desc": "Credits (approximate, see README)",
+          "default": "0"
+        },
+        {
+          "id": "edb.cmdr.combatRank",
+          "type": "text",
+          "desc": "Combat rank",
+          "default": "Harmless"
+        },
+        {
+          "id": "edb.cmdr.tradeRank",
+          "type": "text",
+          "desc": "Trade rank",
+          "default": "Penniless"
+        },
+        {
+          "id": "edb.cmdr.exploRank",
+          "type": "text",
+          "desc": "Exploration rank",
+          "default": "Aimless"
+        },
+        {
+          "id": "edb.cmdr.cqcRank",
+          "type": "text",
+          "desc": "CQC rank",
+          "default": "Helpless"
+        },
+        {
+          "id": "edb.cmdr.federationRank",
+          "type": "text",
+          "desc": "Federation rank",
+          "default": "None"
+        },
+        {
+          "id": "edb.cmdr.empireRank",
+          "type": "text",
+          "desc": "Empire rank",
+          "default": "None"
+        },
+        {
+          "id": "edb.cmdr.reputationFederation",
+          "type": "text",
+          "desc": "Federation reputation (-100..100)",
+          "default": "0"
+        },
+        {
+          "id": "edb.cmdr.reputationEmpire",
+          "type": "text",
+          "desc": "Empire reputation (-100..100)",
+          "default": "0"
+        },
+        {
+          "id": "edb.cmdr.reputationAlliance",
+          "type": "text",
+          "desc": "Alliance reputation (-100..100)",
+          "default": "0"
+        },
+        {
+          "id": "edb.cmdr.reputationIndependent",
+          "type": "text",
+          "desc": "Independent reputation (-100..100)",
+          "default": "0"
+        },
+        {
+          "id": "edb.cmdr.shipType",
+          "type": "text",
+          "desc": "Current ship type",
+          "default": ""
+        },
+        {
+          "id": "edb.cmdr.shipName",
+          "type": "text",
+          "desc": "Current ship name",
+          "default": ""
+        },
+        {
+          "id": "edb.cmdr.shipIdent",
+          "type": "text",
+          "desc": "Current ship ID",
+          "default": ""
+        },
+        {
+          "id": "edb.cmdr.fuelCapacityMain",
+          "type": "text",
+          "desc": "Main tank capacity (t)",
+          "default": "0"
+        },
+        {
+          "id": "edb.cmdr.fuelCapacityReserve",
+          "type": "text",
+          "desc": "Reservoir capacity (t)",
+          "default": "0"
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.cmdr.event.shipType",
+          "type": "communicate",
+          "name": "When the Ship Type changes",
+          "format": "When the ship becomes $val",
+          "valueType": "text",
+          "valueStateId": "edb.cmdr.shipType"
+        },
+        {
+          "id": "edb.cmdr.event.combatRank",
+          "type": "communicate",
+          "name": "When the Combat Rank changes",
+          "format": "When the Combat Rank becomes $val",
+          "valueType": "text",
+          "valueStateId": "edb.cmdr.combatRank"
+        },
+        {
+          "id": "edb.cmdr.event.tradeRank",
+          "type": "communicate",
+          "name": "When the Trade Rank changes",
+          "format": "When the Trade Rank becomes $val",
+          "valueType": "text",
+          "valueStateId": "edb.cmdr.tradeRank"
+        },
+        {
+          "id": "edb.cmdr.event.exploRank",
+          "type": "communicate",
+          "name": "When the Exploration Rank changes",
+          "format": "When the Exploration Rank becomes $val",
+          "valueType": "text",
+          "valueStateId": "edb.cmdr.exploRank"
+        }
+      ]
+    },
+    {
+      "id": "edb.nav",
+      "name": "Navigation",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.nav.currentSystem",
+          "type": "text",
+          "desc": "Current system",
+          "default": ""
+        },
+        {
+          "id": "edb.nav.currentBody",
+          "type": "text",
+          "desc": "Current body/station",
+          "default": ""
+        },
+        {
+          "id": "edb.nav.starClass",
+          "type": "text",
+          "desc": "Main star class",
+          "default": ""
+        },
+        {
+          "id": "edb.nav.systemSecurity",
+          "type": "text",
+          "desc": "System security",
+          "default": ""
+        },
+        {
+          "id": "edb.nav.systemAllegiance",
+          "type": "text",
+          "desc": "System allegiance",
+          "default": ""
+        },
+        {
+          "id": "edb.nav.systemGovernment",
+          "type": "text",
+          "desc": "System government",
+          "default": ""
+        },
+        {
+          "id": "edb.nav.systemEconomy",
+          "type": "text",
+          "desc": "System economy",
+          "default": ""
+        },
+        {
+          "id": "edb.nav.population",
+          "type": "text",
+          "desc": "System population",
+          "default": "0"
+        },
+        {
+          "id": "edb.nav.nextSystem",
+          "type": "text",
+          "desc": "Next destination on the route",
+          "default": ""
+        },
+        {
+          "id": "edb.nav.jumpsRemaining",
+          "type": "text",
+          "desc": "Jumps remaining on the plotted route",
+          "default": "0"
+        },
+        {
+          "id": "edb.nav.lastJumpDistance",
+          "type": "text",
+          "desc": "Distance of the last jump (ly)",
+          "default": "0"
+        },
+        {
+          "id": "edb.nav.lastJumpFuelUsed",
+          "type": "text",
+          "desc": "Fuel used in the last jump (t)",
+          "default": "0"
+        },
+        {
+          "id": "edb.nav.isJumping",
+          "type": "text",
+          "desc": "Jumping right now (pulse)",
+          "default": "false"
+        },
+        {
+          "id": "edb.nav.jumpType",
+          "type": "text",
+          "desc": "Type of jump started (Hyperspace/Supercruise)",
+          "default": ""
+        },
+        {
+          "id": "edb.nav.dockingRequestStatus",
+          "type": "text",
+          "desc": "Docking request status",
+          "default": ""
+        },
+        {
+          "id": "edb.nav.dockingGrantedPad",
+          "type": "text",
+          "desc": "Granted docking pad",
+          "default": ""
+        },
+        {
+          "id": "edb.nav.isTouchdown",
+          "type": "text",
+          "desc": "Surface touchdown occurred (pulse)",
+          "default": "false"
+        },
+        {
+          "id": "edb.nav.isLiftoff",
+          "type": "text",
+          "desc": "Surface liftoff occurred (pulse)",
+          "default": "false"
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.nav.event.currentSystem",
+          "type": "communicate",
+          "name": "When the Current System changes",
+          "format": "On arrival at $val",
+          "valueType": "text",
+          "valueStateId": "edb.nav.currentSystem"
+        },
+        {
+          "id": "edb.nav.event.dockingRequestStatus",
+          "type": "communicate",
+          "name": "When the Docking Status changes",
+          "format": "When the docking status becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "Requested",
+            "Cancelled",
+            "Denied",
+            "Granted",
+            "Timeout",
+            ""
+          ],
+          "valueStateId": "edb.nav.dockingRequestStatus"
+        },
+        {
+          "id": "edb.nav.event.isJumping",
+          "type": "communicate",
+          "name": "When an FSD jump starts/ends",
+          "format": "FSD jump: $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.nav.isJumping"
+        },
+        {
+          "id": "edb.nav.event.isTouchdown",
+          "type": "communicate",
+          "name": "When touching down on a surface",
+          "format": "Surface touchdown: $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.nav.isTouchdown"
+        },
+        {
+          "id": "edb.nav.event.isLiftoff",
+          "type": "communicate",
+          "name": "When lifting off from a surface",
+          "format": "Surface liftoff: $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.nav.isLiftoff"
+        }
+      ]
+    },
+    {
+      "id": "edb.combat",
+      "name": "Combat",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.combat.isUnderAttack",
+          "type": "text",
+          "desc": "Under attack (pulse)",
+          "default": "false"
+        },
+        {
+          "id": "edb.combat.isInterdicted",
+          "type": "text",
+          "desc": "Being interdicted (pulse)",
+          "default": "false"
+        },
+        {
+          "id": "edb.combat.lastInterdictorName",
+          "type": "text",
+          "desc": "Last interdictor",
+          "default": ""
+        },
+        {
+          "id": "edb.combat.escapedInterdiction",
+          "type": "text",
+          "desc": "Interdiction escaped (pulse)",
+          "default": "false"
+        },
+        {
+          "id": "edb.combat.lastBountyAmount",
+          "type": "text",
+          "desc": "Last bounty amount",
+          "default": "0"
+        },
+        {
+          "id": "edb.combat.lastBountyFaction",
+          "type": "text",
+          "desc": "Last bounty faction",
+          "default": ""
+        },
+        {
+          "id": "edb.combat.sessionBountyTotal",
+          "type": "text",
+          "desc": "Bounty total this session",
+          "default": "0"
+        },
+        {
+          "id": "edb.combat.lastKillbondAmount",
+          "type": "text",
+          "desc": "Last combat bond amount",
+          "default": "0"
+        },
+        {
+          "id": "edb.combat.deathsSession",
+          "type": "text",
+          "desc": "Deaths this session",
+          "default": "0"
+        },
+        {
+          "id": "edb.combat.lastDiedKilledBy",
+          "type": "text",
+          "desc": "Last death caused by",
+          "default": ""
+        },
+        {
+          "id": "edb.combat.hullHealthPercent",
+          "type": "text",
+          "desc": "Last reported hull health %",
+          "default": "100"
+        },
+        {
+          "id": "edb.combat.heatWarning",
+          "type": "text",
+          "desc": "Heat warning (pulse)",
+          "default": "false"
+        },
+        {
+          "id": "edb.combat.shieldsDown",
+          "type": "text",
+          "desc": "Shields down (pulse)",
+          "default": "false"
+        },
+        {
+          "id": "edb.combat.targetName",
+          "type": "text",
+          "desc": "Target name",
+          "default": ""
+        },
+        {
+          "id": "edb.combat.targetShip",
+          "type": "text",
+          "desc": "Target ship type",
+          "default": ""
+        },
+        {
+          "id": "edb.combat.fighterDestroyed",
+          "type": "text",
+          "desc": "Fighter destroyed (pulse)",
+          "default": "false"
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.combat.event.isUnderAttack",
+          "type": "communicate",
+          "name": "When under attack",
+          "format": "Under attack: $val",
+          "valueType": "text",
+          "valueStateId": "edb.combat.isUnderAttack"
+        },
+        {
+          "id": "edb.combat.event.isInterdicted",
+          "type": "communicate",
+          "name": "When interdicted",
+          "format": "Interdicted: $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.combat.isInterdicted"
+        },
+        {
+          "id": "edb.combat.event.bounty",
+          "type": "communicate",
+          "name": "When a bounty is awarded",
+          "format": "Bounty awarded: $val",
+          "valueType": "text",
+          "valueStateId": "edb.combat.lastBountyAmount"
+        },
+        {
+          "id": "edb.combat.event.died",
+          "type": "communicate",
+          "name": "When you die",
+          "format": "You died (killed by: $val)",
+          "valueType": "text",
+          "valueStateId": "edb.combat.lastDiedKilledBy"
+        },
+        {
+          "id": "edb.combat.event.heatWarning",
+          "type": "communicate",
+          "name": "When there is a heat warning",
+          "format": "Heat warning: $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.combat.heatWarning"
+        },
+        {
+          "id": "edb.combat.event.shieldsDown",
+          "type": "communicate",
+          "name": "When shields go down",
+          "format": "Shields down: $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.combat.shieldsDown"
+        }
+      ]
+    },
+    {
+      "id": "edb.explo",
+      "name": "Exploration",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.explo.bodiesInSystem",
+          "type": "text",
+          "desc": "Bodies detected in system (FSS)",
+          "default": "0"
+        },
+        {
+          "id": "edb.explo.allBodiesFound",
+          "type": "text",
+          "desc": "All bodies found (pulse)",
+          "default": "false"
+        },
+        {
+          "id": "edb.explo.lastScannedBody",
+          "type": "text",
+          "desc": "Last scanned body",
+          "default": ""
+        },
+        {
+          "id": "edb.explo.lastScannedBodyType",
+          "type": "text",
+          "desc": "Last scanned body type",
+          "default": ""
+        },
+        {
+          "id": "edb.explo.lastMaterialCollected",
+          "type": "text",
+          "desc": "Last material collected",
+          "default": ""
+        },
+        {
+          "id": "edb.explo.sessionScansCount",
+          "type": "text",
+          "desc": "Scans this session",
+          "default": "0"
+        },
+        {
+          "id": "edb.explo.lastCodexEntry",
+          "type": "text",
+          "desc": "Last Codex entry discovered",
+          "default": ""
+        },
+        {
+          "id": "edb.explo.explorationDataSoldSession",
+          "type": "text",
+          "desc": "Exploration data sold (credits, session)",
+          "default": "0"
+        },
+        {
+          "id": "edb.explo.lastMappedBody",
+          "type": "text",
+          "desc": "Last mapped body (SAA)",
+          "default": ""
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.explo.event.scan",
+          "type": "communicate",
+          "name": "When a body is scanned",
+          "format": "Scanned: $val",
+          "valueType": "text",
+          "valueStateId": "edb.explo.lastScannedBody"
+        },
+        {
+          "id": "edb.explo.event.allBodiesFound",
+          "type": "communicate",
+          "name": "When the system is fully scanned (FSS)",
+          "format": "System complete: $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.explo.allBodiesFound"
+        },
+        {
+          "id": "edb.explo.event.codex",
+          "type": "communicate",
+          "name": "When a Codex entry is discovered",
+          "format": "New Codex entry: $val",
+          "valueType": "text",
+          "valueStateId": "edb.explo.lastCodexEntry"
+        }
+      ]
+    },
+    {
+      "id": "edb.trade",
+      "name": "Trade / Mining",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.trade.lastCommodity",
+          "type": "text",
+          "desc": "Last commodity traded",
+          "default": ""
+        },
+        {
+          "id": "edb.trade.lastAction",
+          "type": "text",
+          "desc": "Last action (Buy/Sell)",
+          "default": ""
+        },
+        {
+          "id": "edb.trade.lastQty",
+          "type": "text",
+          "desc": "Last trade quantity",
+          "default": "0"
+        },
+        {
+          "id": "edb.trade.sessionProfit",
+          "type": "text",
+          "desc": "Trade profit this session (approx.)",
+          "default": "0"
+        },
+        {
+          "id": "edb.trade.lastMiningMaterial",
+          "type": "text",
+          "desc": "Last refined material (mining)",
+          "default": ""
+        },
+        {
+          "id": "edb.trade.sessionMiningCount",
+          "type": "text",
+          "desc": "Materials refined this session",
+          "default": "0"
+        },
+        {
+          "id": "edb.trade.lastCargoCollected",
+          "type": "text",
+          "desc": "Last cargo collected",
+          "default": ""
+        },
+        {
+          "id": "edb.trade.lastMaterialCollected",
+          "type": "text",
+          "desc": "Last raw material collected (SRV/on foot)",
+          "default": ""
+        },
+        {
+          "id": "edb.trade.shipCargoList",
+          "type": "text",
+          "desc": "Live ship cargo hold contents",
+          "default": "No data yet (board your ship or move cargo)"
+        },
+        {
+          "id": "edb.trade.shipCargoCount",
+          "type": "text",
+          "desc": "Total units in the ship cargo hold",
+          "default": "0"
+        },
+        {
+          "id": "edb.trade.shipCargoCapacity",
+          "type": "text",
+          "desc": "Ship cargo capacity (t), from the last Loadout",
+          "default": ""
+        },
+        {
+          "id": "edb.trade.srvCargoList",
+          "type": "text",
+          "desc": "Live SRV cargo hold contents",
+          "default": "No data yet (board the SRV or move cargo)"
+        },
+        {
+          "id": "edb.trade.srvCargoCount",
+          "type": "text",
+          "desc": "Total units in the SRV cargo hold",
+          "default": "0"
+        },
+        {
+          "id": "edb.trade.srvCargoCapacity",
+          "type": "text",
+          "desc": "Active SRV cargo capacity (t), by vehicle type",
+          "default": ""
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.trade.event.commodity",
+          "type": "communicate",
+          "name": "When a commodity is bought or sold",
+          "format": "$val",
+          "valueType": "text",
+          "valueStateId": "edb.trade.lastCommodity"
+        },
+        {
+          "id": "edb.trade.event.mining",
+          "type": "communicate",
+          "name": "When a mined material is refined",
+          "format": "Refined: $val",
+          "valueType": "text",
+          "valueStateId": "edb.trade.lastMiningMaterial"
+        }
+      ]
+    },
+    {
+      "id": "edb.power",
+      "name": "Powerplay",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [
+        {
+          "id": "edb.power.action.resetMeritCounter",
+          "name": "Powerplay: Reset merit counter",
+          "prefix": "Powerplay",
+          "type": "communicate",
+          "format": "Powerplay: Reset gained merits counter"
+        }
+      ],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.power.status",
+          "type": "text",
+          "desc": "Powerplay tracker status",
+          "default": "NO_DATA"
+        },
+        {
+          "id": "edb.power.name",
+          "type": "text",
+          "desc": "Pledged Power",
+          "default": ""
+        },
+        {
+          "id": "edb.power.color",
+          "type": "text",
+          "desc": "Power colour",
+          "default": "#f07b05"
+        },
+        {
+          "id": "edb.power.rank",
+          "type": "text",
+          "desc": "Current Powerplay rank",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.nextRank",
+          "type": "text",
+          "desc": "Next Powerplay rank",
+          "default": "1"
+        },
+        {
+          "id": "edb.power.totalMerits",
+          "type": "text",
+          "desc": "Total merits",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.gainedMerits",
+          "type": "text",
+          "desc": "Merits gained since last reset",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.remainingMerits",
+          "type": "text",
+          "desc": "Merits remaining to next rank",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.lastVoucherAmount",
+          "type": "text",
+          "desc": "Last Powerplay voucher amount",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.sysName",
+          "type": "text",
+          "desc": "System shown in the control panel",
+          "default": "-"
+        },
+        {
+          "id": "edb.power.sysState",
+          "type": "text",
+          "desc": "Powerplay state of that system (Fortified, Stronghold...)",
+          "default": "-"
+        },
+        {
+          "id": "edb.power.sysNextState",
+          "type": "text",
+          "desc": "Next Powerplay state of that system",
+          "default": "-"
+        },
+        {
+          "id": "edb.power.sysProgress",
+          "type": "text",
+          "desc": "Control progress towards the next state, in percent",
+          "default": "-"
+        },
+        {
+          "id": "edb.power.sysCp",
+          "type": "text",
+          "desc": "Control points now / top of the current state band",
+          "default": "-"
+        },
+        {
+          "id": "edb.power.sysRemaining",
+          "type": "text",
+          "desc": "Control points still needed for the next state",
+          "default": "-"
+        },
+        {
+          "id": "edb.power.sysReinforcement",
+          "type": "text",
+          "desc": "Reinforcement control points this cycle",
+          "default": "-"
+        },
+        {
+          "id": "edb.power.sysUndermining",
+          "type": "text",
+          "desc": "Undermining control points this cycle",
+          "default": "-"
+        },
+        {
+          "id": "edb.power.sysNet",
+          "type": "text",
+          "desc": "Net control points this cycle (reinforcement - undermining)",
+          "default": "-"
+        },
+        {
+          "id": "edb.power.sysAsOf",
+          "type": "text",
+          "desc": "When the game last reported this system",
+          "default": "-"
+        },
+        {
+          "id": "edb.power.seg01",
+          "type": "text",
+          "desc": "Control progress bar, cell 1 of 12 (0 empty, 1 base, 2 gain, 3 loss)",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.seg02",
+          "type": "text",
+          "desc": "Control progress bar, cell 2 of 12 (0 empty, 1 base, 2 gain, 3 loss)",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.seg03",
+          "type": "text",
+          "desc": "Control progress bar, cell 3 of 12 (0 empty, 1 base, 2 gain, 3 loss)",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.seg04",
+          "type": "text",
+          "desc": "Control progress bar, cell 4 of 12 (0 empty, 1 base, 2 gain, 3 loss)",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.seg05",
+          "type": "text",
+          "desc": "Control progress bar, cell 5 of 12 (0 empty, 1 base, 2 gain, 3 loss)",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.seg06",
+          "type": "text",
+          "desc": "Control progress bar, cell 6 of 12 (0 empty, 1 base, 2 gain, 3 loss)",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.seg07",
+          "type": "text",
+          "desc": "Control progress bar, cell 7 of 12 (0 empty, 1 base, 2 gain, 3 loss)",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.seg08",
+          "type": "text",
+          "desc": "Control progress bar, cell 8 of 12 (0 empty, 1 base, 2 gain, 3 loss)",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.seg09",
+          "type": "text",
+          "desc": "Control progress bar, cell 9 of 12 (0 empty, 1 base, 2 gain, 3 loss)",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.seg10",
+          "type": "text",
+          "desc": "Control progress bar, cell 10 of 12 (0 empty, 1 base, 2 gain, 3 loss)",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.seg11",
+          "type": "text",
+          "desc": "Control progress bar, cell 11 of 12 (0 empty, 1 base, 2 gain, 3 loss)",
+          "default": "0"
+        },
+        {
+          "id": "edb.power.seg12",
+          "type": "text",
+          "desc": "Control progress bar, cell 12 of 12 (0 empty, 1 base, 2 gain, 3 loss)",
+          "default": "0"
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.power.event.rank",
+          "type": "communicate",
+          "name": "When the Powerplay Rank changes",
+          "format": "Powerplay rank: $val",
+          "valueType": "text",
+          "valueStateId": "edb.power.rank"
+        },
+        {
+          "id": "edb.power.event.power",
+          "type": "communicate",
+          "name": "When the Power changes",
+          "format": "Power: $val",
+          "valueType": "text",
+          "valueStateId": "edb.power.name"
+        },
+        {
+          "id": "edb.power.event.totalMerits",
+          "type": "communicate",
+          "name": "When Total Merits change",
+          "format": "Total merits: $val",
+          "valueType": "text",
+          "valueStateId": "edb.power.totalMerits"
+        }
+      ]
+    },
+    {
+      "id": "edb.missions",
+      "name": "Missions",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.missions.activeCount",
+          "type": "text",
+          "desc": "Active missions",
+          "default": "0"
+        },
+        {
+          "id": "edb.missions.lastAccepted",
+          "type": "text",
+          "desc": "Last accepted mission",
+          "default": ""
+        },
+        {
+          "id": "edb.missions.lastCompleted",
+          "type": "text",
+          "desc": "Last completed mission",
+          "default": ""
+        },
+        {
+          "id": "edb.missions.lastFailed",
+          "type": "text",
+          "desc": "Last failed mission",
+          "default": ""
+        },
+        {
+          "id": "edb.missions.completedSession",
+          "type": "text",
+          "desc": "Missions completed this session",
+          "default": "0"
+        },
+        {
+          "id": "edb.missions.failedSession",
+          "type": "text",
+          "desc": "Missions failed this session",
+          "default": "0"
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.missions.event.accepted",
+          "type": "communicate",
+          "name": "When a mission is accepted",
+          "format": "Mission accepted: $val",
+          "valueType": "text",
+          "valueStateId": "edb.missions.lastAccepted"
+        },
+        {
+          "id": "edb.missions.event.completed",
+          "type": "communicate",
+          "name": "When a mission is completed",
+          "format": "Mission completed: $val",
+          "valueType": "text",
+          "valueStateId": "edb.missions.lastCompleted"
+        },
+        {
+          "id": "edb.missions.event.failed",
+          "type": "communicate",
+          "name": "When a mission fails",
+          "format": "Mission failed: $val",
+          "valueType": "text",
+          "valueStateId": "edb.missions.lastFailed"
+        }
+      ]
+    },
+    {
+      "id": "edb.station",
+      "name": "Station / Engineers",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.station.lastEngineer",
+          "type": "text",
+          "desc": "Last engineer visited/updated",
+          "default": ""
+        },
+        {
+          "id": "edb.station.lastEngineerRank",
+          "type": "text",
+          "desc": "Rank with that engineer",
+          "default": ""
+        },
+        {
+          "id": "edb.station.lastBlueprintApplied",
+          "type": "text",
+          "desc": "Last modification applied",
+          "default": ""
+        },
+        {
+          "id": "edb.station.communityGoalName",
+          "type": "text",
+          "desc": "Active Community Goal",
+          "default": ""
+        },
+        {
+          "id": "edb.station.communityGoalContribution",
+          "type": "text",
+          "desc": "Your Community Goal contribution",
+          "default": "0"
+        },
+        {
+          "id": "edb.station.communityGoalPosition",
+          "type": "text",
+          "desc": "Your Community Goal position",
+          "default": "0"
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.station.event.blueprint",
+          "type": "communicate",
+          "name": "When an engineering modification is applied",
+          "format": "Modification applied: $val",
+          "valueType": "text",
+          "valueStateId": "edb.station.lastBlueprintApplied"
+        },
+        {
+          "id": "edb.station.event.communityGoal",
+          "type": "communicate",
+          "name": "When the Community Goal updates",
+          "format": "Community Goal: $val",
+          "valueType": "text",
+          "valueStateId": "edb.station.communityGoalName"
+        }
+      ]
+    },
+    {
+      "id": "edb.onfoot",
+      "name": "On Foot / Suits",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.onfoot.suitName",
+          "type": "text",
+          "desc": "Equipped suit",
+          "default": ""
+        },
+        {
+          "id": "edb.onfoot.lastBackpackItem",
+          "type": "text",
+          "desc": "Last backpack item picked up/dropped",
+          "default": ""
+        },
+        {
+          "id": "edb.onfoot.lastOrganicScanned",
+          "type": "text",
+          "desc": "Last organic species scanned",
+          "default": ""
+        },
+        {
+          "id": "edb.onfoot.lastOrganicStage",
+          "type": "text",
+          "desc": "Last organic scan stage (1/2/3)",
+          "default": ""
+        },
+        {
+          "id": "edb.onfoot.isEmbarked",
+          "type": "text",
+          "desc": "Embarked on taxi/dropship (pulse)",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isOnFoot",
+          "type": "text",
+          "desc": "On foot",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isInTaxi",
+          "type": "text",
+          "desc": "In taxi (Apex)",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isInMulticrew",
+          "type": "text",
+          "desc": "In multicrew session",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isOnFootInStation",
+          "type": "text",
+          "desc": "On foot in station",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isOnFootOnPlanet",
+          "type": "text",
+          "desc": "On foot on planet",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isAimDownSight",
+          "type": "text",
+          "desc": "Aiming down sight",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isLowOxygen",
+          "type": "text",
+          "desc": "Low oxygen",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isLowHealth",
+          "type": "text",
+          "desc": "Low health",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isCold",
+          "type": "text",
+          "desc": "Cold",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isHot",
+          "type": "text",
+          "desc": "Hot",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isVeryCold",
+          "type": "text",
+          "desc": "Very cold",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isVeryHot",
+          "type": "text",
+          "desc": "Very hot",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isGlideMode",
+          "type": "text",
+          "desc": "Glide mode",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isOnFootInHangar",
+          "type": "text",
+          "desc": "On foot in hangar",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isOnFootSocialSpace",
+          "type": "text",
+          "desc": "On foot in social space",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isOnFootExterior",
+          "type": "text",
+          "desc": "On foot outside",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isBreathableAtmosphere",
+          "type": "text",
+          "desc": "Breathable atmosphere",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isTelepresenceMulticrew",
+          "type": "text",
+          "desc": "Telepresence multicrew",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isPhysicalMulticrew",
+          "type": "text",
+          "desc": "Physical multicrew (on board)",
+          "default": "false"
+        },
+        {
+          "id": "edb.onfoot.isFsdHyperdriveCharging",
+          "type": "text",
+          "desc": "FSD hyperdrive charging (new)",
+          "default": "false"
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.onfoot.event.suitName",
+          "type": "communicate",
+          "name": "When the equipped Suit changes",
+          "format": "When the equipped suit becomes $val",
+          "valueType": "text",
+          "valueStateId": "edb.onfoot.suitName"
+        },
+        {
+          "id": "edb.onfoot.event.organicScanned",
+          "type": "communicate",
+          "name": "When an organic species is scanned",
+          "format": "Scanned: $val",
+          "valueType": "text",
+          "valueStateId": "edb.onfoot.lastOrganicScanned"
+        },
+        {
+          "id": "edb.onfoot.event.isOnFoot",
+          "type": "communicate",
+          "name": "When it changes: On foot",
+          "format": "When \"On foot\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isOnFoot"
+        },
+        {
+          "id": "edb.onfoot.event.isInTaxi",
+          "type": "communicate",
+          "name": "When it changes: In taxi (Apex)",
+          "format": "When \"In taxi (Apex)\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isInTaxi"
+        },
+        {
+          "id": "edb.onfoot.event.isInMulticrew",
+          "type": "communicate",
+          "name": "When it changes: In multicrew session",
+          "format": "When \"In multicrew session\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isInMulticrew"
+        },
+        {
+          "id": "edb.onfoot.event.isOnFootInStation",
+          "type": "communicate",
+          "name": "When it changes: On foot in station",
+          "format": "When \"On foot in station\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isOnFootInStation"
+        },
+        {
+          "id": "edb.onfoot.event.isOnFootOnPlanet",
+          "type": "communicate",
+          "name": "When it changes: On foot on planet",
+          "format": "When \"On foot on planet\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isOnFootOnPlanet"
+        },
+        {
+          "id": "edb.onfoot.event.isAimDownSight",
+          "type": "communicate",
+          "name": "When it changes: Aiming down sight",
+          "format": "When \"Aiming down sight\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isAimDownSight"
+        },
+        {
+          "id": "edb.onfoot.event.isLowOxygen",
+          "type": "communicate",
+          "name": "When it changes: Low oxygen",
+          "format": "When \"Low oxygen\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isLowOxygen"
+        },
+        {
+          "id": "edb.onfoot.event.isLowHealth",
+          "type": "communicate",
+          "name": "When it changes: Low health",
+          "format": "When \"Low health\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isLowHealth"
+        },
+        {
+          "id": "edb.onfoot.event.isCold",
+          "type": "communicate",
+          "name": "When it changes: Cold",
+          "format": "When \"Cold\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isCold"
+        },
+        {
+          "id": "edb.onfoot.event.isHot",
+          "type": "communicate",
+          "name": "When it changes: Hot",
+          "format": "When \"Hot\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isHot"
+        },
+        {
+          "id": "edb.onfoot.event.isVeryCold",
+          "type": "communicate",
+          "name": "When it changes: Very cold",
+          "format": "When \"Very cold\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isVeryCold"
+        },
+        {
+          "id": "edb.onfoot.event.isVeryHot",
+          "type": "communicate",
+          "name": "When it changes: Very hot",
+          "format": "When \"Very hot\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isVeryHot"
+        },
+        {
+          "id": "edb.onfoot.event.isGlideMode",
+          "type": "communicate",
+          "name": "When it changes: Glide mode",
+          "format": "When \"Glide mode\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isGlideMode"
+        },
+        {
+          "id": "edb.onfoot.event.isOnFootInHangar",
+          "type": "communicate",
+          "name": "When it changes: On foot in hangar",
+          "format": "When \"On foot in hangar\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isOnFootInHangar"
+        },
+        {
+          "id": "edb.onfoot.event.isOnFootSocialSpace",
+          "type": "communicate",
+          "name": "When it changes: On foot in social space",
+          "format": "When \"On foot in social space\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isOnFootSocialSpace"
+        },
+        {
+          "id": "edb.onfoot.event.isOnFootExterior",
+          "type": "communicate",
+          "name": "When it changes: On foot outside",
+          "format": "When \"On foot outside\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isOnFootExterior"
+        },
+        {
+          "id": "edb.onfoot.event.isBreathableAtmosphere",
+          "type": "communicate",
+          "name": "When it changes: Breathable atmosphere",
+          "format": "When \"Breathable atmosphere\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isBreathableAtmosphere"
+        },
+        {
+          "id": "edb.onfoot.event.isTelepresenceMulticrew",
+          "type": "communicate",
+          "name": "When it changes: Telepresence multicrew",
+          "format": "When \"Telepresence multicrew\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isTelepresenceMulticrew"
+        },
+        {
+          "id": "edb.onfoot.event.isPhysicalMulticrew",
+          "type": "communicate",
+          "name": "When it changes: Physical multicrew (on board)",
+          "format": "When \"Physical multicrew (on board)\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isPhysicalMulticrew"
+        },
+        {
+          "id": "edb.onfoot.event.isFsdHyperdriveCharging",
+          "type": "communicate",
+          "name": "When it changes: FSD hyperdrive charging (new)",
+          "format": "When \"FSD hyperdrive charging (new)\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.onfoot.isFsdHyperdriveCharging"
+        }
+      ]
+    },
+    {
+      "id": "edb.carrier",
+      "name": "Fleet Carrier",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.carrier.name",
+          "type": "text",
+          "desc": "Fleet Carrier name",
+          "default": ""
+        },
+        {
+          "id": "edb.carrier.callsign",
+          "type": "text",
+          "desc": "Fleet Carrier callsign",
+          "default": ""
+        },
+        {
+          "id": "edb.carrier.fuelLevel",
+          "type": "text",
+          "desc": "Tritium level",
+          "default": "0"
+        },
+        {
+          "id": "edb.carrier.balance",
+          "type": "text",
+          "desc": "Fleet Carrier balance",
+          "default": "0"
+        },
+        {
+          "id": "edb.carrier.jumpDestination",
+          "type": "text",
+          "desc": "Next jump destination",
+          "default": ""
+        },
+        {
+          "id": "edb.carrier.jumpTime",
+          "type": "text",
+          "desc": "Scheduled jump time (UTC)",
+          "default": ""
+        },
+        {
+          "id": "edb.carrier.jumpScheduled",
+          "type": "text",
+          "desc": "Jump scheduled (pulse)",
+          "default": "false"
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.carrier.event.jumpScheduled",
+          "type": "communicate",
+          "name": "When a Fleet Carrier jump is scheduled",
+          "format": "Carrier jump scheduled to: $val",
+          "valueType": "text",
+          "valueStateId": "edb.carrier.jumpDestination"
+        }
+      ]
+    },
+    {
+      "id": "edb.squadron",
+      "name": "Squadron",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.squadron.name",
+          "type": "text",
+          "desc": "Squadron name",
+          "default": ""
+        },
+        {
+          "id": "edb.squadron.rank",
+          "type": "text",
+          "desc": "Squadron rank",
+          "default": ""
+        },
+        {
+          "id": "edb.squadron.lastEvent",
+          "type": "text",
+          "desc": "Last Squadron event",
+          "default": ""
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.squadron.event.lastEvent",
+          "type": "communicate",
+          "name": "When a Squadron event occurs",
+          "format": "Squadron: $val",
+          "valueType": "text",
+          "valueStateId": "edb.squadron.lastEvent"
+        }
+      ]
+    },
+    {
+      "id": "edb.vehicles",
+      "name": "SRV / Vehicles",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.vehicles.srvType",
+          "type": "text",
+          "desc": "Deployed SRV type (e.g. \"SRV Rhino\"); empty when none",
+          "default": ""
+        },
+        {
+          "id": "edb.vehicles.srvTypeId",
+          "type": "text",
+          "desc": "Deployed SRV internal type (e.g. mev_rhino); empty when none",
+          "default": ""
+        },
+        {
+          "id": "edb.vehicles.srvKind",
+          "type": "text",
+          "desc": "Vehicle shown on the SRV page: none, srv, rhino or nomad",
+          "default": "none"
+        },
+        {
+          "id": "edb.vehicles.srvDeployed",
+          "type": "text",
+          "desc": "An SRV is deployed (from Journal LaunchSRV/DockSRV)",
+          "default": "false"
+        },
+        {
+          "id": "edb.vehicles.fighterDeployed",
+          "type": "text",
+          "desc": "A ship-launched fighter is deployed",
+          "default": "false"
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.vehicles.event.srvType",
+          "type": "communicate",
+          "name": "When the deployed SRV type changes",
+          "format": "When the deployed SRV becomes $val",
+          "valueType": "text",
+          "valueStateId": "edb.vehicles.srvType"
+        },
+        {
+          "id": "edb.vehicles.event.srvKind",
+          "type": "communicate",
+          "name": "When the deployed vehicle kind changes",
+          "format": "When the deployed vehicle becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "none",
+            "srv",
+            "rhino",
+            "nomad"
+          ],
+          "valueStateId": "edb.vehicles.srvKind"
+        },
+        {
+          "id": "edb.vehicles.event.srvDeployed",
+          "type": "communicate",
+          "name": "When an SRV is deployed or recovered",
+          "format": "When \"SRV deployed\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.vehicles.srvDeployed"
+        },
+        {
+          "id": "edb.vehicles.event.fighterDeployed",
+          "type": "communicate",
+          "name": "When a fighter is launched or recovered",
+          "format": "When \"Fighter deployed\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.vehicles.fighterDeployed"
+        }
+      ]
+    },
+    {
+      "id": "edb.audio",
+      "name": "Audio Mixer",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [
+        {
+          "id": "edb.audio.action.toggleMute.eliteDangerous",
+          "name": "Toggle mute: Elite Dangerous",
+          "prefix": "Audio Mixer",
+          "type": "communicate",
+          "format": "Toggle mute for Elite Dangerous"
+        },
+        {
+          "id": "edb.audio.action.toggleMute.chrome",
+          "name": "Toggle mute: Chrome",
+          "prefix": "Audio Mixer",
+          "type": "communicate",
+          "format": "Toggle mute for Chrome"
+        },
+        {
+          "id": "edb.audio.action.toggleMute.discord",
+          "name": "Toggle mute: Discord",
+          "prefix": "Audio Mixer",
+          "type": "communicate",
+          "format": "Toggle mute for Discord"
+        },
+        {
+          "id": "edb.audio.action.toggleMic",
+          "name": "Toggle microphone mute",
+          "prefix": "Audio Mixer",
+          "type": "communicate",
+          "format": "Mute / unmute the default microphone (Windows recording device)"
+        }
+      ],
+      "connectors": [
+        {
+          "id": "edb.audio.connector.appVolume",
+          "name": "App volume slider",
+          "format": "Set volume for {$edb.audio.connector.appVolume.data.app$}",
+          "data": [
+            {
+              "id": "edb.audio.connector.appVolume.data.app",
+              "type": "choice",
+              "label": "App",
+              "default": "Elite Dangerous",
+              "valueChoices": [
+                "Elite Dangerous",
+                "Chrome",
+                "Discord",
+                "AIMP"
+              ]
+            }
+          ]
+        }
+      ],
+      "states": [
+        {
+          "id": "edb.audio.status",
+          "type": "text",
+          "desc": "Audio mixer status",
+          "default": "OK"
+        },
+        {
+          "id": "edb.audio.state.muted.eliteDangerous",
+          "type": "text",
+          "desc": "Elite Dangerous muted?",
+          "default": ""
+        },
+        {
+          "id": "edb.audio.state.muted.chrome",
+          "type": "text",
+          "desc": "Chrome muted?",
+          "default": ""
+        },
+        {
+          "id": "edb.audio.state.muted.discord",
+          "type": "text",
+          "desc": "Discord muted?",
+          "default": ""
+        },
+        {
+          "id": "edb.audio.state.micMuted",
+          "type": "text",
+          "desc": "Microphone muted? (icon)",
+          "default": ""
+        },
+        {
+          "id": "edb.audio.micIsMuted",
+          "type": "text",
+          "desc": "Microphone muted?",
+          "default": "false"
+        },
+        {
+          "id": "edb.audio.eliteDangerousIsMuted",
+          "type": "text",
+          "desc": "Elite Dangerous muted? (true/false)",
+          "default": "false"
+        },
+        {
+          "id": "edb.audio.chromeIsMuted",
+          "type": "text",
+          "desc": "Chrome muted? (true/false)",
+          "default": "false"
+        },
+        {
+          "id": "edb.audio.discordIsMuted",
+          "type": "text",
+          "desc": "Discord muted? (true/false)",
+          "default": "false"
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.audio.event.eliteDangerousMuted",
+          "type": "communicate",
+          "name": "When Elite Dangerous mute changes",
+          "format": "When \"Elite Dangerous muted\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.audio.eliteDangerousIsMuted"
+        },
+        {
+          "id": "edb.audio.event.chromeMuted",
+          "type": "communicate",
+          "name": "When Chrome mute changes",
+          "format": "When \"Chrome muted\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.audio.chromeIsMuted"
+        },
+        {
+          "id": "edb.audio.event.discordMuted",
+          "type": "communicate",
+          "name": "When Discord mute changes",
+          "format": "When \"Discord muted\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.audio.discordIsMuted"
+        },
+        {
+          "id": "edb.audio.event.micMuted",
+          "type": "communicate",
+          "name": "When the microphone mute changes",
+          "format": "When \"Microphone muted\" becomes $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "true",
+            "false"
+          ],
+          "valueStateId": "edb.audio.micIsMuted"
+        }
+      ]
+    },
+    {
+      "id": "edb.meta",
+      "name": "Plugin Utilities",
+      "imagepath": "%TP_PLUGIN_FOLDER%ed-touchportal-plugin/images/icon-24.png",
+      "actions": [
+        {
+          "id": "edb.meta.action.resetSession",
+          "name": "Reset session counters",
+          "prefix": "Plugin Utilities",
+          "type": "communicate",
+          "format": "Reset all session counters (combat, trade, missions, powerplay...)"
+        },
+        {
+          "id": "edb.meta.action.reloadJournal",
+          "name": "Reload Journal from the start",
+          "prefix": "Plugin Utilities",
+          "type": "communicate",
+          "format": "Re-read the current Journal from the start"
+        },
+        {
+          "id": "edb.meta.action.openInara",
+          "name": "Open Inara for the current system",
+          "prefix": "Plugin Utilities",
+          "type": "communicate",
+          "format": "Open the current system's Inara page in the browser"
+        },
+        {
+          "id": "edb.meta.action.openEDSM",
+          "name": "Open EDSM for the current system",
+          "prefix": "Plugin Utilities",
+          "type": "communicate",
+          "format": "Open the current system's EDSM page in the browser"
+        },
+        {
+          "id": "edb.meta.action.copySystemToClipboard",
+          "name": "Copy current system to clipboard",
+          "prefix": "Plugin Utilities",
+          "type": "communicate",
+          "format": "Copy the current system name to the clipboard"
+        },
+        {
+          "id": "edb.meta.action.exportSessionStats",
+          "name": "Export session stats to file",
+          "prefix": "Plugin Utilities",
+          "type": "communicate",
+          "format": "Export a summary of the current session to a JSON file"
+        }
+      ],
+      "connectors": [],
+      "states": [
+        {
+          "id": "edb.meta.status",
+          "type": "text",
+          "desc": "Plugin status",
+          "default": "STARTING"
+        },
+        {
+          "id": "edb.meta.lastEventName",
+          "type": "text",
+          "desc": "Last Journal event received",
+          "default": ""
+        },
+        {
+          "id": "edb.meta.sessionStart",
+          "type": "text",
+          "desc": "Plugin session start time",
+          "default": ""
+        }
+      ],
+      "events": [
+        {
+          "id": "edb.meta.event.status",
+          "type": "communicate",
+          "name": "When the plugin status changes",
+          "format": "Plugin status: $val",
+          "valueType": "choice",
+          "valueChoices": [
+            "STARTING",
+            "CONNECTED",
+            "NO_JOURNAL",
+            "ERROR"
+          ],
+          "valueStateId": "edb.meta.status"
+        }
+      ]
+    }
+  ]
+}

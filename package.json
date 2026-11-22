@@ -1,0 +1,16 @@
+{
+  "name": "ed-bubble",
+  "version": "0.1.0-alpha",
+  "description": "ED BUBBLE - companion app for Elite Dangerous: live game data, generated images and Touch Portal control (forked from ed-touchportal).",
+  "main": "plugin.js",
+  "scripts": {
+    "start": "node plugin.js start",
+    "build-entry": "node scripts/build-entry.js",
+    "test": "node test/run-tests.js"
+  },
+  "dependencies": {
+    "touchportal-api": "^4.0.0"
+  },
+  "author": "Adder",
+  "license": "MIT"
+}
