@@ -413,7 +413,7 @@ function screenVuelo(s, v) {
     </section>
    </main>
    <aside class="pn" style="padding:14px;display:grid;grid-template-columns:${showDiagram ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(0,1fr)'};gap:12px;min-height:0">
-     <div style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${sysCard}${showDiagram ? '' : colCard}${showDiagram ? colCard : ''}</div>
+     <div style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${sysCard}</div>
      ${showDiagram ? '' : `<div style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${routeCard(v.route, 15)}${futureCard}</div>`}
    </aside>
   </div>`;
