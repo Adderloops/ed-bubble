@@ -154,6 +154,37 @@ function screenPuente(s, v) {
   </div>`;
 }
 
+/* ---------- ruta trazada compacta (Vuelo) ---------- */
+function routeCard(r, perPage) {
+  const head = `<div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Ruta trazada</span>`;
+  if (!r.legs.length) {
+    return `<div class="in" style="flex:1;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:0">${head}</div>
+      <div class="empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">Sin ruta</span><span style="font-size:14px">Traza una en el mapa galáctico y aparecerá aquí.</span></div></div>`;
+  }
+  if (ui.routeKey !== r.destination + r.legs.length) { ui.routeKey = r.destination + r.legs.length; ui.routePage = 0; }
+  const pages = Math.ceil(r.legs.length / perPage);
+  ui.routePage = Math.min(ui.routePage || 0, pages - 1);
+  const noScoop = r.legs.slice(1).filter((l) => l.scoopable === false).length;
+  const rows = r.legs.slice(ui.routePage * perPage, (ui.routePage + 1) * perPage).map((l) => {
+    const next = l.index === 1;
+    const mark = l.here ? 'border-left:3px solid var(--amber);border-color:#8a5a1e' : next ? 'border-left:3px solid var(--cyan);border-color:var(--cyandim)' : '';
+    return `<div class="in row" style="grid-template-columns:38px 36px minmax(0,1fr) 78px;height:40px;${mark}">
+      <span class="num" style="padding-left:8px;font-size:13px;color:${l.here ? 'var(--amber)' : next ? 'var(--cyan)' : 'var(--eb)'}">${String(l.index).padStart(2, '0')}</span>
+      <span class="starc ${l.scoopable === false ? 'no' : l.scoopable == null ? 'unk' : ''}" style="width:24px;height:24px;font-size:11px">${esc(or(l.starClass, '?')).slice(0, 2)}</span>
+      <span class="va nowrap" style="font-size:15px">${esc(l.system)}</span>
+      <span class="num" style="text-align:right;padding-right:10px;font-size:14px">${l.here ? 'aquí' : `${nf(l.distance, 1)} al`}</span></div>`;
+  }).join('');
+  const pager = pages > 1 ? `<span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-pager="route" data-d="-1" ${ui.routePage === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.routePage + 1}/${pages}</span><button type="button" class="pg" data-pager="route" data-d="1" ${ui.routePage >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
+  return `<div class="in" style="flex:1;padding:14px;display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden">
+    ${head}${pager}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+      ${stat('Saltos', nf(r.jumps))}${stat('Distancia', `${nf(r.distance, 0)} al`)}${stat('No recogibles', nf(noScoop), noScoop ? 'amber' : 'cyan')}
+    </div>
+    <span class="eb nowrap" style="font-size:11px">Destino · <span class="va" style="letter-spacing:0;text-transform:none;font-size:14px;color:var(--text,#fff)">${esc(r.destination)}</span></span>
+    <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${rows}</div>
+  </div>`;
+}
+
 /* ---------- revisión de controles (Puente de mando) ---------- */
 const CTL_PAGE = 3;
 const CTL_ORDER = { unbound: 0, hotas: 1, unsupported: 2, shared: 3 };
@@ -340,9 +371,8 @@ function screenVuelo(s, v) {
         .map((x) => `<span style="display:flex;justify-content:space-between;font-size:14px"><span class="nowrap">${esc(x.name)}</span><span class="num soft">${nf(x.required - x.provided)} t</span></span>`).join('')}
     </div>` : '';
   const futureCard = `
-    <div class="in" style="padding:14px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:0">
-      <span class="eb">Buscar sistema · Trazar ruta</span>
-      <div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:18px;color:var(--soft)">Llega en la entrega 3</span><span style="font-size:14px">Buscador con Spansh, ficha y estaciones de cualquier sistema, y Trazar ruta en el mapa galáctico.</span></div>
+    <div class="in" style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <span class="eb">Buscar sistema · Trazar ruta</span><span class="eb dim">entrega 3</span>
     </div>`;
 
   return `
@@ -384,7 +414,7 @@ function screenVuelo(s, v) {
    </main>
    <aside class="pn" style="padding:14px;display:grid;grid-template-columns:${showDiagram ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(0,1fr)'};gap:12px;min-height:0">
      <div style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${sysCard}${showDiagram ? '' : colCard}${showDiagram ? colCard : ''}</div>
-     ${showDiagram ? '' : `<div style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${futureCard}</div>`}
+     ${showDiagram ? '' : `<div style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${routeCard(v.route, 15)}${futureCard}</div>`}
    </aside>
   </div>`;
 }
@@ -423,6 +453,8 @@ document.addEventListener('pointerdown', (ev) => {
   if (ev.button !== 0) return;
   const b = ev.target.closest('button[data-act]');
   if (b && !b.disabled) { ev.preventDefault(); runAction(b.dataset.act); return; }
+  const rp = ev.target.closest('button[data-pager="route"]');
+  if (rp && !rp.disabled) { ev.preventDefault(); ui.routePage = Math.max(0, (ui.routePage || 0) + Number(rp.dataset.d)); render(); return; }
   const pg = ev.target.closest('button[data-ctlpage]');
   if (pg && !pg.disabled) { ev.preventDefault(); ui.ctlPage = Math.max(0, (ui.ctlPage || 0) + Number(pg.dataset.ctlpage)); render(); }
 });
