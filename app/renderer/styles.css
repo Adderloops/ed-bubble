@@ -30,7 +30,7 @@ button { font: inherit; }
 .hdr-title .big { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hdr-alerts { flex: 1; display: flex; align-items: center; gap: 14px; height: 42px; padding: 0 16px; min-width: 0; overflow: hidden; }
 .alert { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 2px; font-family: Rajdhani, sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
-.alert.warn { color: #1a1402; background: var(--yellow); } .alert.danger { color: #fff; background: #b8323a; }
+.alert.info { color: #06101c; background: var(--cyan); cursor: pointer; } .alert.warn { color: #1a1402; background: var(--yellow); } .alert.danger { color: #fff; background: #b8323a; }
 .hdr-lamps { display: flex; gap: 16px; align-items: center; }
 .lamp { display: flex; align-items: center; gap: 6px; }
 .hdr-clock { font-size: 22px; color: var(--soft); }

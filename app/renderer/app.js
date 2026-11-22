@@ -64,7 +64,7 @@ function renderHeader(s, v) {
   $('hdr-system').textContent = or(clean(s.location.system), 'Esperando al juego…');
   const a = v.alerts;
   $('hdr-alerts').innerHTML = a.length
-    ? `<span class="eb">Alertas</span>${a.map((x) => `<span class="alert ${x.level}">${esc(x.text)}</span>`).join('')}`
+    ? `<span class="eb">Alertas</span>${a.map((x) => `<span class="alert ${x.level}"${x.level === 'info' ? ' data-goto="vuelo" title="Ver el esquema de atraque en Vuelo"' : ''}>${esc(x.text)}</span>`).join('')}`
     : '<span class="eb dim">Alertas</span><span class="va soft" style="font-size:17px">Sin alertas activas</span>';
   const recent = s.connection.lastEventAt && (Date.now() - Date.parse(s.connection.lastEventAt) < 15 * 60 * 1000);
   const lamp = (on, label, title) => `<span class="eb lamp ${on ? 'cyan' : ''}" title="${esc(title)}"><span class="dot ${on ? 'on' : ''}"></span>${label}</span>`;
@@ -1021,6 +1021,8 @@ document.addEventListener('pointerdown', (ev) => {
     window.edbubble.plot(ui.sel.name, d || 0);
     return;
   }
+  const go = ev.target.closest('[data-goto]');
+  if (go) { ev.preventDefault(); ui.section = go.dataset.goto; render(); return; }
   const mt = ev.target.closest('[data-mat]');
   if (mt) { ev.preventDefault(); ui.colSel = mt.dataset.mat; ui.colAside = 'buy'; ui.mk.page = 0; ui.mk.pick = null; render(); return; }
   const ca = ev.target.closest('button[data-colaside]');

@@ -276,6 +276,14 @@ testAsync('trazar ruta: sin las teclas necesarias no envía nada', async () => {
   assert.strictEqual(r.error, 'no-key'); assert.deepStrictEqual(r.missing, ['CamZoomOut']); assert.strictEqual(g.sent.length, 0);
 });
 
+test('atraque concedido: aviso en la cabecera visible desde cualquier sección', () => {
+  const s = model.createState();
+  model.applyEvent(s, ev('DockingGranted', { LandingPad: 25, StationName: 'Macgregor', StationType: 'Coriolis' }));
+  assert.deepStrictEqual(derive.alerts(s)[0], { level: 'info', text: 'Atraque · plataforma 25' });
+  model.applyEvent(s, ev('Docked', { StationName: 'Macgregor', StationType: 'Coriolis', StarSystem: 'S' }));
+  assert.ok(!derive.alerts(s).some((a) => a.level === 'info'));
+});
+
 test('plataformas: regla general (n-1) mod 12, con las comprobadas corrigiéndola', () => {
   const pads = require('../../core/pads');
   assert.strictEqual(pads.padHour('Dodec', 32), 8);

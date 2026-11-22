@@ -52,6 +52,8 @@ function alerts(state) {
   if (state.cmdr.legalState && !['Clean', 'Allied', 'Thargoid'].includes(state.cmdr.legalState)) out.push({ level: 'warn', text: `Estado legal: ${legalLabel(state.cmdr.legalState)}` });
   const stolen = (state.cargo.inventory || []).reduce((a, i) => a + (i.stolen || 0), 0);
   if (stolen > 0) out.push({ level: 'warn', text: `Carga robada a bordo · ${stolen} t` });
+  // atraque concedido: visible desde cualquier sección
+  if (state.docking && state.docking.active && state.docking.pad) out.unshift({ level: 'info', text: `Atraque · plataforma ${state.docking.pad}` });
   return out;
 }
 
