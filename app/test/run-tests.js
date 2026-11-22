@@ -271,6 +271,26 @@ test('plataformas: regla general (n-1) mod 12, con las comprobadas corrigiéndol
   assert.strictEqual(pads.padHour('Orbis', 0), null);
 });
 
+test('colonización: material a bordo cruzado con la obra, viajes con la bodega y entregas de la sesión', () => {
+  const s = model.createState();
+  model.applyEvent(s, ev('Loadout', { Ship: 'panthermkii', CargoCapacity: 1000, FuelCapacity: { Main: 128 } }));
+  model.applyEvent(s, ev('Docked', { StationName: 'Orbital Construction Site: X', StationType: 'SpaceConstructionDepot', StarSystem: 'S', MarketID: 7 }));
+  model.applyEvent(s, ev('ColonisationConstructionDepot', { MarketID: 7, ConstructionProgress: 0.1, ResourcesRequired: [
+    { Name: '$CMMComposite_name;', Name_Localised: 'CMM Composite', RequiredAmount: 2500, ProvidedAmount: 0, Payment: 1 },
+    { Name: '$water_name;', Name_Localised: 'Water', RequiredAmount: 100, ProvidedAmount: 100, Payment: 1 }] }));
+  model.applyCargo(s, { Count: 800, Inventory: [{ Name: 'cmmcomposite', Name_Localised: 'CMM Composite', Count: 600 }, { Name: 'gold', Count: 200 }] });
+  model.applyEvent(s, ev('ColonisationContribution', { MarketID: 7, Contributions: [{ Name: '$CMMComposite_name;', Name_Localised: 'CMM Composite', Amount: 400 }] }));
+  const c = derive.colonisationView(s);
+  const d = c.depots[0];
+  assert.strictEqual(d.type, 'SpaceConstructionDepot');
+  assert.strictEqual(d.trips, 3); // 2500 t / 1000 t
+  assert.strictEqual(d.resources[0].key, 'cmmcomposite'); assert.strictEqual(d.resources[0].aboard, 600);
+  assert.strictEqual(d.resources[1].remaining, 0); assert.strictEqual(d.done, 1);
+  assert.deepStrictEqual(c.cargo.map((i) => i.useful), [true, false]);
+  assert.strictEqual(c.contributions[0].total, 400); assert.strictEqual(s.session.deliveredToConstruction, 400);
+  assert.strictEqual(derive.flightMode(s).section, 'colonizacion', 'atracado en una obra -> Colonización');
+});
+
 test('Spansh: tipo de estación, icono y plataforma (las obras siempre L)', () => {
   const sp = require('../../core/spansh');
   assert.strictEqual(sp.stationKind('Coriolis Starport').icon, 'coriolis');

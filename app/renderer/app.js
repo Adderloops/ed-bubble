@@ -6,7 +6,7 @@ const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo' }, { id: 'srv', label: 'SRV' },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación' }, { id: 'apie', label: 'A pie' },
-  { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay' }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería' }, { id: 'colonizacion', label: 'Colonización' },
+  { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay' }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería' }, { id: 'colonizacion', label: 'Colonización', built: true },
   { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' },
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
@@ -16,6 +16,7 @@ const ui = {
   search: { q: '', results: [], loading: false, error: null, seq: 0 }, // buscador de Navegación
   sel: null, // sistema elegido: { name, loading, system, error }
   navTab: 'route', sysTab: 'stations', sysPage: 0,
+  colDepot: null, colPage: 0, // Colonización: obra elegida y página de materiales
   plot: null, // { running, target, text, ok, error }
   extOk: null, // última consulta a Spansh: true / false
 };
@@ -676,6 +677,91 @@ function systemDetail(s) {
     <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${rows}</div>`;
 }
 
+/* ---------- Colonización ---------- */
+const COL_PAGE = 14;
+
+function screenColonizacion(s, v) {
+  const c = v.col;
+  if (!c.depots.length) {
+    return `<section class="pn card"><span class="ti" style="font-size:16px">Colonización</span>
+      <div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:22px;color:var(--soft)">Sin obras todavía</span><span style="font-size:15px">Atraca en una obra de construcción (orbital o de superficie) y aquí aparecerán sus materiales, lo que falta y los viajes.</span></div></section>`;
+  }
+  if (!ui.colDepot || !c.depots.find((d) => d.marketId === ui.colDepot)) ui.colDepot = c.current && c.depots.find((d) => d.marketId === c.current) ? c.current : c.depots[0].marketId;
+  const d = c.depots.find((x) => x.marketId === ui.colDepot);
+  const typeLabel = STATION_TYPES[d.type] || (d.type ? d.type : 'Obra de construcción');
+  const tabs = c.depots.length > 1 ? `<div style="display:flex;gap:8px;flex-wrap:nowrap;overflow:hidden">${c.depots.slice(0, 6).map((x) => `<button type="button" class="tab small ${x.marketId === d.marketId ? 'on' : ''}" data-depot="${esc(x.marketId)}"><span class="nowrap" style="max-width:260px;display:inline-block;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom">${esc(siteName(x.name) || x.marketId)}</span> · ${pct(x.progress, 0)}</button>`).join('')}</div>` : '';
+  const shipCap = c.capacity;
+  const hero = `
+    <section class="pn card" style="gap:10px">
+      ${tabs}
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:20px;align-items:end">
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+          <span class="eb">${esc(typeLabel)} · ${esc(clean(d.system) || '—')}${d.complete ? ' · <span class="cyan">Completada</span>' : d.failed ? ' · <span class="red">Fallida</span>' : ''}</span>
+          <span class="ti nowrap" style="font-size:34px">${esc(siteName(d.name) || '—')}</span>
+          <span class="eb dim">Datos del juego · última visita ${d.at ? `${String(d.at).slice(0, 10)} ${hhmm(d.at)} UTC` : '—'}</span>
+        </div>
+        <div style="text-align:right"><span class="num amber" style="font-size:64px;line-height:1">${nf((d.progress || 0) * 100, 1)}<span style="font-size:30px"> %</span></span></div>
+      </div>
+      <span class="bar" style="height:14px"><span style="width:${(d.progress || 0) * 100}%;background:var(--amber)"></span></span>
+      <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px">
+        ${stat('Faltan', `${nf(d.remaining)} t`, 'amber')}${stat('Entregado', `${nf(d.provided)} t`)}${stat('Total', `${nf(d.required)} t`)}${stat('Materiales completos', `${d.done} / ${d.resources.length}`)}${stat(`Viajes${shipCap ? ` (${nf(shipCap)} t)` : ''}`, d.trips != null ? `≈ ${nf(d.trips)}` : '—', 'cyan')}
+      </div>
+    </section>`;
+
+  const pages = Math.max(1, Math.ceil(d.resources.length / COL_PAGE));
+  ui.colPage = Math.min(ui.colPage || 0, pages - 1);
+  const rows = d.resources.slice(ui.colPage * COL_PAGE, (ui.colPage + 1) * COL_PAGE).map((r) => {
+    const done = r.remaining === 0;
+    const carry = r.aboard > 0 && !done;
+    return `<div class="in row" style="grid-template-columns:minmax(0,1fr) 110px 110px 120px 200px 110px 90px;height:40px;${done ? 'opacity:.45;' : ''}${carry ? 'border-left:3px solid var(--cyan);border-color:var(--cyandim)' : ''}">
+      <span class="va nowrap" style="font-size:16px;padding-left:12px">${esc(r.name)}${carry ? ' <span class="eb cyan" style="font-size:10px">a bordo</span>' : ''}</span>
+      <span class="num soft" style="text-align:right">${nf(r.required)}</span>
+      <span class="num soft" style="text-align:right">${nf(r.provided)}</span>
+      <span class="num ${done ? 'cyan' : 'amber'}" style="text-align:right">${done ? '✓' : nf(r.remaining)}</span>
+      <span style="display:flex;align-items:center;gap:8px;padding-left:16px"><span class="bar" style="flex:1;height:8px"><span style="width:${Math.min(1, r.ratio) * 100}%;background:${done ? 'var(--cyandim)' : 'var(--amber)'}"></span></span><span class="num soft" style="width:52px;text-align:right;font-size:13px">${nf(r.ratio * 100, 0)} %</span></span>
+      <span class="num ${carry ? 'cyan' : 'dim'}" style="text-align:right">${r.aboard ? nf(r.aboard) : '—'}</span>
+      <span class="num soft" style="text-align:right;padding-right:12px">${done ? '' : r.trips != null ? nf(r.trips) : '—'}</span>
+    </div>`;
+  }).join('');
+  const pager = pages > 1 ? `<span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-pager="col" data-d="-1" ${ui.colPage === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.colPage + 1}/${pages}</span><button type="button" class="pg" data-pager="col" data-d="1" ${ui.colPage >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
+  const table = `
+    <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Materiales</span>${pager}</div>
+      <div class="eb dim" style="display:grid;grid-template-columns:minmax(0,1fr) 110px 110px 120px 200px 110px 90px;font-size:10px">
+        <span style="padding-left:12px">Material</span><span style="text-align:right">Pedido</span><span style="text-align:right">Entregado</span><span style="text-align:right">Faltan (t)</span><span style="padding-left:16px">Progreso</span><span style="text-align:right">A bordo</span><span style="text-align:right;padding-right:12px">Viajes</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${rows}</div>
+    </section>`;
+
+  const useful = c.cargo.filter((i) => i.useful);
+  const other = c.cargo.filter((i) => !i.useful);
+  const usefulT = useful.reduce((a, i) => a + i.count, 0);
+  const cargoRows = c.cargo.length
+    ? [...useful, ...other].slice(0, 8).map((i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--inline)">
+        <span style="display:flex;flex-direction:column;min-width:0"><span class="nowrap" style="font-size:15px">${esc(i.name)}</span><span class="eb ${i.useful ? 'cyan' : 'dim'}" style="font-size:10px">${i.useful ? 'La obra lo necesita' : 'No lo pide esta obra'}${i.stolen ? ' · <span class="red">robada</span>' : ''}</span></span>
+        <span class="num ${i.useful ? 'cyan' : 'soft'}">${nf(i.count)} t</span></div>`).join('')
+    : '<div class="empty">Bodega vacía.</div>';
+  const cargoCard = `
+    <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">A bordo</span><span class="num soft">${nf(c.cargoCount)} / ${nf(c.capacity)} t</span></div>
+      ${c.cargo.length ? `<span class="eb ${usefulT ? 'cyan' : 'dim'}">${usefulT ? `${nf(usefulT)} t útiles para la obra` : 'Nada de lo que llevas lo pide la obra actual'}</span>` : ''}
+      <div style="display:flex;flex-direction:column;min-height:0">${cargoRows}</div>
+    </section>`;
+  const contrib = c.contributions.slice(0, 7).map((x) => `<div style="display:grid;grid-template-columns:52px minmax(0,1fr) 90px;gap:8px;align-items:baseline;font-size:14px">
+      <span class="num dim">${hhmm(x.at)}</span><span class="nowrap">${esc(x.items.map((i) => i.name).join(', '))} <span class="soft">· ${esc(siteName(x.depot) || '')}</span></span><span class="num cyan" style="text-align:right">${nf(x.total)} t</span></div>`).join('');
+  const sessionCard = `
+    <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">Entregas</span><span class="eb">Sesión · <span class="num cyan" style="font-size:16px;letter-spacing:0">${nf(s.session.deliveredToConstruction)} t</span></span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;min-height:0">${contrib || '<div class="empty">Aún no has entregado nada en esta sesión.</div>'}</div>
+    </section>`;
+
+  return `
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 500px;gap:12px;min-height:0">
+    <main style="display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0">${hero}${table}</main>
+    <aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${cargoCard}${sessionCard}</aside>
+  </div>`;
+}
+
 /* ---------- esquema de atraque (SVG) ---------- */
 function dockingSvg(padNum, width, hour) {
   const pad = Number(padNum) || 0;
@@ -734,7 +820,7 @@ function render() {
   renderHeader(s, v);
   renderRail(v);
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : screenPuente(s, v);
   if (sel) { const el = $('nav-search'); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -817,6 +903,10 @@ document.addEventListener('pointerdown', (ev) => {
     window.edbubble.plot(ui.sel.name, d || 0);
     return;
   }
+  const dp = ev.target.closest('button[data-depot]');
+  if (dp) { ev.preventDefault(); ui.colDepot = dp.dataset.depot; ui.colPage = 0; render(); return; }
+  const cpg = ev.target.closest('button[data-pager="col"]');
+  if (cpg && !cpg.disabled) { ev.preventDefault(); ui.colPage = Math.max(0, ui.colPage + Number(cpg.dataset.d)); render(); return; }
   const np = ev.target.closest('button[data-pager="nav"]');
   if (np && !np.disabled) { ev.preventDefault(); ui.navPage = Math.max(0, (ui.navPage || 0) + Number(np.dataset.d)); render(); return; }
   const cp = ev.target.closest('button[data-copy]');

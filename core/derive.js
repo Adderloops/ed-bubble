@@ -24,7 +24,11 @@ function flightMode(state) {
   if (f.isOnFoot) return { key: 'onfoot', label: 'A pie', section: 'apie' };
   if (f.isInSRV) return { key: 'srv', label: 'En SRV', section: 'srv' };
   if (f.isFSDJump) return { key: 'jump', label: 'Saltando', section: 'vuelo' };
-  if (f.isDocked || state.location.docked) return { key: 'docked', label: 'Atracado', section: 'estacion' };
+  if (f.isDocked || state.location.docked) {
+    // en una obra de construcción, la sección es Colonización
+    const atDepot = /construction/i.test(state.location.stationType || '') || /construction site/i.test(state.location.station || '');
+    return { key: atDepot ? 'docked-depot' : 'docked', label: 'Atracado', section: atDepot ? 'colonizacion' : 'estacion' };
+  }
   if (f.isLanded || state.location.landed) return { key: 'landed', label: 'Aterrizado', section: 'vuelo' };
   if (f.isSupercruise) return { key: 'supercruise', label: 'Supercrucero', section: 'vuelo' };
   if (state.docking.active) return { key: 'approach', label: 'Aproximación', section: 'vuelo' };
@@ -86,6 +90,25 @@ function routeView(state) {
   };
 }
 
+/** Colonización: todas las obras vistas, con lo que falta, lo que llevas a bordo y los viajes. */
+function colonisationView(state) {
+  const cap = state.ship.cargoCapacity || null;
+  const aboard = {};
+  for (const i of (state.cargo && state.cargo.inventory) || []) aboard[i.key] = (aboard[i.key] || 0) + i.count;
+  const trips = (t) => (cap && t > 0 ? Math.ceil(t / cap) : t > 0 ? null : 0);
+  const depots = Object.values(state.colonisation.depots).map((d) => {
+    const resources = (d.resources || []).map((r) => {
+      const remaining = Math.max(0, (r.required || 0) - (r.provided || 0));
+      return { ...r, remaining, ratio: r.required ? (r.provided || 0) / r.required : 1, aboard: aboard[r.key] || 0, trips: trips(remaining) };
+    }).sort((a, b) => (b.remaining > 0) - (a.remaining > 0) || b.remaining - a.remaining || a.name.localeCompare(b.name));
+    return { ...d, resources, trips: trips(d.remaining), done: resources.filter((r) => r.remaining === 0).length };
+  }).sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
+  const cur = state.colonisation.depots[state.colonisation.current];
+  const need = new Set(cur ? (cur.resources || []).filter((r) => (r.required || 0) > (r.provided || 0)).map((r) => r.key) : []);
+  const cargo = ((state.cargo && state.cargo.inventory) || []).map((i) => ({ ...i, useful: need.has(i.key) }));
+  return { depots, current: state.colonisation.current, cargo, cargoCount: (state.cargo && state.cargo.count) || 0, capacity: cap, contributions: state.colonisation.contributions || [] };
+}
+
 function view(state) {
   const { padHour } = require('./pads');
   return {
@@ -96,7 +119,8 @@ function view(state) {
     route: routeView(state),
     scoopableHere: isScoopable(state.location.starClass),
     colonisation: state.colonisation.current ? state.colonisation.depots[state.colonisation.current] : null,
+    col: colonisationView(state),
   };
 }
 
-module.exports = { view, flightMode, alerts, fuel, routeView, isScoopable, FUEL_ALERT, HULL_ALERT };
+module.exports = { view, colonisationView, flightMode, alerts, fuel, routeView, isScoopable, FUEL_ALERT, HULL_ALERT };

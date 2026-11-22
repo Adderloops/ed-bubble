@@ -16,6 +16,8 @@ Variables para desarrollo: `ED_BUBBLE_SIMULATE=1` (no envía teclas), `ED_BINDIN
 
 **Trazar ruta:** abre el mapa galáctico, pega el nombre (Ctrl+V), selecciona el resultado, mantiene Seleccionar para trazar y comprueba en `NavRoute.json` que la ruta va a ese sistema; después cierra el mapa. Se detiene si el juego pierde el foco y se puede cancelar. Necesita teclas de teclado para: Mapa galáctico, Cámara: acercar, Cámara: alejar, Interfaz: arriba / derecha / seleccionar (el panel Controles del Puente lo comprueba). Los tiempos de espera están en `core/plot.js` (`T`) por si hay que ajustarlos.
 
+**Colonización:** todas las obras en las que has atracado (pestañas), con progreso, toneladas que faltan, materiales completos y viajes con la bodega de tu nave; tabla de materiales ordenada por lo que más falta (pedido, entregado, faltan, progreso, a bordo, viajes); lo que llevas a bordo y si la obra lo necesita; y las entregas de la sesión. Al atracar en una obra, el salto automático lleva aquí.
+
 Iconos de estación (`renderer/icons/`): aportados por el autor (Adder).
 
 Desarrollo: `ED_BUBBLE_SPANSH_FIXTURE=carpeta` sirve `search.json` y `suggest.json` en lugar de consultar Spansh; `ED_BUBBLE_SHOT_SYSTEM=nombre` captura el buscador y la ficha.

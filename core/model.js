@@ -34,7 +34,7 @@ function createState() {
     lastJump: { distance: null, fuelUsed: null, at: null },
     docking: { active: false, pad: null, station: null, stationType: null, at: null },
     powerplay: { power: null, rank: null, merits: null, system: null, control: null, controlAt: null },
-    colonisation: { depots: {}, current: null },
+    colonisation: { depots: {}, current: null, contributions: [] },
     cargo: { count: 0, vessel: 'Ship', inventory: [] },
     session: { startedAt: null, jumps: 0, distance: 0, merits: 0, bounties: 0, mined: 0, deliveredToConstruction: 0 },
     log: [],
@@ -193,25 +193,35 @@ const HANDLERS = {
     const id = String(e.MarketID);
     const prev = state.colonisation.depots[id] || {};
     const req = (e.ResourcesRequired || []).map((r) => ({
-      name: r.Name_Localised || r.Name, required: r.RequiredAmount, provided: r.ProvidedAmount, payment: r.Payment,
+      key: commodityKey(r.Name), name: r.Name_Localised || r.Name, required: r.RequiredAmount, provided: r.ProvidedAmount, payment: r.Payment,
     }));
     const required = req.reduce((a, r) => a + (r.required || 0), 0);
     const provided = req.reduce((a, r) => a + (r.provided || 0), 0);
     state.colonisation.depots[id] = {
       marketId: id, name: prev.name || stationNameFor(state, id), system: prev.system || state.location.system,
+      type: prev.type || (state.location.docked && state.location.stationType) || null,
       progress: e.ConstructionProgress ?? null, complete: !!e.ConstructionComplete, failed: !!e.ConstructionFailed,
       required, provided, remaining: Math.max(0, required - provided), resources: req, at: e.timestamp || null,
     };
     state.colonisation.current = id;
   },
   ColonisationContribution(state, e) {
-    const t = (e.Contributions || []).reduce((a, c) => a + (c.Amount || 0), 0);
+    const items = (e.Contributions || []).map((c) => ({ key: commodityKey(c.Name), name: c.Name_Localised || c.Name, amount: c.Amount || 0 }));
+    const t = items.reduce((a, c) => a + c.amount, 0);
     state.session.deliveredToConstruction += t;
+    const id = String(e.MarketID || '');
+    state.colonisation.contributions.unshift({ at: e.timestamp || null, marketId: id, depot: (state.colonisation.depots[id] || {}).name || stationNameFor(state, id), items, total: t });
+    if (state.colonisation.contributions.length > 30) state.colonisation.contributions.length = 30;
     pushLog(state, e, 'Entrega a construcción', `${fmtNum(t, 0)} t`);
   },
   CommitCrime(state, e) { pushLog(state, e, 'Delito', loc(e, 'CrimeType') || '', 'warn'); },
   Shutdown(state, e) { pushLog(state, e, 'Juego cerrado', ''); },
 };
+
+/** Clave común para un material: "$CMMComposite_name;" y "cmmcomposite" -> "cmmcomposite". */
+function commodityKey(name) {
+  return String(name || '').toLowerCase().replace(/^\$/, '').replace(/_name;?$/, '').replace(/[^a-z0-9]/g, '');
+}
 
 function stationNameFor(state, marketId) {
   if (state._markets && state._markets[marketId]) return state._markets[marketId];
@@ -281,7 +291,7 @@ function applyCargo(state, raw) {
   state.cargo = {
     count: raw.Count ?? 0,
     vessel: raw.Vessel || 'Ship',
-    inventory: (raw.Inventory || []).map((i) => ({ name: i.Name_Localised || i.Name, count: i.Count || 0, stolen: i.Stolen || 0, mission: !!i.MissionID })),
+    inventory: (raw.Inventory || []).map((i) => ({ key: commodityKey(i.Name), name: i.Name_Localised || i.Name, count: i.Count || 0, stolen: i.Stolen || 0, mission: !!i.MissionID })),
   };
 }
 
@@ -299,4 +309,4 @@ function applyNavRoute(state, raw) {
   state.route = i >= 0 ? route.slice(i) : route;
 }
 
-module.exports = { createState, applyEvent, applyStatus, applyCargo, applyNavRoute, HANDLERS, fmtNum };
+module.exports = { createState, applyEvent, applyStatus, applyCargo, applyNavRoute, HANDLERS, fmtNum, commodityKey };
