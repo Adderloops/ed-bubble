@@ -10,6 +10,8 @@ let ok = 0; let fail = 0;
 function test(name, fn) {
   try { fn(); ok += 1; console.log(`  OK  ${name}`); } catch (e) { fail += 1; console.log(`  FALLA  ${name}\n        ${e.message}`); }
 }
+const asyncTests = [];
+function testAsync(name, fn) { asyncTests.push([name, fn]); }
 const ev = (event, extra = {}) => ({ timestamp: '2026-11-22T14:00:00Z', event, ...extra });
 const statusRaw = (flags, extra = {}) => ({ Flags: flags, Flags2: 0, Pips: [4, 4, 4], Fuel: { FuelMain: 10, FuelReservoir: 0.5 }, Cargo: 0, LegalState: 'Clean', ...extra });
 function decoded(raw) { return require('../../src/services/status-reader').decode(raw); }
@@ -220,8 +222,6 @@ testAsync('dónde comprar: pide a Spansh el material con stock mínimo y platafo
 
 // ---- Trazar ruta: con un juego simulado (teclas falsas y estado que reacciona) ----
 const plot = require('../../core/plot');
-const asyncTests = [];
-function testAsync(name, fn) { asyncTests.push([name, fn]); }
 function fakeGame({ confirm = true, loseFocusAt = null } = {}) {
   const state = { status: { guiFocus: 'NoFocus' }, route: [], fsdTarget: { name: null } };
   const kb = binds.parseBinds(SAMPLE_BINDS);
