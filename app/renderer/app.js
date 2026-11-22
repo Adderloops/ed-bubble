@@ -333,9 +333,8 @@ function screenVuelo(s, v) {
       <span class="ti" style="font-size:16px;align-self:flex-start">Atraque</span>
       <span class="eb" style="align-self:flex-start">Concedido · ${esc(STATION_TYPES[s.docking.stationType] || s.docking.stationType)}</span>
       <div style="position:relative;width:200px;height:200px;border-radius:100px;border:1px solid var(--line2);background:radial-gradient(circle,#0e2036 0%,#06101c 70%)">
-        <span title="Entrada: luz roja a la izquierda, verde a la derecha" style="position:absolute;left:72px;top:-7px;width:56px;height:14px;background:#06101c;border:1px solid var(--line2);border-radius:2px"></span>
-        <span style="position:absolute;left:66px;top:-6px;width:12px;height:12px;border-radius:6px;background:#ff4b4b;box-shadow:0 0 8px #ff4b4b"></span>
-        <span style="position:absolute;left:122px;top:-6px;width:12px;height:12px;border-radius:6px;background:#3be37a;box-shadow:0 0 8px #3be37a"></span>${marks}
+        <span title="Luz roja" style="position:absolute;left:-7px;top:93px;width:14px;height:14px;border-radius:7px;background:#ff4b4b;box-shadow:0 0 9px #ff4b4b"></span>
+        <span title="Luz verde" style="position:absolute;left:193px;top:93px;width:14px;height:14px;border-radius:7px;background:#3be37a;box-shadow:0 0 9px #3be37a"></span>${marks}
         <span class="eb" style="position:absolute;left:0;right:0;top:78px;text-align:center">Plataforma</span>
         <span class="num amber" style="position:absolute;left:0;right:0;top:94px;text-align:center;font-size:34px">${String(pad).padStart(2, '0')}</span>
       </div>
