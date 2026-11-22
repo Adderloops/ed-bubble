@@ -35,7 +35,7 @@ const SHIP_NAMES = { panthermkii: 'Panther Mk II', smallcombat01_nx: 'Kestrel Mk
 const shipName = (t, loc) => loc || SHIP_NAMES[String(t || '').toLowerCase()] || (t ? String(t).replace(/_/g, ' ') : '—');
 
 const STATION_TYPES = {
-  Coriolis: 'Coriolis', Orbis: 'Orbis', Bernal: 'Ocellus', Ocellus: 'Ocellus', Outpost: 'Puesto orbital', AsteroidBase: 'Base en asteroide', MegaShip: 'Meganave', FleetCarrier: 'Fleet carrier',
+  Coriolis: 'Coriolis', Orbis: 'Orbis', Bernal: 'Ocellus', Ocellus: 'Ocellus', Dodec: 'Dodec', Outpost: 'Puesto orbital', AsteroidBase: 'Base en asteroide', MegaShip: 'Meganave', FleetCarrier: 'Fleet carrier',
   CraterPort: 'Puerto planetario', CraterOutpost: 'Puesto planetario', OnFootSettlement: 'Asentamiento', SurfaceStation: 'Estación de superficie',
   SpaceConstructionDepot: 'Construcción orbital', PlanetaryConstructionDepot: 'Construcción en superficie',
 };
