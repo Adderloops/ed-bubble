@@ -20,6 +20,7 @@ const ui = {
   colAside: 'buy', colSel: null, // pestaña de la derecha y material elegido
   mk: { key: null, loading: false, list: [], error: null, page: 0, pick: null }, // dónde comprar
   mkFilter: { large: null, surface: true, carriers: false },
+  finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
   plot: null, // { running, target, text, ok, error }
   extOk: null, // última consulta a Spansh: true / false
 };
@@ -373,7 +374,7 @@ function screenVuelo(s, v) {
       ${r.legs.length ? `<div style="display:flex;flex-direction:column;gap:2px"><span class="eb amber" style="font-size:11px">${esc(routeProgressText(r))}</span>${routeGraph(r, 516, false)}</div>` : ''}
       <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
         ${stat('Distancia', nextLeg && nextLeg.distance != null ? `${nf(nextLeg.distance, 2)} al` : '—')}${stat('Saltos restantes', r.legs.length ? nf(r.jumps) : or(s.fsdTarget.remainingJumps))}${stat('Destino', r.destination ? esc(r.destination) : esc(tgtName))}
-      </div>` : `<div class="empty" style="flex-direction:column;gap:6px;padding:18px"><span class="va" style="font-size:18px;color:var(--soft)">Sin objetivo de salto</span><span style="font-size:14px">Fija un sistema o traza una ruta en el mapa galáctico.</span></div>`}
+      </div>${finalStrip(s)}` : `<div class="empty" style="flex-direction:column;gap:6px;padding:18px"><span class="va" style="font-size:18px;color:var(--soft)">Sin objetivo de salto</span><span style="font-size:14px">Fija un sistema o traza una ruta en el mapa galáctico.</span></div>`}
     </section>`;
 
   return `
@@ -412,7 +413,7 @@ function screenVuelo(s, v) {
     </section>
    </main>
    <aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">
-     ${nextCard}
+     ${arrivedCard(s) || nextCard}
      ${docking ? dockCard : approachCard}
    </aside>
   </div>`;
@@ -849,6 +850,35 @@ function buyPanel(s, d, c) {
     <div style="margin-top:auto">${action}</div>`;
 }
 
+/* ---------- destino final (estación) ---------- */
+function finalStrip(s) {
+  const f = ui.finalDest;
+  if (!f) return '';
+  return `<div class="in" style="padding:10px 12px;display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;border-color:#5a4524">
+      ${f.icon ? `<img src="icons/${f.icon}.png" alt="" style="width:40px;height:40px;object-fit:contain">` : '<span></span>'}
+      <span style="display:flex;flex-direction:column;min-width:0"><span class="eb amber" style="font-size:10px">Destino final</span><span class="va nowrap" style="font-size:16px">${esc(siteName(f.station))} <span class="soft">· ${esc(f.system)}</span></span>${f.commodity ? `<span class="eb" style="font-size:10px">Comprar ${esc(f.commodity)}</span>` : ''}</span>
+      <button type="button" class="pg" data-finalclear="1" title="Olvidar destino" style="width:auto;padding:0 8px">✕</button>
+    </div>`;
+}
+
+function arrivedCard(s) {
+  const f = ui.finalDest;
+  if (!f || !s.location.system || f.system.toLowerCase() !== s.location.system.toLowerCase()) return '';
+  return `
+    <section class="pn card" style="border-left:3px solid var(--amber);gap:12px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">Has llegado · ve a la estación</span><button type="button" class="pg" data-finalclear="1" title="Olvidar destino" style="width:auto;padding:0 8px">✕</button></div>
+      <div style="display:flex;align-items:center;gap:14px">
+        ${f.icon ? `<img src="icons/${f.icon}.png" alt="" style="width:64px;height:64px;object-fit:contain">` : ''}
+        <span style="display:flex;flex-direction:column;min-width:0"><span class="ti nowrap" style="font-size:28px">${esc(siteName(f.station))}</span><span class="eb">${esc(f.label || '')} · ${esc(f.system)}</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+        ${stat('Distancia', f.ls != null ? `${nf(f.ls, 0)} ls` : '—', 'cyan')}${stat('Plataforma', f.pad || '?', f.pad === 'L' ? 'amber' : '')}${stat('Comprar', esc(f.commodity || '—'))}
+      </div>
+      ${f.supply != null ? `<span class="eb soft">Stock ${nf(f.supply)} t · ${nf(f.price)} cr/t</span>` : ''}
+      <span class="eb dim">Selecciónala en el panel izquierdo › Navegación</span>
+    </section>`;
+}
+
 /* ---------- esquema de atraque (SVG) ---------- */
 function dockingSvg(padNum, width, hour) {
   const pad = Number(padNum) || 0;
@@ -904,6 +934,7 @@ function render() {
     if (ui.lastModeKey !== null && BUILT.has(v.mode.section) && v.mode.section !== ui.section) ui.section = v.mode.section;
     ui.lastModeKey = v.mode.key;
   }
+  if (ui.finalDest && s.location.docked && s.location.station && siteName(s.location.station).toLowerCase() === siteName(ui.finalDest.station).toLowerCase()) ui.finalDest = null;
   renderHeader(s, v);
   renderRail(v);
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
@@ -1012,9 +1043,15 @@ document.addEventListener('pointerdown', (ev) => {
     const f = ui.mkFilter;
     const list = ui.mk.list.filter((m) => (f.surface || !m.planetary) && (f.carriers || !m.carrier));
     const pick = list[ui.mk.pick];
-    if (pick) window.edbubble.plot(pick.system, pick.distance || 0);
+    if (pick) {
+      const res = ui.snap.view.col.depots.flatMap((d) => d.resources).find((r) => r.key === ui.colSel);
+      ui.finalDest = { station: pick.station, system: pick.system, ls: pick.ls, pad: pick.pad, icon: pick.icon, label: pick.label, commodity: res ? res.name : null, supply: pick.supply, price: pick.price };
+      window.edbubble.plot(pick.system, pick.distance || 0);
+    }
     return;
   }
+  const fc = ev.target.closest('button[data-finalclear]');
+  if (fc) { ev.preventDefault(); ui.finalDest = null; render(); return; }
   const dp = ev.target.closest('button[data-depot]');
   if (dp) { ev.preventDefault(); ui.colDepot = dp.dataset.depot; ui.colPage = 0; render(); return; }
   const cpg = ev.target.closest('button[data-pager="col"]');

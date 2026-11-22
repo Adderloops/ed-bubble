@@ -96,6 +96,12 @@ function createWindow() {
         const img = await win.webContents.capturePage();
         fs.writeFileSync(path.join(out, `${sec}.png`), img.toPNG());
       }
+      // ED_BUBBLE_SHOT_FINAL=json: Vuelo con un destino final (para revisar el diseño)
+      if (process.env.ED_BUBBLE_SHOT_FINAL) {
+        await win.webContents.executeJavaScript(`ui.section='vuelo'; ui.finalDest=${process.env.ED_BUBBLE_SHOT_FINAL}; render();`);
+        await new Promise((r) => setTimeout(r, 400));
+        fs.writeFileSync(path.join(out, 'destino.png'), (await win.webContents.capturePage()).toPNG());
+      }
       // ED_BUBBLE_SHOT_MATERIAL=clave: Colonización con ese material elegido (dónde comprar)
       if (process.env.ED_BUBBLE_SHOT_MATERIAL) {
         await win.webContents.executeJavaScript(`ui.section='colonizacion'; ui.colSel=${JSON.stringify(process.env.ED_BUBBLE_SHOT_MATERIAL)}; ui.colAside='buy'; render();`);
