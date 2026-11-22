@@ -12,7 +12,13 @@ Variables para desarrollo: `ED_BUBBLE_SIMULATE=1` (no envía teclas), `ED_BINDIN
 
 **Vuelo y Navegación:** Vuelo es pilotar (estado, interruptores, acciones, combustible, próximo salto, atraque o aproximación a planeta). Navegación es planificar (ficha del sistema actual con Copiar / Inara / Spansh / EDSM, objetivo de salto y ruta completa).
 
-El buscador de Spansh y Trazar ruta llegan en la entrega 3, en Navegación.
+**Entrega 3 (Navegación):** buscador de sistemas con Spansh (sugerencias al escribir, con la distancia desde donde estás) y ficha del sistema: estrella y combustible, población, seguridad, gobierno, economía, Powerplay, y pestañas de estaciones (icono, plataforma L/M/S, distancia y servicios), facciones (influencia y estado) y cuerpos.
+
+**Trazar ruta:** abre el mapa galáctico, pega el nombre (Ctrl+V), selecciona el resultado, mantiene Seleccionar para trazar y comprueba en `NavRoute.json` que la ruta va a ese sistema; después cierra el mapa. Se detiene si el juego pierde el foco y se puede cancelar. Necesita teclas de teclado para: Mapa galáctico, Cámara: acercar, Cámara: alejar, Interfaz: arriba / derecha / seleccionar (el panel Controles del Puente lo comprueba). Los tiempos de espera están en `core/plot.js` (`T`) por si hay que ajustarlos.
+
+Iconos de estación (`renderer/icons/`): aportados por el autor (Adder).
+
+Desarrollo: `ED_BUBBLE_SPANSH_FIXTURE=carpeta` sirve `search.json` y `suggest.json` en lugar de consultar Spansh; `ED_BUBBLE_SHOT_SYSTEM=nombre` captura el buscador y la ficha.
 
 ## Arrancar
 

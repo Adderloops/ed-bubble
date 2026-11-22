@@ -43,7 +43,7 @@ const BIND_NAMES = {
 };
 const CHECK_GROUPS = [
   { name: 'Vuelo', binds: ['LandingGearToggle', 'ToggleFlightAssist', 'DeployHardpointToggle', 'ShipSpotLightToggle', 'ToggleCargoScoop', 'NightVisionToggle', 'DeployHeatSink', 'ToggleButtonUpInput', 'EjectAllCargo', 'TargetNextRouteSystem', 'FocusLeftPanel', 'CyclePreviousPanel', 'UI_Right', 'UI_Select'] },
-  { name: 'Trazar ruta', soon: true, binds: ['GalaxyMapOpen', 'CamZoomIn', 'CamZoomOut', 'UI_Up', 'UI_Right', 'UI_Select', 'UI_Back'] },
+  { name: 'Trazar ruta', binds: require('./plot').NEEDED },
 ];
 
 const chord = (b) => `${[...b.modifiers].sort().join('+')}|${b.key}`;

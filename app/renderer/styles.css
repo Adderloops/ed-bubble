@@ -96,3 +96,20 @@ button { font: inherit; }
 .nav-btn { height: 44px; font-family: Rajdhani, sans-serif; font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--cyan); background: #0c1b2e; border: 1px solid var(--line2); border-radius: 2px; cursor: pointer; }
 .nav-btn:hover { border-color: var(--cyan); background: #0f2c44; }
 .nav-btn:disabled { color: var(--dim); cursor: default; opacity: .5; }
+
+/* Navegación: buscador, pestañas, ficha */
+.search { height: 46px; padding: 0 14px; font-family: 'Exo 2', sans-serif; font-size: 17px; color: #fff; background: #06101c; border: 1px solid var(--line2); border-radius: 2px; outline: none; }
+.search:focus { border-color: var(--cyan); box-shadow: 0 0 0 1px var(--cyan) inset; }
+.pick { display: flex; justify-content: space-between; align-items: center; gap: 10px; height: 38px; padding: 0 12px; font-family: 'Exo 2', sans-serif; font-size: 15px; color: var(--soft, #cfe3f5); background: var(--inner); border: 1px solid var(--inline); border-radius: 2px; cursor: pointer; text-align: left; }
+.pick:hover { border-color: var(--cyan); color: #fff; }
+.pick.on { border-color: var(--amber); color: #fff; }
+.tab { height: 36px; padding: 0 16px; font-family: Rajdhani, sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .1em; text-transform: uppercase; color: var(--eb); background: transparent; border: 1px solid var(--line2); border-radius: 2px; cursor: pointer; }
+.tab.on { color: var(--amber); border-color: var(--amber); background: #221a0e; }
+.tab.small { height: 32px; font-size: 13px; }
+.plot-btn { height: 44px; width: 170px; font-family: Rajdhani, sans-serif; font-weight: 700; font-size: 16px; letter-spacing: .1em; text-transform: uppercase; color: #1a1402; background: var(--amber); border: 1px solid var(--amber); border-radius: 2px; cursor: pointer; }
+.plot-btn:hover { filter: brightness(1.1); }
+.plot-btn:disabled { color: var(--dim); background: #1a1610; border-color: #3a3020; cursor: default; }
+.pad { justify-self: center; width: 34px; height: 30px; display: flex; align-items: center; justify-content: center; font-family: 'Share Tech Mono', monospace; font-size: 17px; border-radius: 2px; border: 1px solid var(--line2); color: var(--soft, #cfe3f5); }
+.pad-L { color: #1a1402; background: var(--amber); border-color: var(--amber); }
+.pad-M { color: var(--cyan); border-color: var(--cyan); }
+.svc { font-family: Rajdhani, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--cyan); border: 1px solid var(--cyandim); border-radius: 2px; padding: 2px 6px; white-space: nowrap; }

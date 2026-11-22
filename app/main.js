@@ -7,13 +7,15 @@
  * para la segunda pantalla; recuerda su posición y tamaño.
  */
 
-const { app, BrowserWindow, ipcMain, screen, clipboard, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, clipboard, shell, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { Engine } = require('../core/engine');
 const binds = require('../core/binds');
 const actions = require('../core/actions');
 const { KeySender } = require('../core/keysender');
+const spansh = require('../core/spansh');
+const { plotRoute } = require('../core/plot');
 
 const BOUNDS_FILE = () => path.join(app.getPath('userData'), 'window-bounds.json');
 
@@ -38,6 +40,7 @@ function defaultBounds() {
 let win = null;
 let engine = null;
 let last = null;
+let plotting = null; // { cancelled } mientras se traza una ruta
 let controls = { error: 'Cargando controles…' };
 const keys = new KeySender({ simulate: process.env.ED_BUBBLE_SIMULATE === '1' || undefined });
 
@@ -93,12 +96,32 @@ function createWindow() {
         const img = await win.webContents.capturePage();
         fs.writeFileSync(path.join(out, `${sec}.png`), img.toPNG());
       }
+      // ED_BUBBLE_SHOT_SYSTEM=nombre: busca ese sistema en Navegación y captura la ficha
+      if (process.env.ED_BUBBLE_SHOT_SYSTEM) {
+        const n = JSON.stringify(process.env.ED_BUBBLE_SHOT_SYSTEM);
+        await win.webContents.executeJavaScript(`ui.section='navegacion'; render(); const el=document.getElementById('nav-search'); el.focus(); el.value=${n}.slice(0, 16); el.dispatchEvent(new Event('input', { bubbles: true }));`);
+        await new Promise((r) => setTimeout(r, 3000));
+        fs.writeFileSync(path.join(out, 'buscador.png'), (await win.webContents.capturePage()).toPNG());
+        await win.webContents.executeJavaScript(`selectSystem(${n});`);
+        await new Promise((r) => setTimeout(r, 4000));
+        for (const tab of ['stations', 'factions', 'bodies']) {
+          await win.webContents.executeJavaScript(`ui.sysTab='${tab}'; ui.sysPage=0; render();`);
+          await new Promise((r) => setTimeout(r, 400));
+          fs.writeFileSync(path.join(out, `sistema-${tab}.png`), (await win.webContents.capturePage()).toPNG());
+        }
+      }
       app.quit();
     });
   }
 }
 
 app.whenReady().then(() => {
+  spansh.setFetch((url, opts) => net.fetch(url, opts));
+  // Solo desarrollo: ED_BUBBLE_SPANSH_FIXTURE=carpeta con search.json y suggest.json (sin red)
+  if (process.env.ED_BUBBLE_SPANSH_FIXTURE) {
+    const dir = process.env.ED_BUBBLE_SPANSH_FIXTURE;
+    spansh.setFetch(async (url) => new Response(fs.readFileSync(path.join(dir, /field_values/.test(url) ? 'suggest.json' : 'search.json'))));
+  }
   engine = new Engine({ folder: process.env.ED_JOURNAL_FOLDER || undefined });
   engine.on('update', (snap) => {
     last = snap;
@@ -113,6 +136,7 @@ app.whenReady().then(() => {
   keys.start();
   ipcMain.handle('ed:controls', () => controlsInfo());
   ipcMain.handle('ed:run', async (_e, id) => {
+    if (plotting) return { ok: false, error: 'plot-busy' };
     const built = actions.build(String(id), controls.binds);
     if (built.error) return { ok: false, error: built.error, action: built.action };
     const res = await keys.run(built.ops);
@@ -134,6 +158,36 @@ app.whenReady().then(() => {
     shell.openExternal(url);
     return true;
   });
+  // Spansh: sugerencias y ficha (con la distancia desde el sistema actual)
+  ipcMain.handle('ed:suggest', async (_e, q) => {
+    try { return { ok: true, results: await spansh.suggest(String(q || '').slice(0, 80)) }; } catch (e) { return { ok: false, error: e.message }; }
+  });
+  ipcMain.handle('ed:system', async (_e, name) => {
+    const here = last && last.state.location.system;
+    try { return { ok: true, system: await spansh.system(String(name || '').slice(0, 120), here || undefined) }; } catch (e) { return { ok: false, error: e.message }; }
+  });
+  // Trazar ruta en el mapa galáctico
+  const plotStatus = (st) => { if (win && !win.isDestroyed()) win.webContents.send('ed:plot-status', st); };
+  ipcMain.handle('ed:plot', async (_e, name, distance) => {
+    const target = String(name || '').trim().slice(0, 120);
+    if (!target) return { ok: false, error: 'no-target' };
+    if (plotting) return { ok: false, error: 'plot-busy' };
+    plotting = { cancelled: false, target };
+    plotStatus({ running: true, target, text: 'Preparando' });
+    const res = await plotRoute(target, Number(distance) || 0, {
+      keys,
+      binds: controls.binds,
+      getState: () => (last || engine.snapshot()).state,
+      clipboard,
+      onStep: (text) => plotStatus({ running: true, target, text }),
+      isCancelled: () => plotting.cancelled,
+    });
+    plotting = null;
+    plotStatus({ running: false, target, ...res });
+    if (!res.ok) console.warn('[ruta]', target, res);
+    return res;
+  });
+  ipcMain.handle('ed:plot-cancel', () => { if (plotting) plotting.cancelled = true; return true; });
   ipcMain.handle('ed:info', () => ({ version: require('./package.json').version, journalFolder: engine.folder }));
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });

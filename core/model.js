@@ -20,7 +20,7 @@ function createState() {
     location: {
       system: null, body: null, bodyType: null, station: null, stationType: null, docked: false, landed: false,
       starClass: null, allegiance: null, economy: null, secondEconomy: null, government: null, security: null, population: null,
-      faction: null, factionState: null, powerplayState: null, controllingPower: null, systemAddress: null,
+      faction: null, factionState: null, powerplayState: null, controllingPower: null, systemAddress: null, starPos: null,
     },
     destination: { name: null, body: null, system: null },
     status: {
@@ -54,6 +54,7 @@ function setSystemInfo(state, e) {
   const L = state.location;
   if (e.StarSystem) L.system = e.StarSystem;
   if (e.SystemAddress !== undefined) L.systemAddress = e.SystemAddress;
+  if (Array.isArray(e.StarPos)) L.starPos = e.StarPos;
   if (e.SystemAllegiance !== undefined) L.allegiance = e.SystemAllegiance || null;
   if (e.SystemEconomy !== undefined) L.economy = loc(e, 'SystemEconomy');
   if (e.SystemSecondEconomy !== undefined) L.secondEconomy = loc(e, 'SystemSecondEconomy');

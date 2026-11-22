@@ -185,9 +185,9 @@ test('revisión de controles: sin asignar, solo en mando y tecla compartida entr
 });
 
 test('revisión de controles: una acción asignada solo al HOTAS se marca como "solo en mando"', () => {
-  const xml = '<Root><UI_Back><Primary Device="SaitekX56Joystick" Key="Joy_2" /><Secondary Device="{NoDevice}" Key="" /></UI_Back></Root>';
+  const xml = '<Root><UI_Up><Primary Device="SaitekX56Joystick" Key="Joy_2" /><Secondary Device="{NoDevice}" Key="" /></UI_Up></Root>';
   const r = actions.checkControls({ binds: binds.parseBinds(xml), otherDevices: binds.parseOtherDevices(xml) });
-  assert.strictEqual(r.problems.find((p) => p.action === 'UI_Back').status, 'hotas');
+  assert.strictEqual(r.problems.find((p) => p.action === 'UI_Up').status, 'hotas');
 });
 
 test('progreso de la ruta: saltos hechos, que quedan y distancia sin contar el salto ya hecho', () => {
@@ -203,5 +203,79 @@ test('progreso de la ruta: saltos hechos, que quedan y distancia sin contar el s
   assert.strictEqual(r2.doneJumps, 2); assert.strictEqual(r2.distance, 30);
 });
 
-console.log(`\n${ok} pruebas OK, ${fail} fallidas.`);
-process.exit(fail ? 1 : 0);
+// ---- Trazar ruta: con un juego simulado (teclas falsas y estado que reacciona) ----
+const plot = require('../../core/plot');
+const asyncTests = [];
+function testAsync(name, fn) { asyncTests.push([name, fn]); }
+function fakeGame({ confirm = true, loseFocusAt = null } = {}) {
+  const state = { status: { guiFocus: 'NoFocus' }, route: [], fsdTarget: { name: null } };
+  const kb = binds.parseBinds(SAMPLE_BINDS);
+  const bind = (k) => ({ key: k, modifiers: [] });
+  Object.assign(kb, { GalaxyMapOpen: bind('Key_M'), CamZoomIn: bind('Key_Insert'), CamZoomOut: bind('Key_Delete'), UI_Up: bind('Key_W') });
+  const sent = [];
+  let calls = 0;
+  const keys = { run: async (ops) => {
+    calls += 1;
+    if (loseFocusAt && calls === loseFocusAt) return { ok: false, error: 'focus-lost' };
+    for (const o of ops) if (o.op === 'down') sent.push(o.sc);
+    const downs = ops.filter((o) => o.op === 'down').map((o) => o.sc);
+    if (downs.includes(0x32)) state.status.guiFocus = state.status.guiFocus === 'GalaxyMap' ? 'NoFocus' : 'GalaxyMap'; // M = mapa
+    const hold = ops.find((o) => o.op === 'sleep' && o.ms >= 1000);
+    if (hold && confirm) state.route = [{ system: 'Aquí' }, { system: 'Sol' }];
+    return { ok: true };
+  } };
+  let clip = null;
+  return { state, kb, sent, keys, clipboard: { writeText: (t) => { clip = t; } }, clip: () => clip };
+}
+Object.assign(plot.T, { travelBase: 10, travelPer1000: 5, poll: 5, settle: 5, step: 1, afterSearchSelect: 1, afterPaste: 1, afterEnter: 1, afterRight: 1, mapOpenTimeout: 300, verifyTimeout: 200 });
+
+testAsync('trazar ruta: abre el mapa, pega el nombre, mantiene seleccionar, confirma la ruta y cierra el mapa', async () => {
+  const g = fakeGame();
+  const steps = [];
+  const r = await plot.plotRoute('Sol', 230, { keys: g.keys, binds: g.kb, getState: () => g.state, clipboard: g.clipboard, onStep: (t) => steps.push(t) });
+  assert.deepStrictEqual(r, { ok: true });
+  assert.strictEqual(g.clip(), 'Sol');
+  assert.ok(g.sent.includes(0x2F) && g.sent.includes(0x1C), 'Ctrl+V e Intro');
+  assert.strictEqual(g.state.status.guiFocus, 'NoFocus', 'el mapa queda cerrado');
+  assert.ok(steps.includes('Trazando la ruta'));
+});
+
+testAsync('trazar ruta: si el juego no confirma la ruta, lo dice', async () => {
+  const g = fakeGame({ confirm: false });
+  const r = await plot.plotRoute('Sol', 0, { keys: g.keys, binds: g.kb, getState: () => g.state, clipboard: g.clipboard });
+  assert.strictEqual(r.error, 'not-confirmed');
+});
+
+testAsync('trazar ruta: se detiene si el juego pierde el foco, y se puede cancelar', async () => {
+  const g = fakeGame({ loseFocusAt: 2 });
+  const r = await plot.plotRoute('Sol', 0, { keys: g.keys, binds: g.kb, getState: () => g.state, clipboard: g.clipboard });
+  assert.strictEqual(r.error, 'focus-lost');
+  const g2 = fakeGame(); let cancel = false;
+  const r2 = await plot.plotRoute('Sol', 0, { keys: g2.keys, binds: g2.kb, getState: () => g2.state, clipboard: g2.clipboard, onStep: (t) => { if (t.startsWith('Buscando')) cancel = true; }, isCancelled: () => cancel });
+  assert.strictEqual(r2.error, 'cancelled');
+});
+
+testAsync('trazar ruta: sin las teclas necesarias no envía nada', async () => {
+  const g = fakeGame(); delete g.kb.CamZoomOut;
+  const r = await plot.plotRoute('Sol', 0, { keys: g.keys, binds: g.kb, getState: () => g.state, clipboard: g.clipboard });
+  assert.strictEqual(r.error, 'no-key'); assert.deepStrictEqual(r.missing, ['CamZoomOut']); assert.strictEqual(g.sent.length, 0);
+});
+
+test('Spansh: tipo de estación, icono y plataforma (las obras siempre L)', () => {
+  const sp = require('../../core/spansh');
+  assert.strictEqual(sp.stationKind('Coriolis Starport').icon, 'coriolis');
+  assert.strictEqual(sp.stationKind('Planetary Construction Depot').label, 'Obra en superficie');
+  assert.strictEqual(sp.padSize({ type: 'Space Construction Depot', has_large_pad: false }), 'L');
+  assert.strictEqual(sp.padSize({ type: 'Outpost', medium_pads: 2, has_large_pad: false }), 'M');
+  const n = sp.normalise({ name: 'X', bodies: [{ is_main_star: true, subtype: 'K (Yellow-Orange) Star' }], stations: [{ name: 'A', distance_to_arrival: 5 }, { name: 'B', type: 'Orbis Starport', distance_to_arrival: 9, has_large_pad: true, has_market: true }] });
+  assert.strictEqual(n.starClass, 'K');
+  assert.deepStrictEqual(n.stations.map((x) => x.name), ['B'], 'sin tipo ni mercado se descarta');
+});
+
+(async () => {
+  for (const [name, fn] of asyncTests) {
+    try { await fn(); ok += 1; console.log(`  OK  ${name}`); } catch (e) { fail += 1; console.log(`  FALLA  ${name}\n        ${e.message}`); }
+  }
+  console.log(`\n${ok} pruebas OK, ${fail} fallidas.`);
+  process.exit(fail ? 1 : 0);
+})();

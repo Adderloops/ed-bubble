@@ -9,6 +9,11 @@ contextBridge.exposeInMainWorld('edbubble', {
   controls: () => ipcRenderer.invoke('ed:controls'),
   onControls: (cb) => ipcRenderer.on('ed:controls', (_e, c) => cb(c)),
   run: (id) => ipcRenderer.invoke('ed:run', id),
+  suggest: (q) => ipcRenderer.invoke('ed:suggest', q),
+  system: (name) => ipcRenderer.invoke('ed:system', name),
+  plot: (name, distance) => ipcRenderer.invoke('ed:plot', name, distance),
+  plotCancel: () => ipcRenderer.invoke('ed:plot-cancel'),
+  onPlotStatus: (cb) => ipcRenderer.on('ed:plot-status', (_e, st) => cb(st)),
   copy: (text) => ipcRenderer.invoke('ed:copy', text),
   open: (site, name, address) => ipcRenderer.invoke('ed:open', { site, name, address }),
 });

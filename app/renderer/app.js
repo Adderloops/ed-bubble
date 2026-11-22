@@ -11,7 +11,14 @@ const SECTIONS = [
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
 
-const ui = { section: 'puente', autoJump: true, lastModeKey: null, snap: null, controls: null, armed: null, flash: null, feedback: null };
+const ui = {
+  section: 'puente', autoJump: true, lastModeKey: null, snap: null, controls: null, armed: null, flash: null, feedback: null,
+  search: { q: '', results: [], loading: false, error: null, seq: 0 }, // buscador de Navegación
+  sel: null, // sistema elegido: { name, loading, system, error }
+  navTab: 'route', sysTab: 'stations', sysPage: 0,
+  plot: null, // { running, target, text, ok, error }
+  extOk: null, // última consulta a Spansh: true / false
+};
 
 /* ---------- utilidades ---------- */
 const $ = (id) => document.getElementById(id);
@@ -33,7 +40,12 @@ const STATION_TYPES = {
   SpaceConstructionDepot: 'Construcción orbital', PlanetaryConstructionDepot: 'Construcción en superficie',
 };
 const DIAGRAM_TYPES = new Set(['Coriolis', 'Orbis', 'Bernal', 'Ocellus', 'Dodec']);
-const ES = { Independent: 'Independiente', Federation: 'Federación', Empire: 'Imperio', Alliance: 'Alianza', Expansion: 'Expansión', Boom: 'Auge', Bust: 'Recesión', None: 'Ninguno', Election: 'Elecciones', War: 'Guerra', CivilWar: 'Guerra civil', Investment: 'Inversión', Retreat: 'Retirada', Lockdown: 'Confinamiento', Outbreak: 'Brote', Famine: 'Hambruna', CivilUnrest: 'Disturbios', PirateAttack: 'Ataque pirata', Unoccupied: 'Sin ocupar', Exploited: 'Explotado', Fortified: 'Fortificado', Stronghold: 'Bastión', 'Low Security': 'Baja', 'Medium Security': 'Media', 'High Security': 'Alta', Anarchy: 'Anarquía', Lawless: 'Sin ley' };
+const ES = { Independent: 'Independiente', Federation: 'Federación', Empire: 'Imperio', Alliance: 'Alianza', Expansion: 'Expansión', Boom: 'Auge', Bust: 'Recesión', None: 'Ninguno', Election: 'Elecciones', War: 'Guerra', CivilWar: 'Guerra civil', Investment: 'Inversión', Retreat: 'Retirada', Lockdown: 'Confinamiento', Outbreak: 'Brote', Famine: 'Hambruna', CivilUnrest: 'Disturbios', PirateAttack: 'Ataque pirata', Unoccupied: 'Sin ocupar', Exploited: 'Explotado', Fortified: 'Fortificado', Stronghold: 'Bastión', 'Low Security': 'Baja', 'Medium Security': 'Media', 'High Security': 'Alta', Low: 'Baja', Medium: 'Media', High: 'Alta', Anarchy: 'Anarquía', Lawless: 'Sin ley',
+  Corporate: 'Corporativo', Communism: 'Comunismo', Democracy: 'Democracia', Dictatorship: 'Dictadura', Feudal: 'Feudal', Patronage: 'Mecenazgo', Theocracy: 'Teocracia', Confederacy: 'Confederación', Cooperative: 'Cooperativa', 'Prison colony': 'Colonia penitenciaria', Prison: 'Prisión',
+  'High Tech': 'Alta tecnología', Industrial: 'Industrial', Extraction: 'Extracción', Refinery: 'Refinería', Agriculture: 'Agricultura', Tourism: 'Turismo', Military: 'Militar', Service: 'Servicios', Colony: 'Colonia', Terraforming: 'Terraformación',
+  'High metal content world': 'Mundo rico en metales pesados', 'Metal-rich body': 'Cuerpo rico en metales', 'Rocky body': 'Cuerpo rocoso', 'Icy body': 'Cuerpo helado', 'Rocky Ice world': 'Mundo de roca y hielo', 'Rocky ice world': 'Mundo de roca y hielo',
+  'Water world': 'Mundo de agua', 'Earth-like world': 'Mundo tipo Tierra', 'Ammonia world': 'Mundo de amoníaco', 'Water giant': 'Gigante de agua', 'Helium-rich gas giant': 'Gigante gaseoso rico en helio', 'Gas giant with water-based life': 'Gigante gaseoso con vida acuática', 'Gas giant with ammonia-based life': 'Gigante gaseoso con vida de amoníaco',
+  'Class I gas giant': 'Gigante gaseoso clase I', 'Class II gas giant': 'Gigante gaseoso clase II', 'Class III gas giant': 'Gigante gaseoso clase III', 'Class IV gas giant': 'Gigante gaseoso clase IV', 'Class V gas giant': 'Gigante gaseoso clase V' };
 const tr = (v) => (v == null ? '—' : ES[v] || v);
 
 function seg(ratio, cls = 'on') {
@@ -53,7 +65,7 @@ function renderHeader(s, v) {
   const lamp = (on, label, title) => `<span class="eb lamp ${on ? 'cyan' : ''}" title="${esc(title)}"><span class="dot ${on ? 'on' : ''}"></span>${label}</span>`;
   $('hdr-lamps').innerHTML = lamp(s.connection.journal, 'Journal', s.connection.journalFile || 'Sin Journal')
     + lamp(s.connection.status && recent, 'Juego en vivo', recent ? 'Eventos en los últimos 15 min' : 'Sin eventos recientes')
-    + lamp(false, 'Datos externos', 'Llega en la entrega 3 (Spansh)');
+    + lamp(ui.extOk === true, 'Datos externos', ui.extOk === true ? 'Spansh responde' : ui.extOk === false ? 'Spansh no responde' : 'Sin consultas a Spansh todavía');
 }
 
 function renderRail(v) {
@@ -468,8 +480,8 @@ function screenNavegacion(s, v) {
       </div>
       <div class="kv" style="font-size:15px">
         <span class="eb" style="font-size:10px">Alianza</span><span>${tr(L.allegiance)}</span>
-        <span class="eb" style="font-size:10px">Gobierno</span><span>${esc(or(L.government))}</span>
-        <span class="eb" style="font-size:10px">Economía</span><span>${esc(or(L.economy))}${L.secondEconomy ? ' / ' + esc(L.secondEconomy) : ''}</span>
+        <span class="eb" style="font-size:10px">Gobierno</span><span>${esc(tr(L.government))}</span>
+        <span class="eb" style="font-size:10px">Economía</span><span>${esc(tr(L.economy))}${L.secondEconomy ? ' / ' + esc(tr(L.secondEconomy)) : ''}</span>
         <span class="eb" style="font-size:10px">Facción</span><span class="nowrap">${esc(or(L.faction))} · ${tr(L.factionState)}</span>
         <span class="eb" style="font-size:10px">Powerplay</span><span class="amber">${tr(L.powerplayState)}${L.controllingPower ? ' · ' + esc(L.controllingPower) : ''}</span>
       </div>
@@ -488,11 +500,7 @@ function screenNavegacion(s, v) {
           <span style="display:flex;flex-direction:column;min-width:0"><span class="ti nowrap" style="font-size:22px">${esc(t.name)}</span><span class="eb ${tScoop === false ? 'amber' : tScoop ? 'cyan' : 'dim'}">${tScoop == null ? 'Estrella desconocida' : tScoop ? 'Combustible recogible' : 'Combustible no recogible'}${t.remainingJumps != null ? ` · quedan ${t.remainingJumps} saltos` : ''}</span></span>
         </div>` : '<span class="soft" style="font-size:15px">Sin objetivo. Fíjalo en el mapa galáctico o con "Siguiente sistema".</span>'}
     </section>`;
-  const searchCard = `
-    <section class="pn card" style="flex:1;min-height:0">
-      <span class="ti" style="font-size:16px">Buscar sistema · Trazar ruta</span>
-      <div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:18px;color:var(--soft)">Llega en la entrega 3</span><span style="font-size:14px">Buscador con Spansh, ficha y estaciones de cualquier sistema, y botón Trazar ruta en el mapa galáctico.</span></div>
-    </section>`;
+  const searchCard = searchPanel(s);
 
   let routeBody;
   if (!r.legs.length) {
@@ -531,13 +539,141 @@ function screenNavegacion(s, v) {
   }
 
   return `
-  <div style="display:grid;grid-template-columns:620px minmax(0,1fr);gap:12px;min-height:0">
+  <div style="display:grid;grid-template-columns:600px minmax(0,1fr);gap:12px;min-height:0">
     <div style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${sysCard}${targetCard}${searchCard}</div>
     <section class="pn card" style="min-height:0;overflow:hidden">
-      <span class="ti" style="font-size:16px">Ruta trazada</span>
-      ${routeBody}
+      <div style="display:flex;gap:8px;align-items:center">
+        <button type="button" class="tab ${ui.navTab === 'route' ? 'on' : ''}" data-navtab="route">Ruta trazada</button>
+        ${ui.sel ? `<button type="button" class="tab ${ui.navTab === 'system' ? 'on' : ''}" data-navtab="system"><span class="nowrap" style="max-width:420px;display:inline-block;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom">${esc(ui.sel.name)}</span></button>` : ''}
+        <span style="margin-left:auto">${plotLine()}</span>
+      </div>
+      ${ui.navTab === 'system' && ui.sel ? systemDetail(s) : routeBody}
     </section>
   </div>`;
+}
+
+/* ---------- buscador (Spansh) y ficha de sistema ---------- */
+const distTo = (a, b) => (a && b ? Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) : null);
+const ls = (d) => (d == null ? '—' : d >= 100000 ? `${nf(d / 1000, 0)} mil ls` : `${nf(d, 0)} ls`);
+
+function searchPanel(s) {
+  const q = ui.search;
+  const here = s.location.starPos;
+  let list;
+  if (q.error) list = `<div class="empty"><span class="red">${esc(q.error)}</span></div>`;
+  else if (q.q.trim().length < 3) list = '<div class="empty" style="font-size:14px">Escribe al menos 3 letras del nombre del sistema.</div>';
+  else if (q.loading && !q.results.length) list = '<div class="empty">Buscando en Spansh…</div>';
+  else if (!q.results.length) list = '<div class="empty">Sin resultados.</div>';
+  else {
+    list = q.results.map((r, i) => {
+      const d = distTo(here, r.pos);
+      const on = ui.sel && ui.sel.name.toLowerCase() === r.name.toLowerCase();
+      return `<button type="button" class="pick ${on ? 'on' : ''}" data-pick="${i}"><span class="nowrap">${esc(r.name)}</span><span class="num soft">${d != null ? `${nf(d, d < 100 ? 2 : 1)} al` : ''}</span></button>`;
+    }).join('');
+  }
+  return `
+    <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">Buscar sistema</span><span class="eb dim">Spansh</span></div>
+      <input id="nav-search" class="search" type="text" spellcheck="false" autocomplete="off" placeholder="Nombre del sistema…" value="${esc(q.q)}">
+      <div style="display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden">${list}</div>
+    </section>`;
+}
+
+const PLOT_ERRORS = {
+  cancelled: 'Cancelado', 'not-confirmed': 'El juego no confirmó la ruta (revisa el mapa)', 'focus-lost': 'El juego perdió el foco: detenido',
+  'focus-failed': 'No he podido traer el juego al frente', 'game-not-running': 'El juego no está abierto', 'no-key': 'Faltan teclas (mira Controles en el Puente)',
+  'plot-busy': 'Ya se está trazando una ruta', timeout: 'El ayudante de teclas no responde',
+};
+
+function plotLine() {
+  const p = ui.plot;
+  if (!p) return '';
+  if (p.running) return `<span style="display:flex;align-items:center;gap:10px"><span class="eb yellow">Trazando · ${esc(p.text || '')}</span><button type="button" class="pg" data-plotcancel="1" style="width:auto;padding:0 10px;font-family:Rajdhani;font-size:12px;font-weight:700;letter-spacing:.08em">CANCELAR</button></span>`;
+  if (Date.now() - (p.at || 0) > 8000) return '';
+  return p.ok ? `<span class="eb cyan">Ruta trazada a ${esc(p.target)}</span>` : `<span class="eb red">No trazada: ${esc(PLOT_ERRORS[p.error] || p.error)}</span>`;
+}
+
+function plotReady() {
+  const c = ui.controls && ui.controls.check;
+  const g = c && c.groups.find((x) => x.name === 'Trazar ruta');
+  return g ? g.ready === g.total : false;
+}
+
+function systemDetail(s) {
+  const sel = ui.sel;
+  if (sel.loading) return '<div class="empty" style="font-size:18px">Consultando Spansh…</div>';
+  if (sel.error) return `<div class="empty" style="flex-direction:column;gap:6px"><span class="red">${esc(sel.error)}</span><span style="font-size:14px">Reintenta en unos segundos.</span></div>`;
+  const y = sel.system;
+  const isHere = s.location.system && sel.name.toLowerCase() === s.location.system.toLowerCase();
+  const missing = !plotReady() && ui.controls && ui.controls.check ? ui.controls.check.problems.filter((p) => p.groups.includes('Trazar ruta')).map((p) => p.label) : [];
+  const head = (extra) => `${missing.length ? `<div class="in" style="padding:8px 12px;border-color:#5a4524"><span class="eb yellow">Trazar ruta desactivado · falta tecla de teclado para: ${esc(missing.join(', '))} (Opciones › Controles)</span></div>` : ''}
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+        <span class="ti nowrap" style="font-size:28px">${esc(sel.name)}</span>
+        ${extra}
+      </div>
+      <div style="display:flex;gap:8px;flex:none">
+        <button type="button" class="nav-btn" style="width:120px" data-copy="1" data-name="${esc(sel.name)}">Copiar</button>
+        <button type="button" class="nav-btn" style="width:100px" data-link="inara" data-name="${esc(sel.name)}">Inara</button>
+        <button type="button" class="nav-btn" style="width:100px" data-link="spansh" data-name="${esc(sel.name)}" data-address="${esc(y && y.id64)}">Spansh</button>
+        <button type="button" class="plot-btn" data-plot="1" ${isHere || (ui.plot && ui.plot.running) || !plotReady() ? 'disabled' : ''} title="${isHere ? 'Ya estás en este sistema' : !plotReady() ? 'Faltan teclas para trazar ruta: mira Controles en el Puente de mando' : 'Abre el mapa galáctico y traza la ruta'}">Trazar ruta</button>
+      </div>
+    </div>`;
+  if (!y) return `${head('<span class="eb yellow">Spansh no conoce este sistema</span>')}<div class="empty" style="font-size:14px">Puedes trazar la ruta igualmente si el nombre es exacto.</div>`;
+
+  const d = y.distance != null ? y.distance : distTo(s.location.starPos, y.pos);
+  const scoop = y.starClass ? /^[KGBFOAM](_|$)/.test(y.starClass) : null;
+  const pp = y.powers.length ? `${y.powers.map(esc).join(', ')} · ${tr(y.powerState)}` : tr(y.powerState) || '—';
+  const conflict = y.conflict.length ? ` · ${y.conflict.map((c) => `${esc(c.power)} ${nf(c.progress * 100, 1)} %`).join(', ')}` : '';
+  const upd = y.updatedAt ? `Spansh · actualizado ${String(y.updatedAt).slice(0, 10)}` : 'Spansh';
+  const extra = `<span class="eb">${d != null ? `A ${nf(d, d < 100 ? 2 : 1)} al de ti` : 'Distancia desconocida'}${y.needsPermit ? ' · <span class="red">requiere permiso</span>' : ''} · ${esc(upd)}</span>`;
+
+  const stats = `
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+      ${stat('Estrella', esc(or(y.starClass)), scoop === false ? 'amber' : scoop ? 'cyan' : '')}${stat('Combustible', scoop == null ? '—' : scoop ? 'Recogible' : 'No recogible', scoop === false ? 'amber' : scoop ? 'cyan' : 'dim')}${stat('Población', nf(y.population))}${stat('Seguridad', esc(tr(y.security)))}
+      ${stat('Alianza', esc(tr(y.allegiance)))}${stat('Gobierno', esc(tr(y.government)))}${stat('Economía', esc(tr(y.economy)))}${stat('Economía 2.ª', esc(tr(y.secondEconomy)))}
+    </div>
+    <div class="in" style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px"><span class="eb">Powerplay</span><span class="amber nowrap" style="font-size:16px">${pp}${conflict}</span></div>`;
+
+  const tabs = [['stations', `Estaciones · ${y.stations.length}`], ['factions', `Facciones · ${y.factions.length}`], ['bodies', `Cuerpos · ${y.bodyCount}`]];
+  const per = { stations: 7, factions: 9, bodies: 11 }[ui.sysTab];
+  const items = ui.sysTab === 'stations' ? y.stations : ui.sysTab === 'factions' ? y.factions : y.bodies;
+  const pages = Math.max(1, Math.ceil(items.length / per));
+  ui.sysPage = Math.min(ui.sysPage, pages - 1);
+  const slice = items.slice(ui.sysPage * per, (ui.sysPage + 1) * per);
+  let rows;
+  if (!items.length) rows = `<div class="empty">${ui.sysTab === 'stations' ? 'Sin estaciones conocidas.' : ui.sysTab === 'factions' ? 'Sin facciones (sistema sin poblar).' : 'Sin cuerpos registrados.'}</div>`;
+  else if (ui.sysTab === 'stations') {
+    rows = slice.map((st) => {
+      const sv = st.services;
+      const chip = (on, t) => (on ? `<span class="svc">${t}</span>` : '');
+      return `<div class="in row" style="grid-template-columns:64px minmax(0,1fr) 64px 110px 250px;height:64px">
+        <span style="display:flex;justify-content:center">${st.icon ? `<img src="icons/${st.icon}.png" alt="" style="width:48px;height:48px;object-fit:contain">` : '<span class="starc unk">?</span>'}</span>
+        <span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:17px">${esc(siteName(st.name))}</span><span class="eb nowrap" style="font-size:10px">${esc(st.label)}${st.faction ? ` · ${esc(st.faction)}` : ''}</span></span>
+        <span class="pad pad-${st.pad || 'x'}">${st.pad || '?'}</span>
+        <span class="num" style="text-align:right">${ls(st.distance)}</span>
+        <span style="display:flex;gap:4px;justify-content:flex-end;padding-right:10px;flex-wrap:nowrap">${chip(sv.market, 'Mercado')}${chip(sv.shipyard, 'Astillero')}${chip(sv.outfitting, 'Equipam.')}</span>
+      </div>`;
+    }).join('');
+  } else if (ui.sysTab === 'factions') {
+    rows = slice.map((f) => `<div class="in row" style="grid-template-columns:minmax(0,1fr) 220px 150px 200px;height:52px;${f.controlling ? 'border-left:3px solid var(--amber)' : ''}">
+        <span style="display:flex;flex-direction:column;min-width:0;padding-left:12px"><span class="va nowrap" style="font-size:16px">${esc(f.name)}</span><span class="eb" style="font-size:10px">${f.controlling ? '<span class="amber">Controla el sistema</span> · ' : ''}${esc(tr(f.allegiance))}</span></span>
+        <span style="display:flex;align-items:center;gap:8px"><span class="bar" style="flex:1;height:8px"><span style="width:${(f.influence || 0) * 100}%;background:${f.controlling ? 'var(--amber)' : '#2a7fa3'}"></span></span><span class="num" style="width:62px;text-align:right">${nf((f.influence || 0) * 100, 1)} %</span></span>
+        <span class="soft" style="text-align:right">${esc(tr(f.state))}</span>
+        <span class="soft nowrap" style="text-align:right;padding-right:12px">${esc(tr(f.government))}</span>
+      </div>`).join('');
+  } else {
+    const short = (n) => (n.toLowerCase().startsWith(y.name.toLowerCase()) ? n.slice(y.name.length).trim() || n : n);
+    rows = slice.map((b) => `<div class="in row" style="grid-template-columns:minmax(0,1fr) 300px 130px;height:40px">
+        <span class="va nowrap" style="font-size:16px;padding-left:12px">${b.mainStar ? '★ ' : ''}${esc(short(b.name) || b.name)}</span>
+        <span class="soft nowrap">${esc(tr(b.subtype || b.type) || '—')}</span>
+        <span class="num" style="text-align:right;padding-right:12px">${ls(b.distance)}</span>
+      </div>`).join('');
+  }
+  const pager = pages > 1 ? `<span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-pager="sys" data-d="-1" ${ui.sysPage === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.sysPage + 1}/${pages}</span><button type="button" class="pg" data-pager="sys" data-d="1" ${ui.sysPage >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
+  return `${head(extra)}${stats}
+    <div style="display:flex;gap:8px;align-items:center">${tabs.map(([k, t]) => `<button type="button" class="tab small ${ui.sysTab === k ? 'on' : ''}" data-systab="${k}">${t}</button>`).join('')}<span style="margin-left:auto">${pager}</span></div>
+    <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${rows}</div>`;
 }
 
 /* ---------- esquema de atraque (SVG) ---------- */
@@ -590,13 +726,16 @@ function dockingSvg(padNum, width) {
 function render() {
   const snap = ui.snap; if (!snap) return;
   const { state: s, view: v } = snap;
-  if (ui.autoJump && v.mode.key !== ui.lastModeKey) {
+  const typing = document.activeElement && document.activeElement.id === 'nav-search';
+  if (ui.autoJump && v.mode.key !== ui.lastModeKey && !typing) {
     if (ui.lastModeKey !== null && BUILT.has(v.mode.section) && v.mode.section !== ui.section) ui.section = v.mode.section;
     ui.lastModeKey = v.mode.key;
   }
   renderHeader(s, v);
   renderRail(v);
+  const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
   $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : screenPuente(s, v);
+  if (sel) { const el = $('nav-search'); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
 function fit() {
@@ -614,22 +753,83 @@ $('rail').addEventListener('click', (ev) => {
 document.addEventListener('click', (ev) => {
   if (ev.target.closest('#autojump')) { ui.autoJump = !ui.autoJump; render(); }
 });
+// Buscador: sugerencias de Spansh mientras se escribe (con pausa de 300 ms)
+let searchTimer = null;
+document.addEventListener('input', (ev) => {
+  if (ev.target.id !== 'nav-search') return;
+  ui.search.q = ev.target.value;
+  clearTimeout(searchTimer);
+  const q = ui.search.q.trim();
+  if (q.length < 3) { ui.search.results = []; ui.search.loading = false; ui.search.error = null; render(); return; }
+  ui.search.loading = true;
+  searchTimer = setTimeout(async () => {
+    const seq = ++ui.search.seq;
+    const r = await window.edbubble.suggest(q);
+    if (seq !== ui.search.seq) return; // llegó otra búsqueda después
+    ui.search.loading = false;
+    ui.extOk = r.ok;
+    ui.search.error = r.ok ? null : `Spansh no responde (${r.error})`;
+    ui.search.results = r.ok ? r.results : [];
+    render();
+  }, 300);
+});
+document.addEventListener('keydown', (ev) => {
+  if (ev.target.id === 'nav-search' && ev.key === 'Enter') {
+    const q = ui.search.q.trim();
+    const exact = ui.search.results.find((r) => r.name.toLowerCase() === q.toLowerCase());
+    if (exact || ui.search.results[0]) selectSystem((exact || ui.search.results[0]).name);
+    else if (q.length >= 3) selectSystem(q);
+  }
+});
+
+async function selectSystem(name) {
+  ui.sel = { name, loading: true };
+  ui.navTab = 'system'; ui.sysTab = 'stations'; ui.sysPage = 0;
+  render();
+  const r = await window.edbubble.system(name);
+  if (!ui.sel || ui.sel.name !== name) return;
+  ui.extOk = r.ok;
+  ui.sel = r.ok ? { name: (r.system && r.system.name) || name, system: r.system } : { name, error: `Spansh no responde (${r.error})` };
+  render();
+}
+
 // Las acciones responden al pulsar (pointerdown), no al soltar: la pantalla se
 // repinta varias veces por segundo en vuelo y un clic normal podría perderse.
 document.addEventListener('pointerdown', (ev) => {
   if (ev.button !== 0) return;
   const b = ev.target.closest('button[data-act]');
   if (b && !b.disabled) { ev.preventDefault(); runAction(b.dataset.act); return; }
+  const pk = ev.target.closest('button[data-pick]');
+  if (pk) { ev.preventDefault(); const r = ui.search.results[Number(pk.dataset.pick)]; if (r) selectSystem(r.name); return; }
+  const nt = ev.target.closest('button[data-navtab]');
+  if (nt) { ev.preventDefault(); ui.navTab = nt.dataset.navtab; render(); return; }
+  const st = ev.target.closest('button[data-systab]');
+  if (st) { ev.preventDefault(); ui.sysTab = st.dataset.systab; ui.sysPage = 0; render(); return; }
+  const sp = ev.target.closest('button[data-pager="sys"]');
+  if (sp && !sp.disabled) { ev.preventDefault(); ui.sysPage = Math.max(0, ui.sysPage + Number(sp.dataset.d)); render(); return; }
+  const pc = ev.target.closest('button[data-plotcancel]');
+  if (pc) { ev.preventDefault(); window.edbubble.plotCancel(); return; }
+  const pl = ev.target.closest('button[data-plot]');
+  if (pl && !pl.disabled && ui.sel) {
+    ev.preventDefault();
+    const y = ui.sel.system; const here = ui.snap && ui.snap.state.location.starPos;
+    const d = y ? (y.distance != null ? y.distance : distTo(here, y.pos)) : 0;
+    window.edbubble.plot(ui.sel.name, d || 0);
+    return;
+  }
   const np = ev.target.closest('button[data-pager="nav"]');
   if (np && !np.disabled) { ev.preventDefault(); ui.navPage = Math.max(0, (ui.navPage || 0) + Number(np.dataset.d)); render(); return; }
   const cp = ev.target.closest('button[data-copy]');
   const ln = ev.target.closest('button[data-link]');
   if ((cp || ln) && !(cp || ln).disabled && window.edbubble && ui.snap) {
     ev.preventDefault();
-    const L = ui.snap.state.location; const name = clean(L.system);
+    const L = ui.snap.state.location;
+    const own = (cp || ln).dataset.name;
+    const name = own || clean(L.system);
+    const address = own ? (ln && ln.dataset.address) : L.systemAddress;
     const done = (text) => { ui.navFeedback = { text, at: Date.now() }; render(); setTimeout(render, 3100); };
     if (cp) window.edbubble.copy(name).then(() => done(`Copiado: ${name}`));
-    else window.edbubble.open(ln.dataset.link, name, L.systemAddress).then((ok) => done(ok ? `Abriendo ${ln.textContent} en el navegador` : 'No se pudo abrir'));
+    else window.edbubble.open(ln.dataset.link, name, address).then((ok) => done(ok ? `Abriendo ${ln.textContent} en el navegador` : 'No se pudo abrir'));
     return;
   }
   const rp = ev.target.closest('button[data-pager="route"]');
@@ -645,6 +845,12 @@ renderRail(null);
 if (window.edbubble) {
   window.edbubble.onUpdate((snap) => { ui.snap = snap; render(); });
   window.edbubble.onControls((c) => { ui.controls = c; render(); });
+  window.edbubble.onPlotStatus((p) => {
+    ui.plot = { ...p, at: Date.now() };
+    if (!p.running && p.ok) ui.navTab = 'route'; // ver la ruta recién trazada
+    render();
+    if (!p.running) setTimeout(render, 8100);
+  });
   window.edbubble.controls().then((c) => { ui.controls = c; render(); });
   window.edbubble.snapshot().then((snap) => { if (snap && !ui.snap) { ui.snap = snap; render(); } });
 }
