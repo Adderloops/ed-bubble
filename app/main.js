@@ -17,6 +17,16 @@ const { KeySender } = require('../core/keysender');
 const spansh = require('../core/spansh');
 const { plotRoute } = require('../core/plot');
 
+// Registro de incidencias: %APPDATA%\\ed-bubble-app\\ed-bubble.log (máx. ~1 MB)
+const LOG_FILE = () => path.join(app.getPath('userData'), 'ed-bubble.log');
+function logLine(msg) {
+  try {
+    const f = LOG_FILE();
+    try { if (fs.statSync(f).size > 1024 * 1024) fs.renameSync(f, `${f}.old`); } catch (e) { /* no existe aún */ }
+    fs.appendFileSync(f, `${new Date().toISOString()} ${msg}\n`);
+  } catch (e) { /* sin registro */ }
+}
+
 const BOUNDS_FILE = () => path.join(app.getPath('userData'), 'window-bounds.json');
 
 function loadBounds() {
@@ -141,20 +151,21 @@ app.whenReady().then(() => {
     last = snap;
     if (win && !win.isDestroyed()) win.webContents.send('ed:update', snap);
   });
-  engine.on('warning', (msg) => console.warn('[engine]', msg));
+  engine.on('warning', (msg) => { console.warn('[engine]', msg); logLine(`[motor] ${msg}`); });
   engine.start();
   ipcMain.handle('ed:snapshot', () => last || engine.snapshot());
   loadControls();
   watchControls();
   keys.on('warning', (m) => console.warn('[teclas]', m));
   keys.start();
+  ipcMain.on('ed:log', (_e, msg) => { console.warn('[ventana]', msg); logLine(`[ventana] ${msg}`); });
   ipcMain.handle('ed:controls', () => controlsInfo());
   ipcMain.handle('ed:run', async (_e, id) => {
     if (plotting) return { ok: false, error: 'plot-busy' };
     const built = actions.build(String(id), controls.binds);
     if (built.error) return { ok: false, error: built.error, action: built.action };
     const res = await keys.run(built.ops);
-    if (!res.ok) console.warn(`[teclas] ${id}: ${res.error}`);
+    if (!res.ok) { console.warn(`[teclas] ${id}: ${res.error}`); logLine(`[teclas] ${id}: ${res.error}`); }
     return res;
   });
   ipcMain.handle('ed:copy', (_e, text) => { clipboard.writeText(String(text || '').slice(0, 200)); return true; });
@@ -206,11 +217,12 @@ app.whenReady().then(() => {
     });
     plotting = null;
     plotStatus({ running: false, target, ...res });
-    if (!res.ok) console.warn('[ruta]', target, res);
+    if (!res.ok) { console.warn('[ruta]', target, res); logLine(`[ruta] ${target} ${JSON.stringify(res)}`); }
     return res;
   });
   ipcMain.handle('ed:plot-cancel', () => { if (plotting) plotting.cancelled = true; return true; });
-  ipcMain.handle('ed:info', () => ({ version: require('./package.json').version, journalFolder: engine.folder }));
+  ipcMain.handle('ed:info', () => ({ version: require('./package.json').version, journalFolder: engine.folder, log: LOG_FILE() }));
+  logLine(`[inicio] ED BUBBLE ${require('./package.json').version} · Journal: ${engine.folder}`);
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });

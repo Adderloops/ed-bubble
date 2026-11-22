@@ -926,7 +926,25 @@ function dockingSvg(padNum, width, hour) {
 }
 
 /* ---------- ciclo de pintado ---------- */
+/* Si algo falla al pintar, se avisa en la cabecera y se guarda en ed-bubble.log
+   (en lugar de dejar la pantalla congelada sin decir nada). */
+const reported = new Set();
+function reportError(where, e) {
+  const msg = `${where}: ${(e && (e.stack || e.message)) || e}`;
+  if (!reported.has(msg) && window.edbubble && window.edbubble.log) { reported.add(msg); window.edbubble.log(msg); }
+}
+window.addEventListener('error', (ev) => reportError('error', ev.error || ev.message));
+window.addEventListener('unhandledrejection', (ev) => reportError('promesa', ev.reason));
+
 function render() {
+  try { renderNow(); } catch (e) {
+    reportError(`render(${ui.section})`, e);
+    const a = $('hdr-alerts');
+    if (a) a.innerHTML = `<span class="eb">Alertas</span><span class="alert danger" title="${esc(String(e && e.message))}">Error al pintar ${esc(ui.section)} · ver ed-bubble.log</span>`;
+  }
+}
+
+function renderNow() {
   const snap = ui.snap; if (!snap) return;
   const { state: s, view: v } = snap;
   const typing = document.activeElement && document.activeElement.id === 'nav-search';
@@ -934,6 +952,9 @@ function render() {
     if (ui.lastModeKey !== null && BUILT.has(v.mode.section) && v.mode.section !== ui.section) ui.section = v.mode.section;
     ui.lastModeKey = v.mode.key;
   }
+  // diagnóstico: qué veía la app al conceder un atraque
+  if (s.docking.active && !ui.dockLogged) { ui.dockLogged = true; reportError('atraque', `plataforma ${s.docking.pad} · ${s.docking.stationType} · sección ${ui.section} · salto auto ${ui.autoJump ? 'sí' : 'no'} · modo ${v.mode.key}`); }
+  if (!s.docking.active) ui.dockLogged = false;
   if (ui.finalDest && s.location.docked && s.location.station && siteName(s.location.station).toLowerCase() === siteName(ui.finalDest.station).toLowerCase()) ui.finalDest = null;
   renderHeader(s, v);
   renderRail(v);
