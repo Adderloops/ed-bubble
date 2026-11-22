@@ -42,16 +42,19 @@ function presetFile(folder, preset) {
   return found.length ? path.join(folder, found[0].f) : null;
 }
 
+// Quita la etiqueta <Root ...> para que el bloque raíz no se trague las acciones.
+const stripRoot = (xml) => String(xml).replace(/<\/?Root\b[^>]*>/g, '');
+
 const attr = (s, name) => { const m = s.match(new RegExp(`${name}="([^"]*)"`)); return m ? m[1] : ''; };
 
 /** Convierte el XML del .binds en { Accion: { key, modifiers[], slot } } (solo teclado). */
-function parseBinds(xml) {
+function parseBinds(rawXml) {
+  const xml = stripRoot(rawXml);
   const out = {};
   const blockRe = /<([A-Za-z0-9_]+)>\s*([\s\S]*?)<\/\1>/g;
   let m;
   while ((m = blockRe.exec(xml))) {
     const [, action, body] = m;
-    if (action === 'Root') continue;
     for (const slot of ['Primary', 'Secondary']) {
       const sm = body.match(new RegExp(`<${slot}\\s([^>]*?)(/>|>([\\s\\S]*?)</${slot}>)`));
       if (!sm) continue;
@@ -69,6 +72,24 @@ function parseBinds(xml) {
       if (!onlyKeyboard) continue; // modificador de mando: no se puede reproducir
       out[action] = { key, modifiers, slot };
       break;
+    }
+  }
+  return out;
+}
+
+/** Acciones asignadas a un mando o ratón (no teclado): sirven para avisar "solo HOTAS". */
+function parseOtherDevices(rawXml) {
+  const xml = stripRoot(rawXml);
+  const out = new Set();
+  const blockRe = /<([A-Za-z0-9_]+)>\s*([\s\S]*?)<\/\1>/g;
+  let m;
+  while ((m = blockRe.exec(xml))) {
+    const [, action, body] = m;
+    const re = /<(?:Primary|Secondary)\s([^>]*?)\/?>/g;
+    let sm;
+    while ((sm = re.exec(body))) {
+      const dev = attr(sm[1], 'Device');
+      if (dev && dev !== 'Keyboard' && dev !== '{NoDevice}' && attr(sm[1], 'Key')) { out.add(action); break; }
     }
   }
   return out;
@@ -100,10 +121,11 @@ function loadActive(folder = defaultBindingsFolder()) {
   const file = presetFile(folder, preset);
   if (!file) return { error: `No encuentro el archivo del preset "${preset}".`, folder, preset };
   try {
-    return { preset, file, folder, binds: parseBinds(fs.readFileSync(file, 'utf8')) };
+    const xml = fs.readFileSync(file, 'utf8');
+    return { preset, file, folder, binds: parseBinds(xml), otherDevices: parseOtherDevices(xml) };
   } catch (e) {
     return { error: `No puedo leer ${path.basename(file)}: ${e.message}`, folder, preset };
   }
 }
 
-module.exports = { defaultBindingsFolder, activePresetName, presetFile, parseBinds, loadActive, bindLabel, keyLabel };
+module.exports = { defaultBindingsFolder, activePresetName, presetFile, parseBinds, parseOtherDevices, loadActive, bindLabel, keyLabel };

@@ -119,6 +119,7 @@ function screenPuente(s, v) {
       </div>
     </section>
     <div style="flex:1;display:grid;grid-template-columns:380px minmax(0,1fr);gap:12px;min-height:0">
+     <div style="display:flex;flex-direction:column;gap:12px;min-height:0">
       <section class="pn card">
         <span class="ti" style="font-size:16px">Estado de la nave</span>
         ${meter('Casco', hull != null ? pct(hull, 0) : '—', hull, hull != null && hull < 0.5 ? 'danger' : 'on')}
@@ -129,6 +130,8 @@ function screenPuente(s, v) {
           ${stat('Tren', s.status.flags.isLandingGearDown ? 'Bajado' : 'Arriba')}${stat('Armas', s.status.flags.areHardpointsDeployed ? 'Fuera' : 'Dentro')}${stat('Salto máx.', `${nf(s.ship.maxJumpRange, 2)} al`)}
         </div>
       </section>
+      ${controlsPanel()}
+     </div>
       <section class="pn card">
         <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Ruta trazada</span><span class="eb">${r.legs.length ? `${r.jumps} saltos · ${nf(r.distance, 1)} al · ${esc(r.destination)}` : ''}</span></div>
         <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${routeRows}</div>
@@ -149,6 +152,53 @@ function screenPuente(s, v) {
      </div>
    </aside>
   </div>`;
+}
+
+/* ---------- revisión de controles (Puente de mando) ---------- */
+const CTL_PAGE = 3;
+const CTL_ORDER = { unbound: 0, hotas: 1, unsupported: 2, shared: 3 };
+const CTL_STATUS = {
+  unbound: ['Sin asignar', 'red'],
+  hotas: ['Solo en mando', 'yellow'],
+  unsupported: ['Tecla no enviable', 'yellow'],
+  shared: ['Tecla compartida', 'yellow'],
+};
+
+function controlsPanel() {
+  const c = ui.controls;
+  const head = (right) => `<div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Controles</span>${right}</div>`;
+  if (!c) return `<section class="pn card" style="flex:1;min-height:0">${head('')}<div class="empty">Leyendo tus controles…</div></section>`;
+  if (c.error || !c.check) return `<section class="pn card" style="flex:1;min-height:0">${head('')}<div class="empty" style="flex-direction:column;gap:6px"><span class="red">${esc(c.error || 'Sin datos')}</span><span style="font-size:14px">Sin controles no se pueden pulsar los botones.</span></div></section>`;
+  const k = c.check;
+  const groups = k.groups.map((g) => {
+    const full = g.ready === g.total;
+    return `<div class="in" style="padding:8px 12px;display:flex;justify-content:space-between;align-items:center">
+      <span class="va nowrap" style="font-size:15px">${esc(g.name)}${g.soon ? ' <span class="eb dim" style="font-size:10px">entrega 3</span>' : ''}</span>
+      <span class="num ${full ? 'cyan' : 'yellow'}" style="font-size:16px">${full ? '✓ ' : ''}${g.ready} / ${g.total}</span></div>`;
+  }).join('');
+  let body;
+  if (!k.problems.length) {
+    body = `<div class="empty" style="flex-direction:column;gap:6px"><span class="va cyan" style="font-size:18px">Todo listo</span><span style="font-size:14px">Todas las acciones que usa ED BUBBLE tienen tecla de teclado.</span></div>`;
+  } else {
+    const pages = Math.ceil(k.problems.length / CTL_PAGE);
+    ui.ctlPage = Math.min(ui.ctlPage || 0, pages - 1);
+    const sorted = k.problems.slice().sort((a, b) => CTL_ORDER[a.status] - CTL_ORDER[b.status]);
+    const rows = sorted.slice(ui.ctlPage * CTL_PAGE, ui.ctlPage * CTL_PAGE + CTL_PAGE).map((p) => {
+      const [txt, cls] = CTL_STATUS[p.status] || [p.status, 'yellow'];
+      const sub = p.status === 'shared' ? `${esc(p.key)} · también ${esc(p.with.join(', '))}` : p.status === 'unsupported' ? esc(p.key) : esc(p.groups.join(' · '));
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--inline)">
+        <span style="display:flex;flex-direction:column;min-width:0"><span class="nowrap" style="font-size:15px">${esc(p.label)}</span><span class="eb dim nowrap" style="font-size:10px;letter-spacing:.08em">${sub}</span></span>
+        <span class="eb ${cls}" style="font-size:11px">${txt}</span></div>`;
+    }).join('');
+    const pager = pages > 1 ? `<span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-ctlpage="-1" ${ui.ctlPage === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.ctlPage + 1}/${pages}</span><button type="button" class="pg" data-ctlpage="1" ${ui.ctlPage >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
+    body = `<div style="display:flex;justify-content:space-between;align-items:center"><span class="eb yellow">${k.problems.length} por revisar</span>${pager}</div><div style="display:flex;flex-direction:column;min-height:0">${rows}</div>`;
+  }
+  return `<section class="pn card" style="flex:1;min-height:0;overflow:hidden">
+    ${head(`<span class="eb dim">Preset ${esc(c.preset)}</span>`)}
+    <div style="display:flex;flex-direction:column;gap:6px">${groups}</div>
+    ${body}
+    <span class="note nowrap" style="margin-top:auto">Corrígelas en Opciones › Controles; se releen solas.</span>
+  </section>`;
 }
 
 function idCell(label, value, sub, last) {
@@ -197,7 +247,7 @@ function actAttrs(id) {
   if (!a) return { dis: 'disabled', key: '…', title: 'Cargando controles' };
   if (!a.available) return { dis: 'disabled', key: 'sin tecla', title: `Asigna una tecla de teclado en el juego a: ${a.missing.join(', ')}` };
   const armed = ui.armed && ui.armed.id === id;
-  return { dis: '', key: armed ? 'pulsa otra vez' : a.key, title: a.macro ? `${a.label} (macro de varias teclas)` : `${a.label} · ${a.key}`, cls: `${armed ? ' armed' : ''}${ui.flash && ui.flash.id === id ? (ui.flash.ok ? ' sent' : ' failed') : ''}` };
+  return { dis: '', key: armed ? 'pulsa otra vez' : '', title: a.macro ? `${a.label} (macro de varias teclas)` : `${a.label} · ${a.key}`, cls: `${armed ? ' armed' : ''}${ui.flash && ui.flash.id === id ? (ui.flash.ok ? ' sent' : ' failed') : ''}` };
 }
 
 function feedbackLine() {
@@ -232,8 +282,8 @@ function screenVuelo(s, v) {
   const docking = s.docking.active;
   const showDiagram = docking && (DIAGRAM_TYPES.has(s.docking.stationType) || /dodec/i.test(s.docking.stationType || ''));
   const inds = INDICATORS.map(([l, k, w]) => `<span class="chip ${fl[k] ? (w ? 'warnon' : 'on') : ''}"><span class="dot ${fl[k] ? (w ? 'warn' : 'on') : ''}"></span>${l}</span>`).join('');
-  const toggles = TOGGLES.map(([l, k, id]) => { const a = actAttrs(id); return `<button type="button" class="ctl ${fl[k] ? 'on' : ''}${a.cls || ''}" data-act="${id}" ${a.dis} title="${esc(a.title)}"><span style="display:flex;align-items:center;gap:8px"><span class="dot ${fl[k] ? 'on' : ''}"></span>${l}</span><span class="k">${esc(a.key)}</span></button>`; }).join('');
-  const actions = ACTIONS.map(([l, id]) => { const a = actAttrs(id); return `<button type="button" class="act${a.cls || ''}" data-act="${id}" ${a.dis} title="${esc(a.title)}">${l}<span class="k">${esc(a.key)}</span></button>`; }).join('');
+  const toggles = TOGGLES.map(([l, k, id]) => { const a = actAttrs(id); return `<button type="button" class="ctl ${fl[k] ? 'on' : ''}${a.cls || ''}" data-act="${id}" ${a.dis} title="${esc(a.title)}"><span style="display:flex;align-items:center;gap:8px"><span class="dot ${fl[k] ? 'on' : ''}"></span>${l}</span>${a.key ? `<span class="k">${esc(a.key)}</span>` : ''}</button>`; }).join('');
+  const actions = ACTIONS.map(([l, id]) => { const a = actAttrs(id); return `<button type="button" class="act${a.cls || ''}" data-act="${id}" ${a.dis} title="${esc(a.title)}">${l}${a.key ? `<span class="k">${esc(a.key)}</span>` : ''}</button>`; }).join('');
   const nearBody = fl.hasLatLong;
   const approach = nearBody
     ? `<div class="in" style="padding:12px;display:flex;justify-content:space-between;align-items:center"><span class="eb">Cuerpo</span><span class="va nowrap" style="font-size:18px">${esc(clean(s.status.bodyName) || clean(s.location.body) || '—')}</span></div>
@@ -372,7 +422,9 @@ document.addEventListener('click', (ev) => {
 document.addEventListener('pointerdown', (ev) => {
   if (ev.button !== 0) return;
   const b = ev.target.closest('button[data-act]');
-  if (b && !b.disabled) { ev.preventDefault(); runAction(b.dataset.act); }
+  if (b && !b.disabled) { ev.preventDefault(); runAction(b.dataset.act); return; }
+  const pg = ev.target.closest('button[data-ctlpage]');
+  if (pg && !pg.disabled) { ev.preventDefault(); ui.ctlPage = Math.max(0, (ui.ctlPage || 0) + Number(pg.dataset.ctlpage)); render(); }
 });
 window.addEventListener('resize', fit);
 setInterval(() => { $('hdr-clock').textContent = `${new Date().toISOString().slice(11, 16)} UTC`; }, 1000);

@@ -170,5 +170,25 @@ test('teclas: en simulación no se envía nada y las órdenes quedan registradas
   assert.strictEqual(r.ok, true); assert.strictEqual(k.sent.length, 1);
 });
 
+test('revisión de controles: sin asignar, solo en mando y tecla compartida entre acciones de ED BUBBLE', () => {
+  const kb = binds.parseBinds(SAMPLE_BINDS);
+  kb.NightVisionToggle = { key: 'Key_7', modifiers: ['Key_LeftControl'], slot: 'Primary' }; // misma que el tren
+  const r = actions.checkControls({ binds: kb, otherDevices: binds.parseOtherDevices(SAMPLE_BINDS) });
+  const st = Object.fromEntries(r.problems.map((p) => [p.action, p.status]));
+  assert.strictEqual(st.DeployHeatSink, 'unbound', 'modificador de mando: no hay tecla de teclado usable');
+  assert.strictEqual(st.EjectAllCargo, 'unbound');
+  assert.strictEqual(st.LandingGearToggle, 'shared');
+  assert.strictEqual(st.NightVisionToggle, 'shared');
+  assert.strictEqual(st.UI_Select, undefined, 'asignada: no es un problema');
+  const vuelo = r.groups.find((g) => g.name === 'Vuelo');
+  assert.ok(vuelo.ready < vuelo.total);
+});
+
+test('revisión de controles: una acción asignada solo al HOTAS se marca como "solo en mando"', () => {
+  const xml = '<Root><UI_Back><Primary Device="SaitekX56Joystick" Key="Joy_2" /><Secondary Device="{NoDevice}" Key="" /></UI_Back></Root>';
+  const r = actions.checkControls({ binds: binds.parseBinds(xml), otherDevices: binds.parseOtherDevices(xml) });
+  assert.strictEqual(r.problems.find((p) => p.action === 'UI_Back').status, 'hotas');
+});
+
 console.log(`\n${ok} pruebas OK, ${fail} fallidas.`);
 process.exit(fail ? 1 : 0);

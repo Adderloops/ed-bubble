@@ -50,7 +50,7 @@ function loadControls() {
 }
 
 function controlsInfo() {
-  return { preset: controls.preset || null, error: controls.error || null, simulate: keys.simulate, actions: actions.describe(controls.binds) };
+  return { preset: controls.preset || null, error: controls.error || null, simulate: keys.simulate, actions: actions.describe(controls.binds), check: controls.error ? null : actions.checkControls(controls) };
 }
 
 /** Recarga los controles cuando el comandante los cambia en el juego. */

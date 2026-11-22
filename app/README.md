@@ -6,6 +6,8 @@ Ventana para la segunda pantalla con datos en vivo de Elite Dangerous.
 
 **Entrega 2:** los interruptores y acciones de Vuelo se pulsan con el ratón. ED BUBBLE lee tu preset de controles activo (`%LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings`), trae el juego al frente y pulsa la tecla de teclado que tengas asignada. Las acciones sin tecla de teclado (solo HOTAS) salen desactivadas. Si cambias los controles en el juego, la app los recarga sola. "Expulsar carga" pide una segunda pulsación en 3 segundos.
 
+El panel **Controles** del Puente de mando revisa las teclas que usa ED BUBBLE (Vuelo y, para la entrega 3, Trazar ruta) y señala las que faltan, las que solo están en el mando y las que comparten tecla.
+
 Variables para desarrollo: `ED_BUBBLE_SIMULATE=1` (no envía teclas), `ED_BINDINGS_FOLDER` (otra carpeta de controles).
 
 El buscador de Spansh y Trazar ruta llegan en la entrega 3.

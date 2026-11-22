@@ -84,3 +84,6 @@ button { font: inherit; }
 .bar > span { position: absolute; top: 0; bottom: 0; left: 0; }
 .empty { display: flex; align-items: center; justify-content: center; flex: 1; color: var(--dim); font-size: 16px; text-align: center; padding: 10px; }
 .note { font-size: 11px; color: var(--dim); }
+
+.pg { width: 30px; height: 26px; font-family: 'Share Tech Mono', monospace; font-size: 16px; color: var(--cyan); background: var(--inner); border: 1px solid var(--line2); border-radius: 2px; cursor: pointer; }
+.pg:disabled { color: var(--dim); cursor: default; opacity: .5; }
