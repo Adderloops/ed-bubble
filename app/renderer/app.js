@@ -17,6 +17,9 @@ const ui = {
   sel: null, // sistema elegido: { name, loading, system, error }
   navTab: 'route', sysTab: 'stations', sysPage: 0,
   colDepot: null, colPage: 0, // Colonización: obra elegida y página de materiales
+  colAside: 'buy', colSel: null, // pestaña de la derecha y material elegido
+  mk: { key: null, loading: false, list: [], error: null, page: 0, pick: null }, // dónde comprar
+  mkFilter: { large: null, surface: true, carriers: false },
   plot: null, // { running, target, text, ok, error }
   extOk: null, // última consulta a Spansh: true / false
 };
@@ -713,7 +716,8 @@ function screenColonizacion(s, v) {
   const rows = d.resources.slice(ui.colPage * COL_PAGE, (ui.colPage + 1) * COL_PAGE).map((r) => {
     const done = r.remaining === 0;
     const carry = r.aboard > 0 && !done;
-    return `<div class="in row" style="grid-template-columns:minmax(0,1fr) 110px 110px 120px 200px 110px 90px;height:40px;${done ? 'opacity:.45;' : ''}${carry ? 'border-left:3px solid var(--cyan);border-color:var(--cyandim)' : ''}">
+    const sel = ui.colSel === r.key;
+    return `<div class="in row mat" data-mat="${esc(r.key)}" style="grid-template-columns:minmax(0,1fr) 110px 110px 120px 200px 110px 90px;height:40px;${done ? 'opacity:.45;' : ''}${sel ? 'border-color:var(--amber);box-shadow:0 0 0 1px var(--amber) inset;' : carry ? 'border-left:3px solid var(--cyan);border-color:var(--cyandim)' : ''}">
       <span class="va nowrap" style="font-size:16px;padding-left:12px">${esc(r.name)}${carry ? ' <span class="eb cyan" style="font-size:10px">a bordo</span>' : ''}</span>
       <span class="num soft" style="text-align:right">${nf(r.required)}</span>
       <span class="num soft" style="text-align:right">${nf(r.provided)}</span>
@@ -726,7 +730,7 @@ function screenColonizacion(s, v) {
   const pager = pages > 1 ? `<span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-pager="col" data-d="-1" ${ui.colPage === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.colPage + 1}/${pages}</span><button type="button" class="pg" data-pager="col" data-d="1" ${ui.colPage >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
   const table = `
     <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
-      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Materiales</span>${pager}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Materiales</span><span class="eb dim">Pulsa un material para ver dónde comprarlo</span>${pager}</div>
       <div class="eb dim" style="display:grid;grid-template-columns:minmax(0,1fr) 110px 110px 120px 200px 110px 90px;font-size:10px">
         <span style="padding-left:12px">Material</span><span style="text-align:right">Pedido</span><span style="text-align:right">Entregado</span><span style="text-align:right">Faltan (t)</span><span style="padding-left:16px">Progreso</span><span style="text-align:right">A bordo</span><span style="text-align:right;padding-right:12px">Viajes</span>
       </div>
@@ -737,29 +741,112 @@ function screenColonizacion(s, v) {
   const other = c.cargo.filter((i) => !i.useful);
   const usefulT = useful.reduce((a, i) => a + i.count, 0);
   const cargoRows = c.cargo.length
-    ? [...useful, ...other].slice(0, 8).map((i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--inline)">
+    ? [...useful, ...other].slice(0, 16).map((i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--inline)">
         <span style="display:flex;flex-direction:column;min-width:0"><span class="nowrap" style="font-size:15px">${esc(i.name)}</span><span class="eb ${i.useful ? 'cyan' : 'dim'}" style="font-size:10px">${i.useful ? 'La obra lo necesita' : 'No lo pide esta obra'}${i.stolen ? ' · <span class="red">robada</span>' : ''}</span></span>
         <span class="num ${i.useful ? 'cyan' : 'soft'}">${nf(i.count)} t</span></div>`).join('')
     : '<div class="empty">Bodega vacía.</div>';
   const cargoCard = `
-    <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
-      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">A bordo</span><span class="num soft">${nf(c.cargoCount)} / ${nf(c.capacity)} t</span></div>
+    <div style="display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="eb">Bodega</span><span class="num soft">${nf(c.cargoCount)} / ${nf(c.capacity)} t</span></div>
       ${c.cargo.length ? `<span class="eb ${usefulT ? 'cyan' : 'dim'}">${usefulT ? `${nf(usefulT)} t útiles para la obra` : 'Nada de lo que llevas lo pide la obra actual'}</span>` : ''}
       <div style="display:flex;flex-direction:column;min-height:0">${cargoRows}</div>
-    </section>`;
-  const contrib = c.contributions.slice(0, 7).map((x) => `<div style="display:grid;grid-template-columns:52px minmax(0,1fr) 90px;gap:8px;align-items:baseline;font-size:14px">
+    </div>`;
+  const contrib = c.contributions.slice(0, 18).map((x) => `<div style="display:grid;grid-template-columns:52px minmax(0,1fr) 90px;gap:8px;align-items:baseline;font-size:14px">
       <span class="num dim">${hhmm(x.at)}</span><span class="nowrap">${esc(x.items.map((i) => i.name).join(', '))} <span class="soft">· ${esc(siteName(x.depot) || '')}</span></span><span class="num cyan" style="text-align:right">${nf(x.total)} t</span></div>`).join('');
   const sessionCard = `
-    <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
-      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">Entregas</span><span class="eb">Sesión · <span class="num cyan" style="font-size:16px;letter-spacing:0">${nf(s.session.deliveredToConstruction)} t</span></span></div>
+    <div style="display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="eb">Entregas de la sesión</span><span class="eb">Sesión · <span class="num cyan" style="font-size:16px;letter-spacing:0">${nf(s.session.deliveredToConstruction)} t</span></span></div>
       <div style="display:flex;flex-direction:column;gap:8px;min-height:0">${contrib || '<div class="empty">Aún no has entregado nada en esta sesión.</div>'}</div>
-    </section>`;
+    </div>`;
 
   return `
   <div style="display:grid;grid-template-columns:minmax(0,1fr) 500px;gap:12px;min-height:0">
     <main style="display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0">${hero}${table}</main>
-    <aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${cargoCard}${sessionCard}</aside>
+    <aside class="pn card" style="min-height:0;min-width:0;overflow:hidden">
+      <div style="display:flex;gap:8px">
+        ${[['buy', 'Dónde comprar'], ['cargo', `A bordo · ${nf(c.cargoCount)} t`], ['log', 'Entregas']].map(([k, t]) => `<button type="button" class="tab small ${ui.colAside === k ? 'on' : ''}" data-colaside="${k}">${t}</button>`).join('')}
+      </div>
+      ${ui.colAside === 'buy' ? buyPanel(s, d, c) : ui.colAside === 'cargo' ? cargoCard : sessionCard}
+    </aside>
   </div>`;
+}
+
+/* ---------- Colonización: dónde comprar (Spansh) ---------- */
+const LARGE_SHIPS = new Set(['anaconda', 'cutter', 'federation_corvette', 'type9', 'type9_military', 'type7', 'belugaliner', 'panthermkii']);
+const MK_PAGE = 7;
+const daysAgo = (iso) => (iso ? Math.floor((Date.now() - Date.parse(iso)) / 86400000) : null);
+const ageText = (n) => (n == null ? '—' : n < 1 ? 'hoy' : n === 1 ? 'ayer' : n < 60 ? `hace ${n} d` : `hace ${Math.round(n / 30)} meses`);
+
+function marketQuery(res, c) {
+  const large = ui.mkFilter.large != null ? ui.mkFilter.large : LARGE_SHIPS.has(String((ui.snap && ui.snap.state.ship.type) || '').toLowerCase());
+  const minSupply = Math.min(res.remaining, c.capacity || res.remaining) || 1;
+  return { commodity: res.name, minSupply, largePad: large, key: `${res.name}|${minSupply}|${large}` };
+}
+
+async function loadMarkets(q) {
+  ui.mk = { key: q.key, loading: true, list: [], error: null, page: 0, pick: null };
+  render();
+  const r = await window.edbubble.markets(q);
+  if (ui.mk.key !== q.key) return;
+  ui.extOk = r.ok;
+  ui.mk = { ...ui.mk, loading: false, list: r.ok ? r.list : [], error: r.ok ? null : r.error, reference: r.reference };
+  render();
+}
+
+function buyPanel(s, d, c) {
+  const res = d.resources.find((r) => r.key === ui.colSel);
+  if (!res) return '<div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:18px;color:var(--soft)">Elige un material</span><span style="font-size:14px">Pulsa un material de la tabla y aquí verás las estaciones más cercanas que lo venden, con stock y precio.</span></div>';
+  const q = marketQuery(res, c);
+  if (ui.mk.key !== q.key && !ui.mk.loading) setTimeout(() => loadMarkets(q), 0);
+  const f = ui.mkFilter;
+  const large = q.largePad;
+  const chip = (k, on, t) => `<button type="button" class="tab small ${on ? 'on' : ''}" data-mkf="${k}">${t}</button>`;
+  const head = `
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <span class="ti nowrap" style="font-size:22px">${esc(res.name)}</span>
+      <span class="eb">${res.remaining ? `Faltan ${nf(res.remaining)} t · stock mínimo ${nf(q.minSupply)} t` : '<span class="cyan">Completado en esta obra</span>'}</span>
+    </div>
+    <div style="display:flex;gap:6px">${chip('large', large, 'Plataforma L')}${chip('surface', f.surface, 'Superficie')}${chip('carriers', f.carriers, 'Carriers')}</div>`;
+  if (ui.mk.loading || ui.mk.key !== q.key) return `${head}<div class="empty">Buscando en Spansh…</div>`;
+  if (ui.mk.error) return `${head}<div class="empty"><span class="red">${esc(ui.mk.error)}</span></div>`;
+  const list = ui.mk.list.filter((m) => (f.surface || !m.planetary) && (f.carriers || !m.carrier));
+  if (!list.length) return `${head}<div class="empty" style="font-size:14px">Ninguna estación cercana con ese stock. Prueba a quitar filtros.</div>`;
+  const pages = Math.ceil(list.length / MK_PAGE);
+  ui.mk.page = Math.min(ui.mk.page, pages - 1);
+  const cap = c.capacity || 0;
+  const rows = list.slice(ui.mk.page * MK_PAGE, (ui.mk.page + 1) * MK_PAGE).map((m) => {
+    const i = list.indexOf(m);
+    const age = daysAgo(m.updatedAt);
+    const on = ui.mk.pick === i;
+    return `<button type="button" class="mkrow ${on ? 'on' : ''}" data-mkpick="${i}">
+      <span style="display:flex;justify-content:center">${m.icon ? `<img src="icons/${m.icon}.png" alt="" style="width:38px;height:38px;object-fit:contain">` : ''}</span>
+      <span style="display:flex;flex-direction:column;min-width:0;text-align:left">
+        <span class="va nowrap" style="font-size:16px">${esc(siteName(m.station))} <span class="pad pad-${m.pad || 'x'}" style="display:inline-flex;width:22px;height:20px;font-size:12px;vertical-align:middle">${m.pad || '?'}</span></span>
+        <span class="eb nowrap" style="font-size:10px;letter-spacing:.06em;overflow:hidden;text-overflow:ellipsis">${nf(m.distance, 1)} al · ${nf(m.ls, 0)} ls · ${esc(m.system)}</span>
+      </span>
+      <span style="display:flex;flex-direction:column;align-items:flex-end">
+        <span class="num ${cap && m.supply >= cap ? 'cyan' : 'yellow'}">${nf(m.supply)} t</span>
+        <span class="eb soft" style="font-size:10px;letter-spacing:.04em">${nf(m.price)} cr</span>
+        <span class="eb ${age != null && age > 30 ? 'yellow' : 'dim'}" style="font-size:10px;letter-spacing:.04em">${ageText(age)}</span>
+      </span>
+    </button>`;
+  }).join('');
+  const pick = ui.mk.pick != null ? list[ui.mk.pick] : null;
+  const pager = pages > 1 ? `<span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-pager="mk" data-d="-1" ${ui.mk.page === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.mk.page + 1}/${pages}</span><button type="button" class="pg" data-pager="mk" data-d="1" ${ui.mk.page >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
+  const here = s.location.system && pick && pick.system.toLowerCase() === s.location.system.toLowerCase();
+  const action = pick ? `
+    <div class="in" style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;border-color:var(--amber)">
+      <span class="nowrap" style="font-size:15px">${esc(siteName(pick.station))} <span class="soft">· ${esc(pick.system)}</span></span>
+      <div style="display:flex;gap:8px">
+        <button type="button" class="plot-btn" style="flex:1" data-mkplot="1" ${here || (ui.plot && ui.plot.running) || !plotReady() ? 'disabled' : ''} title="${here ? 'Ya estás en ese sistema' : 'Trazar ruta hasta ese sistema'}">${here ? 'En este sistema' : 'Trazar ruta'}</button>
+        <button type="button" class="nav-btn" style="width:120px" data-copy="1" data-name="${esc(pick.station)}">Copiar</button>
+      </div>
+      ${plotLine()}
+    </div>` : '<span class="eb dim">Pulsa una estación para trazar la ruta hasta ella.</span>';
+  return `${head}
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0"><span class="eb dim nowrap" style="min-width:0;overflow:hidden;text-overflow:ellipsis">Spansh · más cercanas a ti</span>${pager}</div>
+    <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${rows}</div>
+    <div style="margin-top:auto">${action}</div>`;
 }
 
 /* ---------- esquema de atraque (SVG) ---------- */
@@ -901,6 +988,31 @@ document.addEventListener('pointerdown', (ev) => {
     const y = ui.sel.system; const here = ui.snap && ui.snap.state.location.starPos;
     const d = y ? (y.distance != null ? y.distance : distTo(here, y.pos)) : 0;
     window.edbubble.plot(ui.sel.name, d || 0);
+    return;
+  }
+  const mt = ev.target.closest('[data-mat]');
+  if (mt) { ev.preventDefault(); ui.colSel = mt.dataset.mat; ui.colAside = 'buy'; ui.mk.page = 0; ui.mk.pick = null; render(); return; }
+  const ca = ev.target.closest('button[data-colaside]');
+  if (ca) { ev.preventDefault(); ui.colAside = ca.dataset.colaside; render(); return; }
+  const mf = ev.target.closest('button[data-mkf]');
+  if (mf) {
+    ev.preventDefault();
+    const k = mf.dataset.mkf;
+    if (k === 'large') ui.mkFilter.large = !(ui.mkFilter.large != null ? ui.mkFilter.large : LARGE_SHIPS.has(String(ui.snap.state.ship.type || '').toLowerCase()));
+    else ui.mkFilter[k] = !ui.mkFilter[k];
+    ui.mk.page = 0; ui.mk.pick = null; render(); return;
+  }
+  const mp = ev.target.closest('button[data-mkpick]');
+  if (mp) { ev.preventDefault(); ui.mk.pick = Number(mp.dataset.mkpick); render(); return; }
+  const mpg = ev.target.closest('button[data-pager="mk"]');
+  if (mpg && !mpg.disabled) { ev.preventDefault(); ui.mk.page = Math.max(0, ui.mk.page + Number(mpg.dataset.d)); ui.mk.pick = null; render(); return; }
+  const mpl = ev.target.closest('button[data-mkplot]');
+  if (mpl && !mpl.disabled) {
+    ev.preventDefault();
+    const f = ui.mkFilter;
+    const list = ui.mk.list.filter((m) => (f.surface || !m.planetary) && (f.carriers || !m.carrier));
+    const pick = list[ui.mk.pick];
+    if (pick) window.edbubble.plot(pick.system, pick.distance || 0);
     return;
   }
   const dp = ev.target.closest('button[data-depot]');

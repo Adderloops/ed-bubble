@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('edbubble', {
   run: (id) => ipcRenderer.invoke('ed:run', id),
   suggest: (q) => ipcRenderer.invoke('ed:suggest', q),
   system: (name) => ipcRenderer.invoke('ed:system', name),
+  markets: (q) => ipcRenderer.invoke('ed:markets', q),
   plot: (name, distance) => ipcRenderer.invoke('ed:plot', name, distance),
   plotCancel: () => ipcRenderer.invoke('ed:plot-cancel'),
   onPlotStatus: (cb) => ipcRenderer.on('ed:plot-status', (_e, st) => cb(st)),

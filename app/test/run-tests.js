@@ -203,6 +203,21 @@ test('progreso de la ruta: saltos hechos, que quedan y distancia sin contar el s
   assert.strictEqual(r2.doneJumps, 2); assert.strictEqual(r2.distance, 30);
 });
 
+testAsync('dónde comprar: pide a Spansh el material con stock mínimo y plataforma L, y resume cada estación', async () => {
+  const sp = require('../../core/spansh');
+  let sent = null;
+  sp.setFetch(async (url, opts) => { sent = { url, body: JSON.parse(opts.body) }; return { ok: true, json: async () => ({ results: [
+    { name: 'Rivera Horizon', system_name: 'HIP 1', type: 'Planetary Port', is_planetary: true, distance: 9.9, distance_to_arrival: 317, has_large_pad: true, market_updated_at: '2026-04-09T00:00:00Z', market: [{ commodity: 'Steel', supply: 5000, buy_price: 3556 }] },
+    { name: 'X-1', system_name: 'HIP 2', type: 'Drake-Class Carrier', distance: 12, has_large_pad: true, market: [{ commodity: 'Steel', supply: 9000, buy_price: 3000 }] }] }) }; });
+  const l = await sp.markets({ commodity: 'Steel', reference: 'Aquí', minSupply: 1148, largePad: true });
+  assert.ok(/stations\/search/.test(sent.url));
+  assert.deepStrictEqual(sent.body.filters.market[0].supply.value, ['1148', '1000000000']);
+  assert.deepStrictEqual(sent.body.filters.has_large_pad, { value: true });
+  assert.strictEqual(l[0].supply, 5000); assert.strictEqual(l[0].price, 3556); assert.strictEqual(l[0].planetary, true); assert.strictEqual(l[0].icon, 'surface_port');
+  assert.strictEqual(l[1].carrier, true);
+  sp.setFetch((...a) => fetch(...a));
+});
+
 // ---- Trazar ruta: con un juego simulado (teclas falsas y estado que reacciona) ----
 const plot = require('../../core/plot');
 const asyncTests = [];

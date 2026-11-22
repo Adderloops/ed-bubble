@@ -96,6 +96,14 @@ function createWindow() {
         const img = await win.webContents.capturePage();
         fs.writeFileSync(path.join(out, `${sec}.png`), img.toPNG());
       }
+      // ED_BUBBLE_SHOT_MATERIAL=clave: Colonización con ese material elegido (dónde comprar)
+      if (process.env.ED_BUBBLE_SHOT_MATERIAL) {
+        await win.webContents.executeJavaScript(`ui.section='colonizacion'; ui.colSel=${JSON.stringify(process.env.ED_BUBBLE_SHOT_MATERIAL)}; ui.colAside='buy'; render();`);
+        await new Promise((r) => setTimeout(r, 3000));
+        await win.webContents.executeJavaScript('ui.mk.pick=1; render();');
+        await new Promise((r) => setTimeout(r, 400));
+        fs.writeFileSync(path.join(out, 'comprar.png'), (await win.webContents.capturePage()).toPNG());
+      }
       // ED_BUBBLE_SHOT_SYSTEM=nombre: busca ese sistema en Navegación y captura la ficha
       if (process.env.ED_BUBBLE_SHOT_SYSTEM) {
         const n = JSON.stringify(process.env.ED_BUBBLE_SHOT_SYSTEM);
@@ -120,7 +128,7 @@ app.whenReady().then(() => {
   // Solo desarrollo: ED_BUBBLE_SPANSH_FIXTURE=carpeta con search.json y suggest.json (sin red)
   if (process.env.ED_BUBBLE_SPANSH_FIXTURE) {
     const dir = process.env.ED_BUBBLE_SPANSH_FIXTURE;
-    spansh.setFetch(async (url) => new Response(fs.readFileSync(path.join(dir, /field_values/.test(url) ? 'suggest.json' : 'search.json'))));
+    spansh.setFetch(async (url) => new Response(fs.readFileSync(path.join(dir, /field_values/.test(url) ? 'suggest.json' : /stations\/search/.test(url) ? 'markets.json' : 'search.json'))));
   }
   engine = new Engine({ folder: process.env.ED_JOURNAL_FOLDER || undefined });
   engine.on('update', (snap) => {
@@ -165,6 +173,14 @@ app.whenReady().then(() => {
   ipcMain.handle('ed:system', async (_e, name) => {
     const here = last && last.state.location.system;
     try { return { ok: true, system: await spansh.system(String(name || '').slice(0, 120), here || undefined) }; } catch (e) { return { ok: false, error: e.message }; }
+  });
+  ipcMain.handle('ed:markets', async (_e, q) => {
+    const here = last && last.state.location.system;
+    if (!here) return { ok: false, error: 'Sin sistema actual (abre el juego)' };
+    try {
+      const list = await spansh.markets({ commodity: String((q && q.commodity) || '').slice(0, 80), reference: here, minSupply: Number(q && q.minSupply) || 1, largePad: !!(q && q.largePad) });
+      return { ok: true, list, reference: here };
+    } catch (e) { return { ok: false, error: e.message }; }
   });
   // Trazar ruta en el mapa galáctico
   const plotStatus = (st) => { if (win && !win.isDestroyed()) win.webContents.send('ed:plot-status', st); };

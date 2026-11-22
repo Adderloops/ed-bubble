@@ -118,4 +118,32 @@ function system(name, reference) {
   });
 }
 
-module.exports = { setFetch, suggest, system, normalise, stationKind, padSize };
+/**
+ * Estaciones que venden un material, de la más cercana a la más lejana.
+ * minSupply: stock mínimo; largePad: solo con plataforma L.
+ */
+function markets({ commodity, reference, minSupply = 1, largePad = false }) {
+  const c = String(commodity || '').trim();
+  if (!c || !reference) return Promise.resolve([]);
+  const min = Math.max(1, Math.round(minSupply));
+  return cached(`m:${c.toLowerCase()}|${reference}|${min}|${largePad}`, async () => {
+    const filters = { market: [{ name: c, supply: { value: [String(min), '1000000000'], comparison: '<=>' } }] };
+    if (largePad) filters.has_large_pad = { value: true };
+    const d = await getJson('https://spansh.co.uk/api/stations/search', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filters, sort: [{ distance: { direction: 'asc' } }], reference_system: reference, size: 40, page: 0 }),
+    });
+    return (d.results || []).map((r) => {
+      const m = (r.market || []).find((x) => String(x.commodity).toLowerCase() === c.toLowerCase()) || {};
+      const kind = stationKind(r.type);
+      return {
+        station: r.name, system: r.system_name, type: r.type || null, ...kind,
+        carrier: /carrier/i.test(r.type || ''), planetary: !!r.is_planetary || kind.surface,
+        distance: r.distance ?? null, ls: r.distance_to_arrival ?? null, pad: padSize(r),
+        supply: m.supply ?? null, price: m.buy_price ?? null, updatedAt: r.market_updated_at || r.updated_at || null,
+      };
+    });
+  });
+}
+
+module.exports = { markets, setFetch, suggest, system, normalise, stationKind, padSize };
