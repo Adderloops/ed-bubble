@@ -517,7 +517,7 @@ function screenNavegacion(s, v) {
     const noScoop = r.legs.filter((l) => !l.here && l.scoopable === false).length;
     routeBody = `
       <div class="in" style="padding:12px 14px 6px;display:flex;flex-direction:column;gap:6px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="eb amber">${esc(routeProgressText(r))}</span><span class="eb dim"><span class="cyan">●</span> combustible recogible · <span class="amber">●</span> combustible no recogible</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="eb amber">${esc(routeProgressText(r))}</span><span class="eb dim">Combustible: <span class="cyan">●</span> recogible · <span class="amber">●</span> no recogible</span></div>
         ${routeGraph(r, 920, true)}
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
