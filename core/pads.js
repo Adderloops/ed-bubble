@@ -14,7 +14,9 @@ const KNOWN = {
   Coriolis: { 9: 8 },
   // Cleopatra Vista (Pegasi Sector JN-S b4-7), 2026-11-22: captura desde dentro
   // con el holograma "32" (a las 4 vista desde dentro -> a las 8 al entrar)
-  Dodec: { 32: 8 },
+  // Pad 17: captura desde dentro, nave abajo a la izquierda con la cúpula de la
+  // entrada (lado verde) a la izquierda (~7:40 desde dentro -> ~4 al entrar)
+  Dodec: { 17: 4, 32: 8 },
 };
 
 const ALIAS = { Bernal: 'Ocellus' };

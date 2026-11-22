@@ -264,6 +264,7 @@ testAsync('trazar ruta: sin las teclas necesarias no envía nada', async () => {
 test('plataformas: solo se marcan las comprobadas (Dodec 32 y Coriolis 9 a las 8, vistas al entrar)', () => {
   const pads = require('../../core/pads');
   assert.strictEqual(pads.padHour('Dodec', 32), 8);
+  assert.strictEqual(pads.padHour('Dodec', 17), 4);
   assert.strictEqual(pads.padHour('Coriolis', '9'), 8);
   assert.strictEqual(pads.padHour('Coriolis', 7), null);
   assert.strictEqual(pads.padHour('Orbis', 1), null);
