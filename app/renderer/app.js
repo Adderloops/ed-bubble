@@ -341,7 +341,8 @@ function screenVuelo(s, v) {
     <section class="pn card" style="flex:1;min-height:0;align-items:center">
       <div style="display:flex;justify-content:space-between;width:100%"><span class="ti" style="font-size:16px">Atraque concedido</span><span class="eb">${esc(STATION_TYPES[dock.stationType] || dock.stationType || '—')}</span></div>
       <span class="va" style="font-size:20px;align-self:flex-start">${esc(siteName(dock.station) || '—')}</span>
-      ${showDiagram ? `${dockingSvg(dock.pad, 430)}
+      ${showDiagram ? `${dockingSvg(dock.pad, 430, v.dockPadHour)}
+        ${v.dockPadHour ? '' : '<span class="eb yellow">Posición de esta plataforma aún sin mapear</span>'}
         <div style="display:flex;justify-content:space-between;width:430px"><span class="eb" style="color:#3be37a">● Luz verde</span><span class="eb dim">Vista desde dentro</span><span class="eb" style="color:#ff6b6b">Luz roja ●</span></div>`
       : `<div class="empty" style="flex-direction:column;gap:10px"><span class="eb">Plataforma</span><span class="num amber" style="font-size:120px;line-height:1">${String(Number(dock.pad) || 0).padStart(2, '0')}</span><span style="font-size:14px">Sin esquema para este tipo de estación.</span></div>`}
     </section>` : '';
@@ -677,9 +678,9 @@ function systemDetail(s) {
 }
 
 /* ---------- esquema de atraque (SVG) ---------- */
-function dockingSvg(padNum, width) {
+function dockingSvg(padNum, width, hour) {
   const pad = Number(padNum) || 0;
-  const hot = pad ? (pad - 1) % 12 : -1;
+  const hot = hour ? hour % 12 : -1; // solo plataformas comprobadas (core/pads.js)
   const C = 150; const RP = 94;
   const pt = (r, deg) => { const a = (deg - 90) * Math.PI / 180; return [C + r * Math.cos(a), C + r * Math.sin(a)]; };
   const spokes = Array.from({ length: 12 }, (_, i) => {

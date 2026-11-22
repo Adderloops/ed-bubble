@@ -261,6 +261,14 @@ testAsync('trazar ruta: sin las teclas necesarias no envía nada', async () => {
   assert.strictEqual(r.error, 'no-key'); assert.deepStrictEqual(r.missing, ['CamZoomOut']); assert.strictEqual(g.sent.length, 0);
 });
 
+test('plataformas: solo se marcan las comprobadas (Dodec 32 y Coriolis 9 a las 4)', () => {
+  const pads = require('../../core/pads');
+  assert.strictEqual(pads.padHour('Dodec', 32), 4);
+  assert.strictEqual(pads.padHour('Coriolis', '9'), 4);
+  assert.strictEqual(pads.padHour('Coriolis', 7), null);
+  assert.strictEqual(pads.padHour('Orbis', 1), null);
+});
+
 test('Spansh: tipo de estación, icono y plataforma (las obras siempre L)', () => {
   const sp = require('../../core/spansh');
   assert.strictEqual(sp.stationKind('Coriolis Starport').icon, 'coriolis');

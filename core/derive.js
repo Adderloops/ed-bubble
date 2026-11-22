@@ -87,7 +87,9 @@ function routeView(state) {
 }
 
 function view(state) {
+  const { padHour } = require('./pads');
   return {
+    dockPadHour: state.docking && state.docking.active ? padHour(state.docking.stationType, state.docking.pad) : null,
     mode: flightMode(state),
     alerts: alerts(state),
     fuel: fuel(state),
