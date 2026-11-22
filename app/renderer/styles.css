@@ -87,3 +87,12 @@ button { font: inherit; }
 
 .pg { width: 30px; height: 26px; font-family: 'Share Tech Mono', monospace; font-size: 16px; color: var(--cyan); background: var(--inner); border: 1px solid var(--line2); border-radius: 2px; cursor: pointer; }
 .pg:disabled { color: var(--dim); cursor: default; opacity: .5; }
+
+/* Vuelo: botones grandes para acertar con el ratón en pleno vuelo */
+.vuelo-estado .chip { height: 38px; font-size: 13px; }
+.vuelo-estado .ctl { height: 66px; font-size: 15px; }
+.vuelo-estado .act { height: 84px; font-size: 16px; }
+
+.nav-btn { height: 44px; font-family: Rajdhani, sans-serif; font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--cyan); background: #0c1b2e; border: 1px solid var(--line2); border-radius: 2px; cursor: pointer; }
+.nav-btn:hover { border-color: var(--cyan); background: #0f2c44; }
+.nav-btn:disabled { color: var(--dim); cursor: default; opacity: .5; }

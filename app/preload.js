@@ -9,4 +9,6 @@ contextBridge.exposeInMainWorld('edbubble', {
   controls: () => ipcRenderer.invoke('ed:controls'),
   onControls: (cb) => ipcRenderer.on('ed:controls', (_e, c) => cb(c)),
   run: (id) => ipcRenderer.invoke('ed:run', id),
+  copy: (text) => ipcRenderer.invoke('ed:copy', text),
+  open: (site, name, address) => ipcRenderer.invoke('ed:open', { site, name, address }),
 });

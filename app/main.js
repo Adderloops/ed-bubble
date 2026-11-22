@@ -7,7 +7,7 @@
  * para la segunda pantalla; recuerda su posición y tamaño.
  */
 
-const { app, BrowserWindow, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, clipboard, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { Engine } = require('../core/engine');
@@ -87,7 +87,7 @@ function createWindow() {
     win.webContents.once('did-finish-load', async () => {
       const out = process.env.ED_BUBBLE_SHOT;
       await new Promise((r) => setTimeout(r, 2500));
-      for (const sec of ['puente', 'vuelo']) {
+      for (const sec of ['puente', 'vuelo', 'navegacion']) {
         await win.webContents.executeJavaScript(`ui.section='${sec}'; ui.autoJump=false; render();`);
         await new Promise((r) => setTimeout(r, 400));
         const img = await win.webContents.capturePage();
@@ -118,6 +118,21 @@ app.whenReady().then(() => {
     const res = await keys.run(built.ops);
     if (!res.ok) console.warn(`[teclas] ${id}: ${res.error}`);
     return res;
+  });
+  ipcMain.handle('ed:copy', (_e, text) => { clipboard.writeText(String(text || '').slice(0, 200)); return true; });
+  // Solo se abren estas webs, construidas aquí: la ventana no puede pedir una URL cualquiera.
+  ipcMain.handle('ed:open', (_e, req) => {
+    const name = encodeURIComponent(String((req && req.name) || '').slice(0, 120));
+    const addr = /^\d{1,20}$/.test(String((req && req.address) || '')) ? String(req.address) : null;
+    const urls = {
+      inara: `https://inara.cz/elite/starsystem/?search=${name}`,
+      spansh: addr ? `https://spansh.co.uk/system/${addr}` : `https://spansh.co.uk/search/${name}`,
+      edsm: `https://www.edsm.net/en/system?systemName=${name}`,
+    };
+    const url = urls[req && req.site];
+    if (!url || !name) return false;
+    shell.openExternal(url);
+    return true;
   });
   ipcMain.handle('ed:info', () => ({ version: require('./package.json').version, journalFolder: engine.folder }));
   createWindow();

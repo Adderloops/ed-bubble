@@ -10,7 +10,9 @@ El panel **Controles** del Puente de mando revisa las teclas que usa ED BUBBLE (
 
 Variables para desarrollo: `ED_BUBBLE_SIMULATE=1` (no envía teclas), `ED_BINDINGS_FOLDER` (otra carpeta de controles).
 
-El buscador de Spansh y Trazar ruta llegan en la entrega 3.
+**Vuelo y Navegación:** Vuelo es pilotar (estado, interruptores, acciones, combustible, próximo salto, atraque o aproximación a planeta). Navegación es planificar (ficha del sistema actual con Copiar / Inara / Spansh / EDSM, objetivo de salto y ruta completa).
+
+El buscador de Spansh y Trazar ruta llegan en la entrega 3, en Navegación.
 
 ## Arrancar
 

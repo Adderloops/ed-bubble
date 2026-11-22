@@ -5,7 +5,7 @@
 const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo' }, { id: 'srv', label: 'SRV' },
-  { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación' }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación' }, { id: 'apie', label: 'A pie' },
+  { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación' }, { id: 'apie', label: 'A pie' },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay' }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería' }, { id: 'colonizacion', label: 'Colonización' },
   { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' },
 ];
@@ -33,7 +33,7 @@ const STATION_TYPES = {
   SpaceConstructionDepot: 'Construcción orbital', PlanetaryConstructionDepot: 'Construcción en superficie',
 };
 const DIAGRAM_TYPES = new Set(['Coriolis', 'Orbis', 'Bernal', 'Ocellus', 'Dodec']);
-const ES = { Independent: 'Independiente', Federation: 'Federación', Empire: 'Imperio', Alliance: 'Alianza', Expansion: 'Expansión', Boom: 'Auge', Bust: 'Recesión', None: 'Ninguno', Election: 'Elecciones', War: 'Guerra', CivilWar: 'Guerra civil', Investment: 'Inversión', Retreat: 'Retirada', Lockdown: 'Confinamiento', Outbreak: 'Brote', Famine: 'Hambruna', CivilUnrest: 'Disturbios', PirateAttack: 'Ataque pirata', Unoccupied: 'Sin ocupar', Exploited: 'Explotado', Fortified: 'Fortificado', Stronghold: 'Bastión' };
+const ES = { Independent: 'Independiente', Federation: 'Federación', Empire: 'Imperio', Alliance: 'Alianza', Expansion: 'Expansión', Boom: 'Auge', Bust: 'Recesión', None: 'Ninguno', Election: 'Elecciones', War: 'Guerra', CivilWar: 'Guerra civil', Investment: 'Inversión', Retreat: 'Retirada', Lockdown: 'Confinamiento', Outbreak: 'Brote', Famine: 'Hambruna', CivilUnrest: 'Disturbios', PirateAttack: 'Ataque pirata', Unoccupied: 'Sin ocupar', Exploited: 'Explotado', Fortified: 'Fortificado', Stronghold: 'Bastión', 'Low Security': 'Baja', 'Medium Security': 'Media', 'High Security': 'Alta', Anarchy: 'Anarquía', Lawless: 'Sin ley' };
 const tr = (v) => (v == null ? '—' : ES[v] || v);
 
 function seg(ratio, cls = 'on') {
@@ -324,133 +324,215 @@ function screenVuelo(s, v) {
        </div>`
     : `<div class="in empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:20px;color:var(--dim)">No disponible ahora</span><span class="soft" style="font-size:14px">Aparece al acercarte a un planeta (altitud, rumbo y coordenadas de Status.json).</span></div>`;
 
-  const dial = showDiagram ? (() => {
-    const pad = Number(s.docking.pad) || 0;
-    const hot = pad ? (pad - 1) % 12 : -1;
-    const C = 150; const RP = 94;
-    const pt = (r, deg) => { const a = (deg - 90) * Math.PI / 180; return [C + r * Math.cos(a), C + r * Math.sin(a)]; };
-    const spokes = Array.from({ length: 12 }, (_, i) => {
-      const [x1, y1] = pt(62, i * 30 + 15); const [x2, y2] = pt(122, i * 30 + 15);
-      return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#3a5576" stroke-width="1.2"/>
-        <circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="2" fill="#f08a3a"/><circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="2" fill="#f08a3a"/>`;
-    }).join('');
-    const pads = Array.from({ length: 12 }, (_, i) => {
-      const [x, y] = pt(RP, i * 30); const on = i === hot; const h = 11;
-      return `<g${on ? ' filter="url(#glow)"' : ''}>
-        <rect x="${(x - h).toFixed(1)}" y="${(y - h).toFixed(1)}" width="${2 * h}" height="${2 * h}" rx="3" fill="${on ? 'rgba(240,164,67,.28)' : '#081627'}" stroke="${on ? '#f0a443' : '#2f7fb0'}" stroke-width="${on ? 2.2 : 1.4}"/>
-        <path d="M${x - 3} ${y}h6M${x} ${y - 3}v6" stroke="${on ? '#ffd08a' : '#2f7fb0'}" stroke-width="1"/></g>`;
-    }).join('');
-    const br = (x, y, dx, dy) => `<path d="M${x} ${y + dy * 9}V${y}H${x + dx * 9}" fill="none" stroke="#49c7e8" stroke-width="1.4"/>`;
-    const svg = `<svg viewBox="0 0 300 330" width="268" height="295" style="display:block;overflow:visible">
-      <defs>
-        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        <radialGradient id="hub" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#0f2440"/><stop offset="1" stop-color="#06101c"/></radialGradient>
-      </defs>
-      <g transform="translate(0,15)">
-      <circle cx="${C}" cy="${C}" r="134" fill="#06101c" stroke="#1f3a5a" stroke-width="1"/>
-      <circle cx="${C}" cy="${C}" r="126" fill="none" stroke="#2b5379" stroke-width="2"/>
-      <circle cx="${C}" cy="${C}" r="118" fill="none" stroke="#1f4a6e" stroke-width="1" stroke-dasharray="2 5"/>
-      ${spokes}
-      <circle cx="${C}" cy="${C}" r="62" fill="url(#hub)" stroke="#2b5379" stroke-width="1.5"/>
-      <circle cx="${C}" cy="${C}" r="54" fill="none" stroke="#1f4a6e" stroke-width="1"/>
-      ${pads}
-      ${br(118, 138, 1, 1)}${br(182, 138, -1, 1)}${br(118, 180, 1, -1)}${br(182, 180, -1, -1)}
-      <text x="${C}" y="127" text-anchor="middle" font-family="Rajdhani" font-weight="600" font-size="9" letter-spacing="2.5" fill="#7f9bb8">PLATAFORMA</text>
-      <text x="${C}" y="172" text-anchor="middle" font-family="Share Tech Mono" font-size="38" fill="#f0a443" filter="url(#glow)">${String(pad).padStart(2, '0')}</text>
-      <path d="M${C - 6} 6l6 9l6 -9z" fill="#49c7e8"/>
-      <path d="M${C - 6} 294l6 -9l6 9z" fill="#49c7e8"/>
-      <line x1="4" y1="${C}" x2="22" y2="${C}" stroke="#ff4b4b" stroke-width="2"/>
-      <circle cx="16" cy="${C}" r="7" fill="#ff4b4b" filter="url(#glow)"/>
-      <line x1="278" y1="${C}" x2="296" y2="${C}" stroke="#3be37a" stroke-width="2"/>
-      <circle cx="284" cy="${C}" r="7" fill="#3be37a" filter="url(#glow)"/>
-      </g>
-      <text x="${C}" y="10" text-anchor="middle" font-family="Rajdhani" font-weight="700" font-size="11" letter-spacing="3" fill="#49c7e8">ARRIBA</text>
-      <text x="${C}" y="328" text-anchor="middle" font-family="Rajdhani" font-weight="700" font-size="11" letter-spacing="3" fill="#49c7e8">ABAJO</text>
-    </svg>`;
-    return `<section class="pn card" style="align-items:center;grid-column:2;grid-row:1 / span 2">
-      <span class="ti" style="font-size:16px;align-self:flex-start">Atraque</span>
-      <span class="eb" style="align-self:flex-start">Concedido · ${esc(STATION_TYPES[s.docking.stationType] || s.docking.stationType)}</span>
-      ${svg}
-      <div style="display:flex;justify-content:space-between;width:100%;padding:0 4px"><span class="eb" style="color:#ff6b6b">● Babor</span><span class="eb" style="color:#3be37a">Estribor ●</span></div>
-      <span class="va" style="font-size:16px;text-align:center">${esc(clean(s.docking.station))}</span>
+  const dock = s.docking;
+  const dockCard = docking ? `
+    <section class="pn card" style="flex:1;min-height:0;align-items:center">
+      <div style="display:flex;justify-content:space-between;width:100%"><span class="ti" style="font-size:16px">Atraque concedido</span><span class="eb">${esc(STATION_TYPES[dock.stationType] || dock.stationType || '—')}</span></div>
+      <span class="va" style="font-size:20px;align-self:flex-start">${esc(siteName(dock.station) || '—')}</span>
+      ${showDiagram ? `${dockingSvg(dock.pad, 430)}
+        <div style="display:flex;justify-content:space-between;width:430px"><span class="eb" style="color:#ff6b6b">● Babor · roja</span><span class="eb" style="color:#3be37a">Estribor · verde ●</span></div>`
+      : `<div class="empty" style="flex-direction:column;gap:10px"><span class="eb">Plataforma</span><span class="num amber" style="font-size:120px;line-height:1">${String(Number(dock.pad) || 0).padStart(2, '0')}</span><span style="font-size:14px">Sin esquema para este tipo de estación.</span></div>`}
+    </section>` : '';
+  const approachCard = `
+    <section class="pn card" style="flex:1;min-height:0">
+      <div style="display:flex;justify-content:space-between;gap:10px"><span class="ti nowrap" style="font-size:16px">Aproximación a planeta</span><span class="eb dim">Solo cerca de un cuerpo</span></div>
+      ${approach}
     </section>`;
-  })() : '';
 
-  const L = s.location; const c = v.colonisation;
-  const sysCard = `
-    <div class="in accent" style="padding:14px;display:flex;flex-direction:column;gap:10px;min-height:0">
-      <span class="eb">Sistema actual</span>
-      <span class="ti nowrap" style="font-size:22px">${esc(clean(L.system) || '—')}</span>
-      <span class="eb" style="font-size:10px;color:var(--dim)">Journal · ${hhmm(s.connection.lastEventAt)} UTC</span>
-      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">
-        ${stat('Estrella', L.starClass ? `${L.starClass}` : '—', v.scoopableHere === false ? 'amber' : 'cyan')}
-        ${stat('Combustible', v.scoopableHere == null ? '—' : v.scoopableHere ? 'Recogible' : 'No recogible', v.scoopableHere === false ? 'amber' : 'cyan')}
+  const r = v.route;
+  const nextLeg = r.legs.length ? (r.legs[0].here ? r.legs[1] : r.legs[0]) : null;
+  const tgtName = nextLeg ? nextLeg.system : s.fsdTarget.name;
+  const tgtClass = nextLeg ? nextLeg.starClass : s.fsdTarget.starClass;
+  const tgtScoop = tgtClass ? (nextLeg ? nextLeg.scoopable : null) : null;
+  const scoopTxt = (c) => { const sc = c == null ? null : /^[KGBFOAM](_|$)/.test(c); return sc == null ? ['Desconocida', 'dim'] : sc ? ['Recogible', 'cyan'] : ['No recogible', 'amber']; };
+  const [stxt, scls] = scoopTxt(tgtClass);
+  const nextCard = `
+    <section class="pn card">
+      <div style="display:flex;justify-content:space-between"><span class="ti" style="font-size:16px">Próximo salto</span><span class="eb dim">Ruta completa en Navegación</span></div>
+      ${tgtName ? `
+      <div style="display:flex;align-items:center;gap:14px">
+        <span class="starc ${scls === 'amber' ? 'no' : scls === 'dim' ? 'unk' : ''}" style="width:44px;height:44px;border-radius:22px;font-size:15px">${esc(or(tgtClass, '?')).slice(0, 3)}</span>
+        <span style="display:flex;flex-direction:column;min-width:0"><span class="ti nowrap" style="font-size:24px">${esc(tgtName)}</span><span class="eb ${scls}">Combustible ${stxt.toLowerCase()}</span></span>
       </div>
-      <div class="kv" style="font-size:14px">
-        <span class="eb" style="font-size:10px">Alianza</span><span>${tr(L.allegiance)}</span>
-        <span class="eb" style="font-size:10px">Gobierno</span><span>${esc(or(L.government))}</span>
-        <span class="eb" style="font-size:10px">Economía</span><span>${esc(or(L.economy))}${L.secondEconomy ? ' / ' + esc(L.secondEconomy) : ''}</span>
-        <span class="eb" style="font-size:10px">Seguridad</span><span>${esc(or(L.security))}</span>
-        <span class="eb" style="font-size:10px">Población</span><span class="num">${nf(L.population)}</span>
-        <span class="eb" style="font-size:10px">Facción</span><span>${esc(or(L.faction))} · ${tr(L.factionState)}</span>
-        <span class="eb" style="font-size:10px">Powerplay</span><span class="amber">${tr(L.powerplayState)}${L.controllingPower ? ' · ' + esc(L.controllingPower) : ''}</span>
-      </div>
-    </div>`;
-  const colCard = c ? `
-    <div class="in" style="padding:14px;display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden">
-      <span class="eb nowrap">Colonización · ${esc(siteName(c.name) || 'obra')}</span>
-      <span style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:20px">Faltan ${nf(c.remaining)} t</span><span class="num cyan" style="font-size:22px">${pct(c.progress)}</span></span>
-      <span class="bar"><span style="width:${(c.progress || 0) * 100}%;background:#2a7fa3"></span></span>
-      ${c.resources.filter((x) => x.required > x.provided).sort((a, b) => (b.required - b.provided) - (a.required - a.provided)).slice(0, 6)
-        .map((x) => `<span style="display:flex;justify-content:space-between;font-size:14px"><span class="nowrap">${esc(x.name)}</span><span class="num soft">${nf(x.required - x.provided)} t</span></span>`).join('')}
-    </div>` : '';
-  const futureCard = `
-    <div class="in" style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px">
-      <span class="eb">Buscar sistema · Trazar ruta</span><span class="eb dim">entrega 3</span>
-    </div>`;
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+        ${stat('Distancia', nextLeg && nextLeg.distance != null ? `${nf(nextLeg.distance, 2)} al` : '—')}${stat('Saltos restantes', r.legs.length ? nf(r.jumps) : or(s.fsdTarget.remainingJumps))}${stat('Destino', r.destination ? esc(r.destination) : esc(tgtName))}
+      </div>` : `<div class="empty" style="flex-direction:column;gap:6px;padding:18px"><span class="va" style="font-size:18px;color:var(--soft)">Sin objetivo de salto</span><span style="font-size:14px">Fija un sistema o traza una ruta en el mapa galáctico.</span></div>`}
+    </section>`;
 
   return `
-  <div style="display:grid;grid-template-columns:minmax(0,1fr) ${showDiagram ? '440px' : '780px'};gap:12px;min-height:0">
-   <main style="display:grid;grid-template-columns:${showDiagram ? 'minmax(0,1fr) 290px' : 'minmax(0,1fr)'};grid-template-rows:auto auto minmax(0,1fr);gap:12px;min-width:0;min-height:0">
-    <section class="pn hero" style="grid-column:1;grid-row:1;grid-template-columns:minmax(0,1fr) 320px">
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 560px;gap:12px;min-height:0">
+   <main style="display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0">
+    <section class="pn hero" style="grid-template-columns:minmax(0,1fr) 340px">
       <div style="display:flex;flex-direction:column;gap:8px;min-width:0"><span class="eb" style="display:flex;align-items:center;gap:8px"><span class="dot on"></span>Modo de vuelo</span><span class="ti title">${esc(v.mode.label)}</span></div>
       <div class="in accent kv" style="padding:12px 14px">
-        <span class="eb" style="font-size:10px">Nave</span><span class="va" style="font-size:15px">${esc(or(s.ship.name))} · ${esc(shipName(s.ship.type, s.ship.typeLocalised))}</span>
-        <span class="eb" style="font-size:10px">Objetivo de salto</span><span class="va" style="font-size:15px">${esc(or(s.fsdTarget.name, 'Sin objetivo'))}</span>
+        <span class="eb" style="font-size:10px">Nave</span><span class="va nowrap" style="font-size:15px">${esc(or(s.ship.name))} · ${esc(shipName(s.ship.type, s.ship.typeLocalised))}</span>
         <span class="eb" style="font-size:10px">Alcance máximo</span><span class="num">${nf(s.ship.maxJumpRange, 2)} al</span>
         <span class="eb" style="font-size:10px">Carga</span><span class="num">${nf(s.cargo.count)} / ${nf(s.ship.cargoCapacity)} t</span>
+        <span class="eb" style="font-size:10px">Sistema</span><span class="va nowrap" style="font-size:15px">${esc(clean(s.location.system) || '—')}</span>
       </div>
     </section>
-    ${dial}
-    <section class="pn card" style="grid-column:1;grid-row:2">
-      <div style="display:flex;justify-content:space-between"><span class="ti" style="font-size:16px">Estado</span><span class="eb dim">Los 17 indicadores de la página Vuelo</span></div>
-      <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px">${inds}</div>
-      <div style="display:flex;justify-content:space-between"><span class="ti" style="font-size:16px">Interruptores</span>${feedbackLine()}</div>
-      <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px">${toggles}</div>
-      <span class="ti" style="font-size:16px">Acciones</span>
-      <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px">${actions}</div>
-    </section>
-    <section class="pn" style="grid-column:1 / -1;grid-row:3;padding:14px 18px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;min-height:0;overflow:hidden">
-      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
-        <span class="ti" style="font-size:16px">Combustible</span>
-        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="eb">Tanque principal</span><span class="num" style="font-size:26px">${nf(f.main, 2)} <span class="soft" style="font-size:16px">/ ${nf(f.cap, 0)} t</span></span></div>
-        ${seg(f.ratio, f.ratio != null && f.ratio < 0.25 ? 'warn' : 'on').replace('height: 12px', 'height:16px')}
-        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
-          ${stat('Reserva', `${nf(f.reservoir, 2)} t`)}${stat('Último salto', f.lastUsed != null ? `${nf(f.lastUsed, 2)} t` : '—')}${stat('Distancia últ.', f.lastDistance != null ? `${nf(f.lastDistance, 2)} al` : '—')}
-          ${stat('Saltos con esto', f.jumpsLeft != null ? `≈ ${f.jumpsLeft}` : '—')}${stat('Recogida', f.scooping ? 'Activa' : 'Inactiva', f.scooping ? 'cyan' : 'dim')}${stat('Hasta destino', v.route.legs.length ? `${v.route.jumps} saltos` : 'Sin ruta', v.route.legs.length ? '' : 'dim')}
-        </div>
+    <section class="pn card vuelo-estado" style="flex:1;min-height:0;justify-content:space-between">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between"><span class="ti" style="font-size:16px">Estado</span><span class="eb dim">Los 17 indicadores de la página Vuelo</span></div>
+        <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px">${inds}</div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
-        <div style="display:flex;justify-content:space-between;gap:10px"><span class="ti nowrap" style="font-size:16px">Aproximación a planeta</span><span class="eb dim">Solo cerca de un cuerpo</span></div>
-        ${approach}
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between"><span class="ti" style="font-size:16px">Interruptores</span>${feedbackLine()}</div>
+        <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px">${toggles}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="ti" style="font-size:16px">Acciones</span>
+        <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px">${actions}</div>
+      </div>
+    </section>
+    <section class="pn card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">Combustible</span><span class="num" style="font-size:30px">${nf(f.main, 2)} <span class="soft" style="font-size:18px">/ ${nf(f.cap, 0)} t</span></span></div>
+      ${seg(f.ratio, f.ratio != null && f.ratio < 0.25 ? 'warn' : 'on').replace('height: 12px', 'height:18px')}
+      <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px">
+        ${stat('Reserva', `${nf(f.reservoir, 2)} t`)}${stat('Último salto', f.lastUsed != null ? `${nf(f.lastUsed, 2)} t` : '—')}${stat('Distancia últ.', f.lastDistance != null ? `${nf(f.lastDistance, 2)} al` : '—')}
+        ${stat('Saltos con esto', f.jumpsLeft != null ? `≈ ${f.jumpsLeft}` : '—')}${stat('Recogida', f.scooping ? 'Activa' : 'Inactiva', f.scooping ? 'cyan' : 'dim')}${stat('Hasta destino', r.legs.length ? `${r.jumps} saltos` : 'Sin ruta', r.legs.length ? '' : 'dim')}
       </div>
     </section>
    </main>
-   <aside class="pn" style="padding:14px;display:grid;grid-template-columns:${showDiagram ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(0,1fr)'};gap:12px;min-height:0">
-     <div style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${sysCard}</div>
-     ${showDiagram ? '' : `<div style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${routeCard(v.route, 15)}${futureCard}</div>`}
+   <aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">
+     ${nextCard}
+     ${docking ? dockCard : approachCard}
    </aside>
   </div>`;
+}
+
+/* ---------- Navegación: dónde estoy y adónde voy ---------- */
+const NAV_PAGE = 16;
+
+function screenNavegacion(s, v) {
+  const L = s.location; const r = v.route;
+  const sys = clean(L.system);
+  const [scTxt, scCls] = v.scoopableHere == null ? ['—', 'dim'] : v.scoopableHere ? ['Recogible', 'cyan'] : ['No recogible', 'amber'];
+  const where = L.docked ? `Atracado en ${siteName(L.station)}` : L.landed ? `Aterrizado en ${clean(L.body)}` : clean(L.body) ? `Cerca de ${clean(L.body)}` : 'En el espacio';
+  const nb = ui.navFeedback && Date.now() - ui.navFeedback.at < 3000 ? ui.navFeedback.text : '';
+  const linkBtn = (site, label) => `<button type="button" class="nav-btn" data-link="${site}" ${sys ? '' : 'disabled'}>${label}</button>`;
+  const sysCard = `
+    <section class="pn card" style="border-left:3px solid var(--amber)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="eb">Sistema actual</span><span class="eb dim">Journal · ${hhmm(s.connection.lastEventAt)} UTC</span></div>
+      <span class="ti nowrap" style="font-size:30px">${esc(sys || '—')}</span>
+      <span class="soft nowrap" style="font-size:15px">${esc(where)}</span>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+        ${stat('Estrella', esc(or(L.starClass)))}${stat('Combustible', scTxt, scCls)}${stat('Población', nf(L.population))}${stat('Seguridad', esc(tr(L.security)))}
+      </div>
+      <div class="kv" style="font-size:15px">
+        <span class="eb" style="font-size:10px">Alianza</span><span>${tr(L.allegiance)}</span>
+        <span class="eb" style="font-size:10px">Gobierno</span><span>${esc(or(L.government))}</span>
+        <span class="eb" style="font-size:10px">Economía</span><span>${esc(or(L.economy))}${L.secondEconomy ? ' / ' + esc(L.secondEconomy) : ''}</span>
+        <span class="eb" style="font-size:10px">Facción</span><span class="nowrap">${esc(or(L.faction))} · ${tr(L.factionState)}</span>
+        <span class="eb" style="font-size:10px">Powerplay</span><span class="amber">${tr(L.powerplayState)}${L.controllingPower ? ' · ' + esc(L.controllingPower) : ''}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+        <button type="button" class="nav-btn" data-copy="1" ${sys ? '' : 'disabled'}>Copiar nombre</button>${linkBtn('inara', 'Inara')}${linkBtn('spansh', 'Spansh')}${linkBtn('edsm', 'EDSM')}
+      </div>
+      <span class="eb cyan" style="min-height:14px">${esc(nb)}</span>
+    </section>`;
+  const t = s.fsdTarget;
+  const tScoop = t.starClass ? /^[KGBFOAM](_|$)/.test(t.starClass) : null;
+  const targetCard = `
+    <section class="pn card">
+      <span class="ti" style="font-size:16px">Objetivo de salto</span>
+      ${t.name ? `<div style="display:flex;align-items:center;gap:14px">
+          <span class="starc ${tScoop === false ? 'no' : tScoop == null ? 'unk' : ''}" style="width:40px;height:40px;border-radius:20px;font-size:14px">${esc(or(t.starClass, '?')).slice(0, 3)}</span>
+          <span style="display:flex;flex-direction:column;min-width:0"><span class="ti nowrap" style="font-size:22px">${esc(t.name)}</span><span class="eb ${tScoop === false ? 'amber' : tScoop ? 'cyan' : 'dim'}">${tScoop == null ? 'Estrella desconocida' : tScoop ? 'Combustible recogible' : 'Combustible no recogible'}${t.remainingJumps != null ? ` · quedan ${t.remainingJumps} saltos` : ''}</span></span>
+        </div>` : '<span class="soft" style="font-size:15px">Sin objetivo. Fíjalo en el mapa galáctico o con "Siguiente sistema".</span>'}
+    </section>`;
+  const searchCard = `
+    <section class="pn card" style="flex:1;min-height:0">
+      <span class="ti" style="font-size:16px">Buscar sistema · Trazar ruta</span>
+      <div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:18px;color:var(--soft)">Llega en la entrega 3</span><span style="font-size:14px">Buscador con Spansh, ficha y estaciones de cualquier sistema, y botón Trazar ruta en el mapa galáctico.</span></div>
+    </section>`;
+
+  let routeBody;
+  if (!r.legs.length) {
+    routeBody = '<div class="empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:20px;color:var(--soft)">Sin ruta trazada</span><span style="font-size:14px">Traza una en el mapa galáctico y aparecerá aquí.</span></div>';
+  } else {
+    if (ui.navRouteKey !== r.destination + r.legs.length) { ui.navRouteKey = r.destination + r.legs.length; ui.navPage = 0; }
+    const pages = Math.ceil(r.legs.length / NAV_PAGE);
+    ui.navPage = Math.min(ui.navPage || 0, pages - 1);
+    let acc = 0; const cum = r.legs.map((l) => { acc += l.here ? 0 : (l.distance || 0); return acc; });
+    const rows = r.legs.slice(ui.navPage * NAV_PAGE, (ui.navPage + 1) * NAV_PAGE).map((l) => {
+      const next = l.index === 1 && r.legs[0].here;
+      const mark = l.here ? 'border-left:3px solid var(--amber);border-color:#8a5a1e' : next ? 'border-left:3px solid var(--cyan);border-color:var(--cyandim)' : '';
+      return `<div class="in row" style="grid-template-columns:52px 44px minmax(0,1fr) 150px 110px 120px;height:44px;${mark}">
+        <span class="num" style="padding-left:12px;color:${l.here ? 'var(--amber)' : next ? 'var(--cyan)' : 'var(--eb)'}">${String(l.index).padStart(2, '0')}</span>
+        <span class="starc ${l.scoopable === false ? 'no' : l.scoopable == null ? 'unk' : ''}">${esc(or(l.starClass, '?')).slice(0, 3)}</span>
+        <span class="va nowrap" style="font-size:17px">${esc(l.system)}${l.here ? ' <span class="eb amber" style="font-size:10px">aquí</span>' : next ? ' <span class="eb cyan" style="font-size:10px">siguiente</span>' : ''}</span>
+        <span class="eb" style="color:${l.scoopable === false ? 'var(--amber)' : l.scoopable ? 'var(--cyan)' : 'var(--dim)'}">${l.scoopable === false ? 'No recogible' : l.scoopable ? 'Recogible' : 'Desconocida'}</span>
+        <span class="num" style="text-align:right">${l.here ? '—' : `${nf(l.distance, 2)} al`}</span>
+        <span class="num soft" style="text-align:right;padding-right:14px">${nf(cum[l.index], 1)} al</span></div>`;
+    }).join('');
+    const pager = pages > 1 ? `<span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-pager="nav" data-d="-1" ${ui.navPage === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.navPage + 1}/${pages}</span><button type="button" class="pg" data-pager="nav" data-d="1" ${ui.navPage >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
+    const noScoop = r.legs.filter((l) => !l.here && l.scoopable === false).length;
+    routeBody = `
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+        ${stat('Saltos', nf(r.jumps))}${stat('Distancia', `${nf(r.distance, 1)} al`)}${stat('No recogibles', nf(noScoop), noScoop ? 'amber' : 'cyan')}${stat('Destino', esc(r.destination))}
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="eb dim" style="display:grid;grid-template-columns:52px 44px minmax(0,1fr);width:60%"><span style="padding-left:12px">#</span><span>Estr.</span><span>Sistema</span></span>${pager}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${rows}</div>
+      <span class="note" style="margin-top:auto">Desde NavRoute.json · salto y distancia acumulada · cian = combustible recogible, ámbar = no recogible</span>`;
+  }
+
+  return `
+  <div style="display:grid;grid-template-columns:620px minmax(0,1fr);gap:12px;min-height:0">
+    <div style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${sysCard}${targetCard}${searchCard}</div>
+    <section class="pn card" style="min-height:0;overflow:hidden">
+      <span class="ti" style="font-size:16px">Ruta trazada</span>
+      ${routeBody}
+    </section>
+  </div>`;
+}
+
+/* ---------- esquema de atraque (SVG) ---------- */
+function dockingSvg(padNum, width) {
+  const pad = Number(padNum) || 0;
+  const hot = pad ? (pad - 1) % 12 : -1;
+  const C = 150; const RP = 94;
+  const pt = (r, deg) => { const a = (deg - 90) * Math.PI / 180; return [C + r * Math.cos(a), C + r * Math.sin(a)]; };
+  const spokes = Array.from({ length: 12 }, (_, i) => {
+    const [x1, y1] = pt(62, i * 30 + 15); const [x2, y2] = pt(122, i * 30 + 15);
+    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#3a5576" stroke-width="1.2"/>
+      <circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="2" fill="#f08a3a"/><circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="2" fill="#f08a3a"/>`;
+  }).join('');
+  const pads = Array.from({ length: 12 }, (_, i) => {
+    const [x, y] = pt(RP, i * 30); const on = i === hot; const h = 11;
+    return `<g${on ? ' filter="url(#glow)"' : ''}>
+      <rect x="${(x - h).toFixed(1)}" y="${(y - h).toFixed(1)}" width="${2 * h}" height="${2 * h}" rx="3" fill="${on ? 'rgba(240,164,67,.28)' : '#081627'}" stroke="${on ? '#f0a443' : '#2f7fb0'}" stroke-width="${on ? 2.2 : 1.4}"/>
+      <path d="M${x - 3} ${y}h6M${x} ${y - 3}v6" stroke="${on ? '#ffd08a' : '#2f7fb0'}" stroke-width="1"/></g>`;
+  }).join('');
+  const br = (x, y, dx, dy) => `<path d="M${x} ${y + dy * 9}V${y}H${x + dx * 9}" fill="none" stroke="#49c7e8" stroke-width="1.4"/>`;
+  return `<svg viewBox="0 0 300 330" width="${width}" height="${Math.round(width * 330 / 300)}" style="display:block;overflow:visible;flex:none">
+    <defs>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <radialGradient id="hub" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#0f2440"/><stop offset="1" stop-color="#06101c"/></radialGradient>
+    </defs>
+    <g transform="translate(0,15)">
+    <circle cx="${C}" cy="${C}" r="134" fill="#06101c" stroke="#1f3a5a" stroke-width="1"/>
+    <circle cx="${C}" cy="${C}" r="126" fill="none" stroke="#2b5379" stroke-width="2"/>
+    <circle cx="${C}" cy="${C}" r="118" fill="none" stroke="#1f4a6e" stroke-width="1" stroke-dasharray="2 5"/>
+    ${spokes}
+    <circle cx="${C}" cy="${C}" r="62" fill="url(#hub)" stroke="#2b5379" stroke-width="1.5"/>
+    <circle cx="${C}" cy="${C}" r="54" fill="none" stroke="#1f4a6e" stroke-width="1"/>
+    ${pads}
+    ${br(118, 138, 1, 1)}${br(182, 138, -1, 1)}${br(118, 180, 1, -1)}${br(182, 180, -1, -1)}
+    <text x="${C}" y="127" text-anchor="middle" font-family="Rajdhani" font-weight="600" font-size="9" letter-spacing="2.5" fill="#7f9bb8">PLATAFORMA</text>
+    <text x="${C}" y="172" text-anchor="middle" font-family="Share Tech Mono" font-size="38" fill="#f0a443" filter="url(#glow)">${String(pad).padStart(2, '0')}</text>
+    <path d="M${C - 6} 6l6 9l6 -9z" fill="#49c7e8"/>
+    <path d="M${C - 6} 294l6 -9l6 9z" fill="#49c7e8"/>
+    <line x1="4" y1="${C}" x2="22" y2="${C}" stroke="#ff4b4b" stroke-width="2"/>
+    <circle cx="16" cy="${C}" r="7" fill="#ff4b4b" filter="url(#glow)"/>
+    <line x1="278" y1="${C}" x2="296" y2="${C}" stroke="#3be37a" stroke-width="2"/>
+    <circle cx="284" cy="${C}" r="7" fill="#3be37a" filter="url(#glow)"/>
+    </g>
+    <text x="${C}" y="10" text-anchor="middle" font-family="Rajdhani" font-weight="700" font-size="11" letter-spacing="3" fill="#49c7e8">ARRIBA</text>
+    <text x="${C}" y="328" text-anchor="middle" font-family="Rajdhani" font-weight="700" font-size="11" letter-spacing="3" fill="#49c7e8">ABAJO</text>
+  </svg>`;
 }
 
 /* ---------- ciclo de pintado ---------- */
@@ -463,7 +545,7 @@ function render() {
   }
   renderHeader(s, v);
   renderRail(v);
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : screenPuente(s, v);
 }
 
 function fit() {
@@ -487,6 +569,18 @@ document.addEventListener('pointerdown', (ev) => {
   if (ev.button !== 0) return;
   const b = ev.target.closest('button[data-act]');
   if (b && !b.disabled) { ev.preventDefault(); runAction(b.dataset.act); return; }
+  const np = ev.target.closest('button[data-pager="nav"]');
+  if (np && !np.disabled) { ev.preventDefault(); ui.navPage = Math.max(0, (ui.navPage || 0) + Number(np.dataset.d)); render(); return; }
+  const cp = ev.target.closest('button[data-copy]');
+  const ln = ev.target.closest('button[data-link]');
+  if ((cp || ln) && !(cp || ln).disabled && window.edbubble && ui.snap) {
+    ev.preventDefault();
+    const L = ui.snap.state.location; const name = clean(L.system);
+    const done = (text) => { ui.navFeedback = { text, at: Date.now() }; render(); setTimeout(render, 3100); };
+    if (cp) window.edbubble.copy(name).then(() => done(`Copiado: ${name}`));
+    else window.edbubble.open(ln.dataset.link, name, L.systemAddress).then((ok) => done(ok ? `Abriendo ${ln.textContent} en el navegador` : 'No se pudo abrir'));
+    return;
+  }
   const rp = ev.target.closest('button[data-pager="route"]');
   if (rp && !rp.disabled) { ev.preventDefault(); ui.routePage = Math.max(0, (ui.routePage || 0) + Number(rp.dataset.d)); render(); return; }
   const pg = ev.target.closest('button[data-ctlpage]');
