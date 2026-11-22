@@ -2,7 +2,9 @@
 
 Companion app for **Elite Dangerous** on Windows. It reads the game's live data (Journal, `Status.json`, `NavRoute.json`, `Cargo.json`, `Market.json`…), generates information and images that Touch Portal can't produce on its own, and shows them on a second PC screen and on Touch Portal pages on a tablet.
 
-> Status: **0.1.0-alpha — phase F0.** The code currently is the Touch Portal plugin from [ed-touchportal](https://github.com/Adderloops/ed-touchportal), copied as a starting point and renamed so both can be installed side by side. The Electron app, second-screen window and generated images come in later phases.
+> Status: **0.2.0-alpha — Windows app, delivery 1 (live data, read-only).** See `app/README.md` to run it.
+>
+> Previous: **0.1.0-alpha — phase F0.** The code currently is the Touch Portal plugin from [ed-touchportal](https://github.com/Adderloops/ed-touchportal), copied as a starting point and renamed so both can be installed side by side. The Electron app, second-screen window and generated images come in later phases.
 
 ED BUBBLE is a separate project. `ed-touchportal` stays as it is and is not changed from here.
 
@@ -15,6 +17,13 @@ ED BUBBLE is a separate project. `ed-touchportal` stays as it is and is not chan
 | Touch Portal pages | `ED - …` / `ED ES - …` | `EDB - …` / `EDB ES - …` (to be generated) |
 
 ## Layout
+
+```
+core/                      Data engine shared by the Windows app and (later) Touch Portal
+app/                       Electron Windows app (own package.json; run `npm install` + `npm start` there)
+```
+
+Touch Portal plugin (copied from ed-touchportal):
 
 ```
 plugin.js                  Entry point: connects to Touch Portal and starts everything

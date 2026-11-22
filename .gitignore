@@ -3,3 +3,5 @@ tools/svcl.exe
 *.backup-*
 *.log
 /dist/
+
+app/node_modules/
