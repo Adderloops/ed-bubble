@@ -70,11 +70,19 @@ function fuel(state) {
 
 function routeView(state) {
   const r = state.route || [];
-  const total = r.reduce((a, x) => a + (x.distance || 0), 0);
+  const total = r.slice(1).reduce((a, x) => a + (x.distance || 0), 0); // el primer tramo es el salto que ya hiciste
+  // progreso sobre la ruta completa (tal como se trazó)
+  const full = state.routeFull && state.routeFull.length ? state.routeFull : r;
+  const fullDistance = full.reduce((a, x) => a + (x.distance || 0), 0);
+  const doneJumps = Math.max(0, full.length - r.length);
+  const doneDistance = full.slice(0, doneJumps + 1).reduce((a, x) => a + (x.distance || 0), 0);
   return {
     jumps: Math.max(0, r.length - 1), distance: total,
     destination: r.length ? r[r.length - 1].system : null,
-    legs: r.map((x, i) => ({ index: i, system: x.system, starClass: x.starClass, distance: x.distance, scoopable: isScoopable(x.starClass), here: i === 0 && x.system === state.location.system })),
+    totalJumps: Math.max(0, full.length - 1), doneJumps, fullDistance, doneDistance,
+    // todos los sistemas de la ruta trazada, con lo ya recorrido, para el gráfico
+    fullLegs: full.map((x, i) => ({ system: x.system, starClass: x.starClass, distance: x.distance || 0, scoopable: isScoopable(x.starClass), done: i < doneJumps, current: i === doneJumps })),
+    legs: r.map((x, i) => ({ index: i, system: x.system, systemAddress: x.systemAddress ?? null, starClass: x.starClass, distance: x.distance, scoopable: isScoopable(x.starClass), here: i === 0 && x.system === state.location.system })),
   };
 }
 

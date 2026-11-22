@@ -30,6 +30,7 @@ function createState() {
     },
     fsdTarget: { name: null, starClass: null, remainingJumps: null },
     route: [],
+    routeFull: [],
     lastJump: { distance: null, fuelUsed: null, at: null },
     docking: { active: false, pad: null, station: null, stationType: null, at: null },
     powerplay: { power: null, rank: null, merits: null, system: null, control: null, controlAt: null },
@@ -178,7 +179,7 @@ const HANDLERS = {
   RepairAll(state) { state.ship.hull = 1; },
   Died(state, e) { clearDocking(state); pushLog(state, e, 'Nave destruida', e.KillerName || '', 'danger'); },
   NavRoute() { /* el contenido real está en NavRoute.json */ },
-  NavRouteClear(state, e) { state.route = []; pushLog(state, e, 'Ruta borrada', ''); },
+  NavRouteClear(state, e) { state.route = []; state.routeFull = []; pushLog(state, e, 'Ruta borrada', ''); },
   Powerplay(state, e) { state.powerplay.power = e.Power || null; state.powerplay.rank = e.Rank ?? null; state.powerplay.merits = e.Merits ?? null; },
   PowerplayMerits(state, e) {
     state.powerplay.merits = e.TotalMerits ?? state.powerplay.merits;
@@ -293,6 +294,7 @@ function applyNavRoute(state, raw) {
   if (route.length) route[0].distance = 0;
   // si ya estamos en un sistema de la ruta, se recorta desde ahí
   const i = route.findIndex((r) => r.system === state.location.system);
+  state.routeFull = route;
   state.route = i >= 0 ? route.slice(i) : route;
 }
 

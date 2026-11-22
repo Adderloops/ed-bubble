@@ -354,6 +354,7 @@ function screenVuelo(s, v) {
         <span class="starc ${scls === 'amber' ? 'no' : scls === 'dim' ? 'unk' : ''}" style="width:44px;height:44px;border-radius:22px;font-size:15px">${esc(or(tgtClass, '?')).slice(0, 3)}</span>
         <span style="display:flex;flex-direction:column;min-width:0"><span class="ti nowrap" style="font-size:24px">${esc(tgtName)}</span><span class="eb ${scls}">Combustible ${stxt.toLowerCase()}</span></span>
       </div>
+      ${r.legs.length ? `<div style="display:flex;flex-direction:column;gap:2px"><span class="eb amber" style="font-size:11px">${esc(routeProgressText(r))}</span>${routeGraph(r, 516, false)}</div>` : ''}
       <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
         ${stat('Distancia', nextLeg && nextLeg.distance != null ? `${nf(nextLeg.distance, 2)} al` : '—')}${stat('Saltos restantes', r.legs.length ? nf(r.jumps) : or(s.fsdTarget.remainingJumps))}${stat('Destino', r.destination ? esc(r.destination) : esc(tgtName))}
       </div>` : `<div class="empty" style="flex-direction:column;gap:6px;padding:18px"><span class="va" style="font-size:18px;color:var(--soft)">Sin objetivo de salto</span><span style="font-size:14px">Fija un sistema o traza una ruta en el mapa galáctico.</span></div>`}
@@ -401,8 +402,54 @@ function screenVuelo(s, v) {
   </div>`;
 }
 
+/* ---------- gráfico de saltos de la ruta (SVG) ---------- */
+function routeGraph(r, width, big = true) {
+  const legs = r.fullLegs || [];
+  if (legs.length < 2) return '';
+  const H = big ? 74 : 52; const y = big ? 30 : 22; const pad = 14;
+  const span = width - pad * 2;
+  let acc = 0; const xs = legs.map((l, i) => { if (i) acc += l.distance || 0; return acc; });
+  const total = acc || 1;
+  const X = (i) => pad + (r.fullDistance ? xs[i] / total : i / (legs.length - 1)) * span;
+  const cur = legs.findIndex((l) => l.current);
+  const ci = cur < 0 ? 0 : cur;
+  const dense = legs.length > 45;
+  const col = (l) => (l.scoopable === false ? '#f0a443' : l.scoopable ? '#49c7e8' : '#5d7590');
+  const nodes = legs.map((l, i) => {
+    const x = X(i).toFixed(1);
+    if (i === 0 || i === legs.length - 1 || i === ci || i === ci + 1) return '';
+    if (l.done) return dense ? '' : `<circle cx="${x}" cy="${y}" r="2.5" fill="#4d6a52"/>`;
+    return dense ? `<line x1="${x}" y1="${y - 5}" x2="${x}" y2="${y + 5}" stroke="${col(l)}" stroke-width="1.5"/>`
+      : `<circle cx="${x}" cy="${y}" r="${big ? 4 : 3}" fill="#06101c" stroke="${col(l)}" stroke-width="1.6"/>`;
+  }).join('');
+  const xe = X(legs.length - 1); const xc = X(ci); const xn = ci + 1 < legs.length ? X(ci + 1) : null;
+  const end = legs[legs.length - 1];
+  const fs = big ? 12 : 10;
+  const nm = (t, n) => esc(String(t || '').length > n ? `${String(t).slice(0, n - 1)}…` : t || '');
+  return `<svg width="${width}" height="${H}" viewBox="0 0 ${width} ${H}" style="display:block;overflow:visible">
+    <defs><filter id="rg-glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <line x1="${pad}" y1="${y}" x2="${xc.toFixed(1)}" y2="${y}" stroke="#4d6a52" stroke-width="4" stroke-linecap="round"/>
+    <line x1="${xc.toFixed(1)}" y1="${y}" x2="${xe.toFixed(1)}" y2="${y}" stroke="#2a7fa3" stroke-width="4" stroke-linecap="round"/>
+    ${nodes}
+    <circle cx="${pad}" cy="${y}" r="5" fill="#06101c" stroke="#7d9a6a" stroke-width="2"/>
+    ${xn != null && ci + 1 < legs.length - 1 ? `<circle cx="${xn.toFixed(1)}" cy="${y}" r="${big ? 8 : 6}" fill="#06101c" stroke="${col(legs[ci + 1])}" stroke-width="2.5" filter="url(#rg-glow)"/><circle cx="${xn.toFixed(1)}" cy="${y}" r="2.5" fill="${col(legs[ci + 1])}"/>` : ''}
+    <circle cx="${xe.toFixed(1)}" cy="${y}" r="${big ? 9 : 7}" fill="#06101c" stroke="${col(end)}" stroke-width="2"/><circle cx="${xe.toFixed(1)}" cy="${y}" r="${big ? 4 : 3}" fill="${col(end)}"/>
+    <g filter="url(#rg-glow)"><circle cx="${xc.toFixed(1)}" cy="${y}" r="${big ? 7 : 5.5}" fill="#f0a443"/></g>
+    <path d="M${(xc - 5).toFixed(1)} ${y - (big ? 15 : 12)}l5 6l5 -6z" fill="#f0a443"/>
+    <text x="${pad - 4}" y="${H - 4}" font-family="Share Tech Mono" font-size="${fs}" fill="#7f9bb8">${big ? nm(legs[0].system, 26) : 'origen'}</text>
+    <text x="${(xe + 4).toFixed(1)}" y="${H - 4}" text-anchor="end" font-family="Share Tech Mono" font-size="${fs}" fill="#cfe3f5">${big ? nm(end.system, 26) + ' · ' : ''}${nf(r.fullDistance, 1)} al</text>
+  </svg>`;
+}
+
+/** Línea de texto del progreso: "Salto 2 de 19 · quedan 560 al". */
+function routeProgressText(r) {
+  const next = Math.min(r.totalJumps, r.doneJumps + 1);
+  const left = Math.max(0, r.fullDistance - r.doneDistance);
+  return r.doneJumps >= r.totalJumps ? 'Destino alcanzado' : `Salto ${next} de ${r.totalJumps} · quedan ${nf(left, 1)} al`;
+}
+
 /* ---------- Navegación: dónde estoy y adónde voy ---------- */
-const NAV_PAGE = 16;
+const NAV_PAGE = 13;
 
 function screenNavegacion(s, v) {
   const L = s.location; const r = v.route;
@@ -469,6 +516,10 @@ function screenNavegacion(s, v) {
     const pager = pages > 1 ? `<span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-pager="nav" data-d="-1" ${ui.navPage === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.navPage + 1}/${pages}</span><button type="button" class="pg" data-pager="nav" data-d="1" ${ui.navPage >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
     const noScoop = r.legs.filter((l) => !l.here && l.scoopable === false).length;
     routeBody = `
+      <div class="in" style="padding:12px 14px 6px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="eb amber">${esc(routeProgressText(r))}</span><span class="eb dim"><span class="cyan">●</span> recogible · <span class="amber">●</span> no recogible</span></div>
+        ${routeGraph(r, 920, true)}
+      </div>
       <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
         ${stat('Saltos', nf(r.jumps))}${stat('Distancia', `${nf(r.distance, 1)} al`)}${stat('No recogibles', nf(noScoop), noScoop ? 'amber' : 'cyan')}${stat('Destino', esc(r.destination))}
       </div>

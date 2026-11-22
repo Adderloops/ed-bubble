@@ -190,5 +190,18 @@ test('revisión de controles: una acción asignada solo al HOTAS se marca como "
   assert.strictEqual(r.problems.find((p) => p.action === 'UI_Back').status, 'hotas');
 });
 
+test('progreso de la ruta: saltos hechos, que quedan y distancia sin contar el salto ya hecho', () => {
+  const s = model.createState();
+  s.location.system = 'B';
+  model.applyNavRoute(s, { Route: [{ StarSystem: 'A', StarClass: 'K', StarPos: [0, 0, 0] }, { StarSystem: 'B', StarClass: 'G', StarPos: [10, 0, 0] }, { StarSystem: 'C', StarClass: 'DA', StarPos: [30, 0, 0] }, { StarSystem: 'D', StarClass: 'M', StarPos: [60, 0, 0] }] });
+  const r = derive.routeView(s);
+  assert.strictEqual(r.totalJumps, 3); assert.strictEqual(r.doneJumps, 1);
+  assert.strictEqual(r.distance, 50); assert.strictEqual(r.fullDistance, 60); assert.strictEqual(r.doneDistance, 10);
+  assert.deepStrictEqual(r.fullLegs.map((l) => (l.done ? 'd' : l.current ? 'c' : '-')).join(''), 'dc--');
+  model.applyEvent(s, ev('FSDJump', { StarSystem: 'C', JumpDist: 20, FuelUsed: 1 }));
+  const r2 = derive.routeView(s);
+  assert.strictEqual(r2.doneJumps, 2); assert.strictEqual(r2.distance, 30);
+});
+
 console.log(`\n${ok} pruebas OK, ${fail} fallidas.`);
 process.exit(fail ? 1 : 0);
