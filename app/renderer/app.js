@@ -1,6 +1,6 @@
 'use strict';
 
-/* ED BUBBLE · interfaz (entrega 1: datos en vivo, solo lectura) */
+/* ED BUBBLE · interfaz (entrega 2: datos en vivo + acciones en el juego) */
 
 const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
@@ -11,7 +11,7 @@ const SECTIONS = [
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
 
-const ui = { section: 'puente', autoJump: true, lastModeKey: null, snap: null };
+const ui = { section: 'puente', autoJump: true, lastModeKey: null, snap: null, controls: null, armed: null, flash: null, feedback: null };
 
 /* ---------- utilidades ---------- */
 const $ = (id) => document.getElementById(id);
@@ -178,8 +178,53 @@ const INDICATORS = [
   ['Recog. comb.', 'isScoopingFuel'], ['Bloq. masa', 'isFSDMassLocked'], ['Carga FSD', 'isFSDCharging'], ['Enfriam. FSD', 'isFSDCooldown'], ['Comb. bajo', 'isLowFuel', 1], ['Sobrecalent.', 'isOverHeating', 1],
   ['En peligro', 'isInDanger', 1], ['Interdictado', 'isBeingInterdicted', 1], ['Saltando FSD', 'isFSDJump'], ['SRV luces lar.', 'isSRVHighBeam'], ['Alt. radio medio', 'isAltitudeFromAverageRadius'],
 ];
-const TOGGLES = [['Tren aterr.', 'isLandingGearDown', 'Ctrl+7'], ['FA off', 'isFlightAssistOff', 'Ctrl+Z'], ['Armamento', 'areHardpointsDeployed', 'Ctrl+U'], ['Luces', 'areLightsOn', 'Ctrl+L'], ['Recolector', 'isCargoScoopDeployed', 'Ctrl+C'], ['Visión noct.', 'isNightVision', 'Ctrl+N']];
-const ACTIONS = [['Disipador de calor', 'Ctrl+H'], ['Modo silencioso', 'Ctrl+S'], ['Expulsar carga', 'Ctrl+J'], ['Siguiente sistema', 'RCtrl+N'], ['Solicitar atraque', 'macro']];
+const TOGGLES = [['Tren aterr.', 'isLandingGearDown', 'gear'], ['FA off', 'isFlightAssistOff', 'fa'], ['Armamento', 'areHardpointsDeployed', 'hardpoints'], ['Luces', 'areLightsOn', 'lights'], ['Recolector', 'isCargoScoopDeployed', 'scoop'], ['Visión noct.', 'isNightVision', 'nightvision']];
+const ACTIONS = [['Disipador de calor', 'heatsink'], ['Modo silencioso', 'silent'], ['Expulsar carga', 'eject'], ['Siguiente sistema', 'nextsys'], ['Solicitar atraque', 'dock']];
+
+const ERRORS = {
+  'game-not-running': 'El juego no está abierto',
+  'focus-failed': 'No he podido traer el juego al frente',
+  'focus-lost': 'El juego perdió el foco: acción detenida',
+  'no-binds': 'No he podido leer tus controles',
+  'no-key': 'Esa acción no tiene tecla de teclado en tu preset',
+  timeout: 'El ayudante de teclas no responde',
+  'helper-exited': 'El ayudante de teclas se ha cerrado; reintenta',
+};
+
+/** Atributos de un botón de acción según los controles cargados. */
+function actAttrs(id) {
+  const a = ui.controls && ui.controls.actions && ui.controls.actions[id];
+  if (!a) return { dis: 'disabled', key: '…', title: 'Cargando controles' };
+  if (!a.available) return { dis: 'disabled', key: 'sin tecla', title: `Asigna una tecla de teclado en el juego a: ${a.missing.join(', ')}` };
+  const armed = ui.armed && ui.armed.id === id;
+  return { dis: '', key: armed ? 'pulsa otra vez' : a.key, title: a.macro ? `${a.label} (macro de varias teclas)` : `${a.label} · ${a.key}`, cls: `${armed ? ' armed' : ''}${ui.flash && ui.flash.id === id ? (ui.flash.ok ? ' sent' : ' failed') : ''}` };
+}
+
+function feedbackLine() {
+  const c = ui.controls;
+  if (ui.feedback) return `<span class="eb ${ui.feedback.ok ? 'cyan' : 'red'}">${esc(ui.feedback.text)}</span>`;
+  if (!c) return '<span class="eb dim">Cargando controles…</span>';
+  if (c.error) return `<span class="eb red">${esc(c.error)}</span>`;
+  return `<span class="eb dim">Preset ${esc(c.preset)}${c.simulate ? ' · SIMULACIÓN' : ''} · clic para pulsar en el juego</span>`;
+}
+
+async function runAction(id) {
+  const a = ui.controls && ui.controls.actions[id];
+  if (!a || !a.available || !window.edbubble) return;
+  if (a.confirm && !(ui.armed && ui.armed.id === id)) {
+    ui.armed = { id, until: Date.now() + 3000 };
+    setTimeout(() => { if (ui.armed && ui.armed.id === id && Date.now() >= ui.armed.until) { ui.armed = null; render(); } }, 3050);
+    render(); return;
+  }
+  ui.armed = null;
+  const res = await window.edbubble.run(id);
+  const at = Date.now();
+  ui.flash = { id, ok: res.ok, at };
+  ui.feedback = { ok: res.ok, at, text: res.ok ? `${a.label}: enviado${res.simulated ? ' (simulación)' : ''}` : `${a.label}: ${ERRORS[res.error] || res.error}` };
+  setTimeout(() => { if (ui.flash && ui.flash.at === at) { ui.flash = null; render(); } }, 700);
+  setTimeout(() => { if (ui.feedback && ui.feedback.at === at) { ui.feedback = null; render(); } }, 4000);
+  render();
+}
 
 function screenVuelo(s, v) {
   const fl = s.status.flags || {};
@@ -187,8 +232,8 @@ function screenVuelo(s, v) {
   const docking = s.docking.active;
   const showDiagram = docking && (DIAGRAM_TYPES.has(s.docking.stationType) || /dodec/i.test(s.docking.stationType || ''));
   const inds = INDICATORS.map(([l, k, w]) => `<span class="chip ${fl[k] ? (w ? 'warnon' : 'on') : ''}"><span class="dot ${fl[k] ? (w ? 'warn' : 'on') : ''}"></span>${l}</span>`).join('');
-  const toggles = TOGGLES.map(([l, k, key]) => `<button type="button" class="ctl ${fl[k] ? 'on' : ''}" disabled title="Las acciones llegan en la entrega 2"><span style="display:flex;align-items:center;gap:8px"><span class="dot ${fl[k] ? 'on' : ''}"></span>${l}</span><span class="k">${key}</span></button>`).join('');
-  const actions = ACTIONS.map(([l, key]) => `<button type="button" class="act" disabled title="Las acciones llegan en la entrega 2">${l}<span class="k">${key}</span></button>`).join('');
+  const toggles = TOGGLES.map(([l, k, id]) => { const a = actAttrs(id); return `<button type="button" class="ctl ${fl[k] ? 'on' : ''}${a.cls || ''}" data-act="${id}" ${a.dis} title="${esc(a.title)}"><span style="display:flex;align-items:center;gap:8px"><span class="dot ${fl[k] ? 'on' : ''}"></span>${l}</span><span class="k">${esc(a.key)}</span></button>`; }).join('');
+  const actions = ACTIONS.map(([l, id]) => { const a = actAttrs(id); return `<button type="button" class="act${a.cls || ''}" data-act="${id}" ${a.dis} title="${esc(a.title)}">${l}<span class="k">${esc(a.key)}</span></button>`; }).join('');
   const nearBody = fl.hasLatLong;
   const approach = nearBody
     ? `<div class="in" style="padding:12px;display:flex;justify-content:space-between;align-items:center"><span class="eb">Cuerpo</span><span class="va nowrap" style="font-size:18px">${esc(clean(s.status.bodyName) || clean(s.location.body) || '—')}</span></div>
@@ -266,7 +311,7 @@ function screenVuelo(s, v) {
     <section class="pn card" style="grid-column:1;grid-row:2">
       <div style="display:flex;justify-content:space-between"><span class="ti" style="font-size:16px">Estado</span><span class="eb dim">Los 17 indicadores de la página Vuelo</span></div>
       <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px">${inds}</div>
-      <div style="display:flex;justify-content:space-between"><span class="ti" style="font-size:16px">Interruptores</span><span class="eb dim">Se iluminan según el juego · pulsables en la entrega 2</span></div>
+      <div style="display:flex;justify-content:space-between"><span class="ti" style="font-size:16px">Interruptores</span>${feedbackLine()}</div>
       <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px">${toggles}</div>
       <span class="ti" style="font-size:16px">Acciones</span>
       <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px">${actions}</div>
@@ -319,7 +364,16 @@ $('rail').addEventListener('click', (ev) => {
   const b = ev.target.closest('button[data-sec]');
   if (b && !b.disabled) { ui.section = b.dataset.sec; render(); }
 });
-document.addEventListener('click', (ev) => { if (ev.target.closest('#autojump')) { ui.autoJump = !ui.autoJump; render(); } });
+document.addEventListener('click', (ev) => {
+  if (ev.target.closest('#autojump')) { ui.autoJump = !ui.autoJump; render(); }
+});
+// Las acciones responden al pulsar (pointerdown), no al soltar: la pantalla se
+// repinta varias veces por segundo en vuelo y un clic normal podría perderse.
+document.addEventListener('pointerdown', (ev) => {
+  if (ev.button !== 0) return;
+  const b = ev.target.closest('button[data-act]');
+  if (b && !b.disabled) { ev.preventDefault(); runAction(b.dataset.act); }
+});
 window.addEventListener('resize', fit);
 setInterval(() => { $('hdr-clock').textContent = `${new Date().toISOString().slice(11, 16)} UTC`; }, 1000);
 
@@ -327,5 +381,7 @@ fit();
 renderRail(null);
 if (window.edbubble) {
   window.edbubble.onUpdate((snap) => { ui.snap = snap; render(); });
+  window.edbubble.onControls((c) => { ui.controls = c; render(); });
+  window.edbubble.controls().then((c) => { ui.controls = c; render(); });
   window.edbubble.snapshot().then((snap) => { if (snap && !ui.snap) { ui.snap = snap; render(); } });
 }

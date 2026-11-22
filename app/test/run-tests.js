@@ -96,5 +96,79 @@ test('ruta de NavRoute.json: distancias por coordenadas y recorte al sistema act
   assert.strictEqual(r.legs[0].scoopable, false);
 });
 
+const binds = require('../../core/binds');
+const actions = require('../../core/actions');
+const keysender = require('../../core/keysender');
+const SAMPLE_BINDS = `<?xml version="1.0" encoding="UTF-8" ?>
+<Root PresetName="Demo" MajorVersion="4" MinorVersion="2">
+	<LandingGearToggle>
+		<Primary Device="SaitekX56Throttle" Key="Joy_9" />
+		<Secondary Device="Keyboard" Key="Key_7">
+			<Modifier Device="Keyboard" Key="Key_LeftControl" />
+		</Secondary>
+	</LandingGearToggle>
+	<TargetNextRouteSystem>
+		<Primary Device="Keyboard" Key="Key_N">
+			<Modifier Device="Keyboard" Key="Key_RightControl" />
+		</Primary>
+		<Secondary Device="{NoDevice}" Key="" />
+	</TargetNextRouteSystem>
+	<DeployHeatSink>
+		<Primary Device="Keyboard" Key="Key_H">
+			<Modifier Device="SaitekX56Joystick" Key="Joy_3" />
+		</Primary>
+		<Secondary Device="{NoDevice}" Key="" />
+	</DeployHeatSink>
+	<FocusLeftPanel><Primary Device="Keyboard" Key="Key_1" /><Secondary Device="{NoDevice}" Key="" /></FocusLeftPanel>
+	<CyclePreviousPanel><Primary Device="Keyboard" Key="Key_PageUp" /><Secondary Device="{NoDevice}" Key="" /></CyclePreviousPanel>
+	<UI_Right><Primary Device="Keyboard" Key="Key_D" /><Secondary Device="{NoDevice}" Key="" /></UI_Right>
+	<UI_Select><Primary Device="Keyboard" Key="Key_Space" /><Secondary Device="{NoDevice}" Key="" /></UI_Select>
+</Root>`;
+
+test('controles: toma la tecla de teclado (Primary o Secondary) con sus modificadores e ignora el HOTAS', () => {
+  const b = binds.parseBinds(SAMPLE_BINDS);
+  assert.deepStrictEqual(b.LandingGearToggle, { key: 'Key_7', modifiers: ['Key_LeftControl'], slot: 'Secondary' });
+  assert.strictEqual(binds.bindLabel(b.TargetNextRouteSystem), 'Ctrl D+N');
+  assert.strictEqual(b.DeployHeatSink, undefined, 'un modificador de mando no se puede reproducir');
+});
+
+test('controles: elige el preset activo y su archivo de versión más alta', () => {
+  const fs = require('fs'); const os = require('os'); const path = require('path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'edb-binds-'));
+  fs.writeFileSync(path.join(dir, 'StartPreset.4.start'), 'Demo\nDemo\nDemo\nDemo');
+  fs.writeFileSync(path.join(dir, 'Demo.binds'), '<Root></Root>');
+  fs.writeFileSync(path.join(dir, 'Demo.4.2.binds'), SAMPLE_BINDS);
+  const r = binds.loadActive(dir);
+  assert.strictEqual(r.preset, 'Demo');
+  assert.ok(r.file.endsWith('Demo.4.2.binds'));
+  assert.ok(r.binds.LandingGearToggle);
+});
+
+test('acciones: disponibles solo con tecla de teclado; el atraque es una macro completa', () => {
+  const b = binds.parseBinds(SAMPLE_BINDS);
+  const d = actions.describe(b);
+  assert.strictEqual(d.gear.available, true); assert.strictEqual(d.gear.key, 'Ctrl+7');
+  assert.strictEqual(d.heatsink.available, false);
+  assert.strictEqual(d.dock.available, true); assert.strictEqual(d.dock.macro, true);
+  assert.strictEqual(d.eject.confirm, true);
+  assert.strictEqual(actions.build('heatsink', b).error, 'no-key');
+});
+
+test('teclas: enfoca el juego primero, pulsa modificador y tecla, y suelta en orden inverso', () => {
+  const b = binds.parseBinds(SAMPLE_BINDS);
+  const { ops } = actions.build('nextsys', b);
+  assert.strictEqual(ops[0].op, 'focus');
+  const keys = ops.filter((o) => o.op !== 'sleep' && o.op !== 'focus').map((o) => `${o.op}:${o.sc.toString(16)}${o.ext ? 'e' : ''}`);
+  assert.deepStrictEqual(keys, ['down:1de', 'down:31', 'up:31', 'up:1de']);
+  const dock = actions.build('dock', b).ops.filter((o) => o.op === 'down').map((o) => o.sc);
+  assert.deepStrictEqual(dock, [0x02, 0x49, 0x49, 0x20, 0x39]);
+});
+
+test('teclas: en simulación no se envía nada y las órdenes quedan registradas', async () => {
+  const k = new keysender.KeySender({ simulate: true });
+  const r = await k.run([{ op: 'focus' }]);
+  assert.strictEqual(r.ok, true); assert.strictEqual(k.sent.length, 1);
+});
+
 console.log(`\n${ok} pruebas OK, ${fail} fallidas.`);
 process.exit(fail ? 1 : 0);

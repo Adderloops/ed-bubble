@@ -11,6 +11,9 @@ const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { Engine } = require('../core/engine');
+const binds = require('../core/binds');
+const actions = require('../core/actions');
+const { KeySender } = require('../core/keysender');
 
 const BOUNDS_FILE = () => path.join(app.getPath('userData'), 'window-bounds.json');
 
@@ -35,6 +38,29 @@ function defaultBounds() {
 let win = null;
 let engine = null;
 let last = null;
+let controls = { error: 'Cargando controles…' };
+const keys = new KeySender({ simulate: process.env.ED_BUBBLE_SIMULATE === '1' || undefined });
+
+/** Lee el preset de controles activo y avisa a la ventana. */
+function loadControls() {
+  controls = binds.loadActive(process.env.ED_BINDINGS_FOLDER || undefined);
+  if (controls.error) console.warn('[controles]', controls.error);
+  else console.log(`[controles] preset ${controls.preset} (${Object.keys(controls.binds).length} acciones de teclado)`);
+  if (win && !win.isDestroyed()) win.webContents.send('ed:controls', controlsInfo());
+}
+
+function controlsInfo() {
+  return { preset: controls.preset || null, error: controls.error || null, simulate: keys.simulate, actions: actions.describe(controls.binds) };
+}
+
+/** Recarga los controles cuando el comandante los cambia en el juego. */
+function watchControls() {
+  const folder = controls.folder || process.env.ED_BINDINGS_FOLDER || binds.defaultBindingsFolder();
+  let t = null;
+  try {
+    fs.watch(folder, () => { clearTimeout(t); t = setTimeout(loadControls, 800); });
+  } catch (e) { console.warn('[controles] no puedo vigilar', folder, e.message); }
+}
 
 function createWindow() {
   const b = loadBounds() || defaultBounds();
@@ -43,10 +69,10 @@ function createWindow() {
     minWidth: 960, minHeight: 540,
     backgroundColor: '#04080f',
     title: 'ED BUBBLE',
-    autoHideMenuBar: true,
     show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
+  win.removeMenu(); // sin barra de menú: Alt no debe hacer nada en esta ventana
   if (b.maximized) win.maximize();
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   // No robar el foco al juego al abrir: se muestra sin activarse.
@@ -81,6 +107,18 @@ app.whenReady().then(() => {
   engine.on('warning', (msg) => console.warn('[engine]', msg));
   engine.start();
   ipcMain.handle('ed:snapshot', () => last || engine.snapshot());
+  loadControls();
+  watchControls();
+  keys.on('warning', (m) => console.warn('[teclas]', m));
+  keys.start();
+  ipcMain.handle('ed:controls', () => controlsInfo());
+  ipcMain.handle('ed:run', async (_e, id) => {
+    const built = actions.build(String(id), controls.binds);
+    if (built.error) return { ok: false, error: built.error, action: built.action };
+    const res = await keys.run(built.ops);
+    if (!res.ok) console.warn(`[teclas] ${id}: ${res.error}`);
+    return res;
+  });
   ipcMain.handle('ed:info', () => ({ version: require('./package.json').version, journalFolder: engine.folder }));
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
@@ -88,5 +126,6 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (engine) engine.stop();
+  keys.stop();
   app.quit();
 });

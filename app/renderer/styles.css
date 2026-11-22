@@ -67,6 +67,15 @@ button { font: inherit; }
 .ctl.on { color: #fff; background: #0f2c44; border-color: var(--cyandim); }
 .ctl .k { font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 0; opacity: .7; }
 .act { height: 58px; font-family: Rajdhani, sans-serif; font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: #6f6252; background: #1a1610; border: 1px solid #3a3020; border-radius: 2px; }
+.ctl:not(:disabled), .act:not(:disabled) { cursor: pointer; }
+.ctl:not(:disabled):hover { border-color: var(--cyan); }
+.ctl:disabled, .act:disabled { opacity: .55; cursor: default; }
+.act:not(:disabled) { color: var(--amber); background: #221a0e; border-color: #5a4524; }
+.act:not(:disabled):hover { background: #2e2311; border-color: var(--amber); }
+.act:not(:disabled):active, .ctl:not(:disabled):active { transform: translateY(1px); }
+.act.armed { color: #1a1402; background: var(--yellow); border-color: var(--yellow); }
+.ctl.sent, .act.sent { box-shadow: 0 0 0 2px var(--cyan) inset; }
+.ctl.failed, .act.failed { box-shadow: 0 0 0 2px var(--red) inset; }
 .act .k { display: block; font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 0; }
 .row { display: grid; align-items: center; height: 42px; }
 .starc { width: 28px; height: 28px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-family: 'Share Tech Mono', monospace; font-size: 12px; border: 1px solid var(--cyan); color: var(--cyan); }
