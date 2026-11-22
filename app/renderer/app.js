@@ -327,18 +327,52 @@ function screenVuelo(s, v) {
   const dial = showDiagram ? (() => {
     const pad = Number(s.docking.pad) || 0;
     const hot = pad ? (pad - 1) % 12 : -1;
-    const marks = Array.from({ length: 12 }, (_, i) => { const a = (i * 30 - 90) * Math.PI / 180; const x = 100 + 78 * Math.cos(a) - 7; const y = 100 + 78 * Math.sin(a) - 7;
-      return `<span style="position:absolute;left:${x.toFixed(0)}px;top:${y.toFixed(0)}px;width:14px;height:14px;border-radius:2px;background:${i === hot ? 'var(--amber)' : 'var(--off)'};border:1px solid ${i === hot ? 'var(--amber)' : 'var(--line2)'}"></span>`; }).join('');
+    const C = 150; const RP = 94;
+    const pt = (r, deg) => { const a = (deg - 90) * Math.PI / 180; return [C + r * Math.cos(a), C + r * Math.sin(a)]; };
+    const spokes = Array.from({ length: 12 }, (_, i) => {
+      const [x1, y1] = pt(62, i * 30 + 15); const [x2, y2] = pt(122, i * 30 + 15);
+      return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#3a5576" stroke-width="1.2"/>
+        <circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="2" fill="#f08a3a"/><circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="2" fill="#f08a3a"/>`;
+    }).join('');
+    const pads = Array.from({ length: 12 }, (_, i) => {
+      const [x, y] = pt(RP, i * 30); const on = i === hot; const h = 11;
+      return `<g${on ? ' filter="url(#glow)"' : ''}>
+        <rect x="${(x - h).toFixed(1)}" y="${(y - h).toFixed(1)}" width="${2 * h}" height="${2 * h}" rx="3" fill="${on ? 'rgba(240,164,67,.28)' : '#081627'}" stroke="${on ? '#f0a443' : '#2f7fb0'}" stroke-width="${on ? 2.2 : 1.4}"/>
+        <path d="M${x - 3} ${y}h6M${x} ${y - 3}v6" stroke="${on ? '#ffd08a' : '#2f7fb0'}" stroke-width="1"/></g>`;
+    }).join('');
+    const br = (x, y, dx, dy) => `<path d="M${x} ${y + dy * 9}V${y}H${x + dx * 9}" fill="none" stroke="#49c7e8" stroke-width="1.4"/>`;
+    const svg = `<svg viewBox="0 0 300 330" width="268" height="295" style="display:block;overflow:visible">
+      <defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <radialGradient id="hub" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#0f2440"/><stop offset="1" stop-color="#06101c"/></radialGradient>
+      </defs>
+      <g transform="translate(0,15)">
+      <circle cx="${C}" cy="${C}" r="134" fill="#06101c" stroke="#1f3a5a" stroke-width="1"/>
+      <circle cx="${C}" cy="${C}" r="126" fill="none" stroke="#2b5379" stroke-width="2"/>
+      <circle cx="${C}" cy="${C}" r="118" fill="none" stroke="#1f4a6e" stroke-width="1" stroke-dasharray="2 5"/>
+      ${spokes}
+      <circle cx="${C}" cy="${C}" r="62" fill="url(#hub)" stroke="#2b5379" stroke-width="1.5"/>
+      <circle cx="${C}" cy="${C}" r="54" fill="none" stroke="#1f4a6e" stroke-width="1"/>
+      ${pads}
+      ${br(118, 138, 1, 1)}${br(182, 138, -1, 1)}${br(118, 180, 1, -1)}${br(182, 180, -1, -1)}
+      <text x="${C}" y="127" text-anchor="middle" font-family="Rajdhani" font-weight="600" font-size="9" letter-spacing="2.5" fill="#7f9bb8">PLATAFORMA</text>
+      <text x="${C}" y="172" text-anchor="middle" font-family="Share Tech Mono" font-size="38" fill="#f0a443" filter="url(#glow)">${String(pad).padStart(2, '0')}</text>
+      <path d="M${C - 6} 6l6 9l6 -9z" fill="#49c7e8"/>
+      <path d="M${C - 6} 294l6 -9l6 9z" fill="#49c7e8"/>
+      <line x1="4" y1="${C}" x2="22" y2="${C}" stroke="#ff4b4b" stroke-width="2"/>
+      <circle cx="16" cy="${C}" r="7" fill="#ff4b4b" filter="url(#glow)"/>
+      <line x1="278" y1="${C}" x2="296" y2="${C}" stroke="#3be37a" stroke-width="2"/>
+      <circle cx="284" cy="${C}" r="7" fill="#3be37a" filter="url(#glow)"/>
+      </g>
+      <text x="${C}" y="10" text-anchor="middle" font-family="Rajdhani" font-weight="700" font-size="11" letter-spacing="3" fill="#49c7e8">ARRIBA</text>
+      <text x="${C}" y="328" text-anchor="middle" font-family="Rajdhani" font-weight="700" font-size="11" letter-spacing="3" fill="#49c7e8">ABAJO</text>
+    </svg>`;
     return `<section class="pn card" style="align-items:center;grid-column:2;grid-row:1 / span 2">
       <span class="ti" style="font-size:16px;align-self:flex-start">Atraque</span>
       <span class="eb" style="align-self:flex-start">Concedido · ${esc(STATION_TYPES[s.docking.stationType] || s.docking.stationType)}</span>
-      <div style="position:relative;width:200px;height:200px;border-radius:100px;border:1px solid var(--line2);background:radial-gradient(circle,#0e2036 0%,#06101c 70%)">
-        <span title="Luz roja" style="position:absolute;left:-7px;top:93px;width:14px;height:14px;border-radius:7px;background:#ff4b4b;box-shadow:0 0 9px #ff4b4b"></span>
-        <span title="Luz verde" style="position:absolute;left:193px;top:93px;width:14px;height:14px;border-radius:7px;background:#3be37a;box-shadow:0 0 9px #3be37a"></span>${marks}
-        <span class="eb" style="position:absolute;left:0;right:0;top:78px;text-align:center">Plataforma</span>
-        <span class="num amber" style="position:absolute;left:0;right:0;top:94px;text-align:center;font-size:34px">${String(pad).padStart(2, '0')}</span>
-      </div>
-      <span class="soft" style="font-size:14px;text-align:center">${esc(clean(s.docking.station))}</span>
+      ${svg}
+      <div style="display:flex;justify-content:space-between;width:100%;padding:0 4px"><span class="eb" style="color:#ff6b6b">● Babor</span><span class="eb" style="color:#3be37a">Estribor ●</span></div>
+      <span class="va" style="font-size:16px;text-align:center">${esc(clean(s.docking.station))}</span>
     </section>`;
   })() : '';
 
