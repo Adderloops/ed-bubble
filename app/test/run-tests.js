@@ -134,6 +134,24 @@ test('controles: toma la tecla de teclado (Primary o Secondary) con sus modifica
   assert.strictEqual(b.DeployHeatSink, undefined, 'un modificador de mando no se puede reproducir');
 });
 
+test('controles: esquema del juego sin archivo, archivo importado y archivo que no es de controles', () => {
+  const fs = require('fs'); const os = require('os'); const path = require('path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'edb-binds-'));
+  assert.strictEqual(binds.loadActive(path.join(dir, 'no-existe')).code, 'nofolder');
+  assert.strictEqual(binds.loadActive(dir).code, 'nopreset');
+  fs.writeFileSync(path.join(dir, 'StartPreset.4.start'), 'KeyboardMouseOnly\nKeyboardMouseOnly');
+  const b = binds.loadActive(dir);
+  assert.strictEqual(b.code, 'builtin'); assert.strictEqual(b.preset, 'KeyboardMouseOnly');
+  const f = path.join(dir, 'Amigo.4.2.binds');
+  fs.writeFileSync(f, SAMPLE_BINDS);
+  const r = binds.loadFile(f);
+  assert.ok(!r.error && r.binds.LandingGearToggle);
+  assert.strictEqual(binds.presetFromFile(f), 'Amigo');
+  const bad = path.join(dir, 'nota.binds'); fs.writeFileSync(bad, 'hola');
+  assert.strictEqual(binds.loadFile(bad).code, 'format');
+  assert.strictEqual(binds.loadFile(path.join(dir, 'x.binds')).code, 'read');
+});
+
 test('controles: elige el preset activo y su archivo de versión más alta', () => {
   const fs = require('fs'); const os = require('os'); const path = require('path');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'edb-binds-'));

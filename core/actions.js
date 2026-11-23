@@ -74,7 +74,8 @@ function checkControls(controls) {
     if (st[a].status === 'ok') continue;
     problems.push({ action: a, label: BIND_NAMES[a] || a, groups: CHECK_GROUPS.filter((g) => g.binds.includes(a)).map((g) => g.name), ...st[a] });
   }
-  return { groups, problems, total: all.length, ready: all.filter((a) => st[a].status === 'ok').length };
+  const items = all.map((a) => ({ action: a, label: BIND_NAMES[a] || a, groups: CHECK_GROUPS.filter((g) => g.binds.includes(a)).map((g) => g.name), ...st[a] }));
+  return { groups, problems, items, total: all.length, ready: all.filter((a) => st[a].status === 'ok').length };
 }
 
 /** Estado de cada acción con los controles cargados: tecla que se usará, o por qué no se puede. */

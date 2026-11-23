@@ -64,6 +64,15 @@ Para desarrollo: `ED_JOURNAL_FOLDER` apunta el motor a otra carpeta de Journals,
 
 **Filtro de estaciones** (ficha de un sistema en Navegación): un botón con el icono y el número de cada tipo de estación (las construcciones llevan la etiqueta «Construcción»). Se pueden marcar varios a la vez; «Solo L» deja las que tienen plataforma grande y «Todas» quita el filtro.
 
+## Controles
+
+Sección **Controles** (menú, grupo Comandante; también el botón «Guía» de la tarjeta de controles de Puente). Pensada para quien instala la app por primera vez:
+
+- Guía en cuatro pasos: guardar el esquema en el juego (los esquemas que trae el juego no tienen archivo propio), asignar teclas de teclado (la app no puede pulsar botones de HOTAS o mando), guardar y jugar con Elite en primer plano.
+- Estado: esquema que se usa, archivo y cuántas acciones están listas, con el motivo si no se puede leer.
+- **Importar archivo .binds**: elige cualquier archivo de controles; la app lo usa y lo vigila. «Usar el esquema activo del juego» vuelve a la detección automática (StartPreset.4.start).
+- Lista de las acciones que usa ED BUBBLE con su tecla y estado (lista, sin asignar, solo en mando, tecla compartida o no enviable).
+
 ## Ajustes
 
 Botón **Ajustes** de la cabecera (vuelve a pulsarlo para regresar a la sección anterior). Se guardan en `settings.json`, en la carpeta de datos de la app.

@@ -26,6 +26,10 @@ contextBridge.exposeInMainWorld('edbubble', {
   setSetting: (key, value) => ipcRenderer.invoke('ed:settings-set', key, value),
   displays: () => ipcRenderer.invoke('ed:displays'),
   moveToDisplay: (id) => ipcRenderer.invoke('ed:display-move', id),
+  bindsImport: () => ipcRenderer.invoke('ed:binds-import'),
+  bindsAuto: () => ipcRenderer.invoke('ed:binds-auto'),
+  bindsReload: () => ipcRenderer.invoke('ed:binds-reload'),
+  bindsFolder: () => ipcRenderer.invoke('ed:binds-folder'),
   openData: () => ipcRenderer.invoke('ed:open-data'),
   open: (site, name, address) => ipcRenderer.invoke('ed:open', { site, name, address }),
 });

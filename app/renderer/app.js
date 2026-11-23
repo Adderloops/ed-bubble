@@ -7,7 +7,7 @@ const SECTIONS = [
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo' }, { id: 'srv', label: 'SRV' },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie' },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería' }, { id: 'colonizacion', label: 'Colonización', built: true },
-  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
+  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
 
@@ -238,19 +238,20 @@ function routeCard(r, perPage) {
 
 /* ---------- revisión de controles (Puente de mando) ---------- */
 const CTL_PAGE = 3;
-const CTL_ORDER = { unbound: 0, hotas: 1, unsupported: 2, shared: 3 };
+const CTL_ORDER = { unbound: 0, hotas: 1, unsupported: 2, shared: 3, ok: 4 };
 const CTL_STATUS = {
   unbound: ['Sin asignar', 'red'],
   hotas: ['Solo en mando', 'yellow'],
   unsupported: ['Tecla no enviable', 'yellow'],
   shared: ['Tecla compartida', 'yellow'],
+  ok: ['Lista', 'cyan'],
 };
 
 function controlsPanel() {
   const c = ui.controls;
   const head = (right) => `<div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Controles</span>${right}</div>`;
   if (!c) return `<section class="pn card" style="flex:1;min-height:0">${head('')}<div class="empty">Leyendo tus controles…</div></section>`;
-  if (c.error || !c.check) return `<section class="pn card" style="flex:1;min-height:0">${head('')}<div class="empty" style="flex-direction:column;gap:6px"><span class="red">${esc(c.error || 'Sin datos')}</span><span style="font-size:14px">Sin controles no se pueden pulsar los botones.</span></div></section>`;
+  if (c.error || !c.check) return `<section class="pn card" style="flex:1;min-height:0">${head('<button type="button" class="tab small" data-goto="controles">Guía</button>')}<div class="empty" style="flex-direction:column;gap:8px"><span class="red">${esc(c.error || 'Sin datos')}</span><span style="font-size:14px">Sin controles no se pueden pulsar los botones.</span><button type="button" class="tab" data-goto="controles">Preparar mis controles</button></div></section>`;
   const k = c.check;
   const groups = k.groups.map((g) => {
     const full = g.ready === g.total;
@@ -276,7 +277,7 @@ function controlsPanel() {
     body = `<div style="display:flex;justify-content:space-between;align-items:center"><span class="eb yellow">${k.problems.length} por revisar</span>${pager}</div><div style="display:flex;flex-direction:column;min-height:0">${rows}</div>`;
   }
   return `<section class="pn card" style="flex:1;min-height:0;overflow:hidden">
-    ${head(`<span class="eb dim">Preset ${esc(c.preset)}</span>`)}
+    ${head(`<span style="display:flex;align-items:center;gap:10px"><span class="eb dim">Preset ${esc(c.preset)}</span><button type="button" class="tab small" data-goto="controles">Guía</button></span>`)}
     <div style="display:flex;flex-direction:column;gap:6px">${groups}</div>
     ${body}
     <span class="note nowrap" style="margin-top:auto">Corrígelas en Opciones › Controles; se releen solas.</span>
@@ -1323,6 +1324,98 @@ function reportError(where, e) {
 window.addEventListener('error', (ev) => reportError('error', ev.error || ev.message));
 window.addEventListener('unhandledrejection', (ev) => reportError('promesa', ev.reason));
 
+/* ---------- Controles: guía e importación de .binds ---------- */
+const BINDS_PAGE = 10;
+const BINDS_HELP = {
+  nofolder: 'El juego aún no ha guardado controles en este PC. Abre Elite Dangerous, entra en Opciones › Controles, cambia cualquier cosa y guarda.',
+  nopreset: 'No encuentro qué esquema usas. Abre Opciones › Controles en el juego y guarda tu esquema una vez.',
+  builtin: 'Los esquemas que vienen con el juego no se guardan en tu carpeta. En Opciones › Controles cambia cualquier tecla y guarda el esquema con un nombre tuyo: la app lo detectará sola.',
+  read: 'No puedo leer el archivo elegido. Importa otro o vuelve a usar el esquema activo del juego.',
+  format: 'Ese archivo no es de controles de Elite Dangerous. Elige un archivo .binds.',
+};
+
+function screenControles(s, v) {
+  const c = ui.controls;
+  const step = (n, title, text, state) => `<div class="in" style="display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;padding:12px 14px;${state === 'now' ? 'border-color:var(--amber)' : ''}">
+      <span class="num" style="font-size:26px;color:${state === 'done' ? 'var(--cyan)' : state === 'now' ? 'var(--amber)' : 'var(--eb)'}">${state === 'done' ? '✓' : n}</span>
+      <span style="display:flex;flex-direction:column;gap:3px;min-width:0"><span class="va" style="font-size:17px">${title}</span><span class="soft" style="font-size:14px;line-height:1.35">${text}</span></span></div>`;
+  const found = c && !c.error;
+  const k = found ? c.check : null;
+  const allOk = k && k.ready === k.total;
+  const guide = `
+    <section class="pn card">
+      <span class="ti" style="font-size:16px">Cómo preparar tus controles</span>
+      <span class="soft" style="font-size:14px">ED BUBBLE pulsa por ti las teclas que tienes asignadas en el juego. Para eso necesita leer tu archivo de controles (.binds).</span>
+      ${step(1, 'Guarda tu esquema en el juego', 'Opciones › Controles. Si usas uno de los que trae el juego (teclado y ratón, mando…), cambia cualquier tecla y guárdalo con un nombre tuyo: así se crea tu archivo .binds.', found ? 'done' : 'now')}
+      ${step(2, 'Asigna teclas de teclado', 'La app envía teclas de teclado, no botones de HOTAS ni de mando. A cada acción marcada «Solo en mando» o «Sin asignar» ponle una tecla en la columna secundaria; la principal puede seguir en tu HOTAS.', !found ? '' : allOk ? 'done' : 'now')}
+      ${step(3, 'Guarda y vuelve aquí', 'La app relee tus controles en cuanto el juego los guarda. Si no los encuentra, pulsa «Importar archivo .binds» y elige el tuyo en la carpeta de controles.', allOk ? 'done' : '')}
+      ${step(4, 'Juega con Elite en primer plano', 'Las teclas van a la ventana del juego. Si Elite no tiene el foco, la acción se cancela para no escribir en otra ventana.', '')}
+      <div class="in" style="padding:10px 14px;display:flex;flex-direction:column;gap:2px"><span class="eb" style="font-size:10px">Carpeta de controles de Elite Dangerous</span><span class="num soft" style="font-size:13px;word-break:break-all">${esc((c && c.defaultFolder) || '%LOCALAPPDATA%\\Frontier Developments\\Elite Dangerous\\Options\\Bindings')}</span></div>
+    </section>`;
+
+  const msg = ui.bindsMsg ? `<span class="eb ${ui.bindsMsg.ok ? 'cyan' : 'red'}" style="white-space:normal">${esc(ui.bindsMsg.text)}</span>` : '';
+  const status = !c ? '<div class="empty">Leyendo tus controles…</div>' : `
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:16px;align-items:center">
+        <span style="display:flex;flex-direction:column;gap:4px;min-width:0">
+          <span class="eb">${c.source === 'file' ? 'Archivo importado' : 'Automático · esquema activo del juego'}</span>
+          <span class="ti nowrap" style="font-size:30px">${esc(c.preset || 'Sin controles')}</span>
+          <span class="soft nowrap" style="font-size:13px" title="${esc(c.file || c.folder || '')}">${esc(c.file || c.folder || '—')}</span>
+        </span>
+        <span style="display:flex;flex-direction:column;align-items:flex-end">
+          ${c.error ? '<span class="num red" style="font-size:30px">Sin leer</span>' : `<span class="num ${allOk ? 'cyan' : 'amber'}" style="font-size:40px">${k.ready} / ${k.total}</span><span class="eb ${allOk ? 'cyan' : 'amber'}">${allOk ? 'Todo listo' : `${k.total - k.ready} por revisar`}</span>`}
+        </span>
+      </div>
+      ${c.error ? `<div class="in" style="padding:12px 14px;border-color:#5a2020;display:flex;flex-direction:column;gap:4px"><span class="red" style="font-size:16px">${esc(c.error)}</span><span class="soft" style="font-size:14px">${esc(BINDS_HELP[c.code] || '')}</span></div>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="plot-btn" style="width:auto;padding:0 18px" data-binds="import">Importar archivo .binds</button>
+        ${c.source === 'file' ? '<button type="button" class="tab" data-binds="auto">Usar el esquema activo del juego</button>' : ''}
+        <button type="button" class="tab" data-binds="reload">Volver a leer</button>
+        <button type="button" class="tab" data-binds="folder">Abrir carpeta</button>
+      </div>
+      ${msg}`;
+  const statusCard = `<section class="pn card"><span class="ti" style="font-size:16px">Tus controles</span>${status}</section>`;
+
+  let list = '';
+  if (k) {
+    const items = k.items.slice().sort((a, b) => CTL_ORDER[a.status] - CTL_ORDER[b.status] || a.label.localeCompare(b.label));
+    const pages = Math.max(1, Math.ceil(items.length / BINDS_PAGE));
+    ui.bindsPage = Math.min(ui.bindsPage || 0, pages - 1);
+    const rows = items.slice(ui.bindsPage * BINDS_PAGE, (ui.bindsPage + 1) * BINDS_PAGE).map((it) => {
+      const [txt, cls] = CTL_STATUS[it.status] || [it.status, 'yellow'];
+      return `<div class="in row" style="grid-template-columns:minmax(0,1fr) 170px 170px 160px;height:46px">
+        <span style="display:flex;flex-direction:column;min-width:0;padding-left:12px"><span class="nowrap" style="font-size:16px">${esc(it.label)}</span>${it.status === 'shared' ? `<span class="eb dim nowrap" style="font-size:10px;letter-spacing:.06em">También: ${esc(it.with.join(', '))}</span>` : ''}</span>
+        <span class="eb dim nowrap" style="font-size:11px">${esc(it.groups.join(' · '))}</span>
+        <span class="num nowrap" style="font-size:15px">${it.key ? esc(it.key) : '<span class="dim">—</span>'}</span>
+        <span class="eb ${cls}" style="text-align:right;padding-right:12px;font-size:11px">${txt}</span></div>`;
+    }).join('');
+    const pager = pages > 1 ? `<span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-pager="binds" data-d="-1" ${ui.bindsPage === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.bindsPage + 1}/${pages}</span><button type="button" class="pg" data-pager="binds" data-d="1" ${ui.bindsPage >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
+    list = `<section class="pn card" style="min-height:0">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Acciones que usa ED BUBBLE</span>${pager}</div>
+      <div class="row" style="grid-template-columns:minmax(0,1fr) 170px 170px 160px;height:22px"><span class="eb" style="padding-left:12px;font-size:10px">Acción</span><span class="eb" style="font-size:10px">Se usa en</span><span class="eb" style="font-size:10px">Tecla</span><span class="eb" style="font-size:10px;text-align:right;padding-right:12px">Estado</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px">${rows}</div>
+    </section>`;
+  } else {
+    list = `<section class="pn card"><span class="ti" style="font-size:16px">Acciones que usa ED BUBBLE</span><div class="empty">Aparecerán cuando la app lea tus controles.</div></section>`;
+  }
+  return `<div style="display:grid;grid-template-columns:640px minmax(0,1fr);gap:12px;min-height:0;height:100%">
+    ${guide}
+    <div style="display:grid;grid-template-rows:auto minmax(0,1fr);gap:12px;min-height:0">${statusCard}${list}</div>
+  </div>`;
+}
+
+async function bindsAction(a) {
+  const api = window.edbubble;
+  ui.bindsMsg = null;
+  if (a === 'import') {
+    const r = await api.bindsImport();
+    if (r && r.ok) ui.bindsMsg = { ok: true, text: 'Controles importados. La app usará este archivo y lo vigilará por si cambia.' };
+    else if (r && r.error) ui.bindsMsg = { ok: false, text: r.error };
+  } else if (a === 'auto') { await api.bindsAuto(); ui.bindsMsg = { ok: true, text: 'Vuelvo a usar el esquema activo del juego.' }; }
+  else if (a === 'reload') { await api.bindsReload(); ui.bindsMsg = { ok: true, text: 'Controles leídos de nuevo.' }; }
+  else if (a === 'folder') { const e = await api.bindsFolder(); if (e) ui.bindsMsg = { ok: false, text: 'La carpeta de controles no existe todavía: guarda tus controles en el juego una vez.' }; }
+  render();
+}
+
 /* ---------- Ajustes ---------- */
 function setRow(key, label, sub, on, disabled) {
   return `<button type="button" class="set-row${on ? ' on' : ''}" data-set="${key}"${disabled ? ' disabled' : ''}>
@@ -1418,7 +1511,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -1517,7 +1610,7 @@ document.addEventListener('pointerdown', (ev) => {
   const co = ev.target.closest('button[data-coord]');
   if (co) { ev.preventDefault(); coordAction(co.dataset.coord); return; }
   const go = ev.target.closest('[data-goto]');
-  if (go) { ev.preventDefault(); ui.section = go.dataset.goto; render(); return; }
+  if (go) { ev.preventDefault(); goSection(go.dataset.goto); render(); return; }
   const mt = ev.target.closest('[data-mat]');
   if (mt) { ev.preventDefault(); ui.colSel = mt.dataset.mat; ui.colAside = 'buy'; ui.mk.page = 0; ui.mk.pick = null; render(); return; }
   const ca = ev.target.closest('button[data-colaside]');
@@ -1570,6 +1663,10 @@ document.addEventListener('pointerdown', (ev) => {
   }
   const rp = ev.target.closest('button[data-pager="route"]');
   if (rp && !rp.disabled) { ev.preventDefault(); ui.routePage = Math.max(0, (ui.routePage || 0) + Number(rp.dataset.d)); render(); return; }
+  const bd = ev.target.closest('button[data-binds]');
+  if (bd) { ev.preventDefault(); bindsAction(bd.dataset.binds); return; }
+  const bp = ev.target.closest('button[data-pager="binds"]');
+  if (bp && !bp.disabled) { ev.preventDefault(); ui.bindsPage = Math.max(0, (ui.bindsPage || 0) + Number(bp.dataset.d)); render(); return; }
   const sw = ev.target.closest('button[data-set]');
   if (sw && !sw.disabled) {
     ev.preventDefault();

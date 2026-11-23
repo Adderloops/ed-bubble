@@ -114,18 +114,41 @@ function bindLabel(b) {
   return [...b.modifiers.map(keyLabel), keyLabel(b.key)].join('+');
 }
 
-/** Carga el preset activo. Devuelve { preset, file, binds } o { error }. */
-function loadActive(folder = defaultBindingsFolder()) {
-  const preset = activePresetName(folder);
-  if (!preset) return { error: 'No encuentro el preset de controles activo (StartPreset.4.start).', folder };
-  const file = presetFile(folder, preset);
-  if (!file) return { error: `No encuentro el archivo del preset "${preset}".`, folder, preset };
-  try {
-    const xml = fs.readFileSync(file, 'utf8');
-    return { preset, file, folder, binds: parseBinds(xml), otherDevices: parseOtherDevices(xml) };
-  } catch (e) {
-    return { error: `No puedo leer ${path.basename(file)}: ${e.message}`, folder, preset };
-  }
+/** Nombre del preset a partir del archivo: TitoV5.4.2.binds -> TitoV5. */
+function presetFromFile(file) {
+  return path.basename(String(file)).replace(/\.binds$/i, '').replace(/\.\d+\.\d+$/, '');
 }
 
-module.exports = { defaultBindingsFolder, activePresetName, presetFile, parseBinds, parseOtherDevices, loadActive, bindLabel, keyLabel };
+/** ¿Parece un archivo de controles de Elite Dangerous? */
+function looksLikeBinds(xml) {
+  return /<Root\b[^>]*PresetName=/i.test(xml) || /<(?:Primary|Secondary)\s[^>]*Device=/i.test(xml);
+}
+
+/** Lee un archivo .binds concreto. Devuelve { preset, file, folder, binds } o { error, code }. */
+function loadFile(file) {
+  const folder = path.dirname(file);
+  let xml;
+  try { xml = fs.readFileSync(file, 'utf8'); } catch (e) {
+    return { error: `No puedo leer ${path.basename(file)}: ${e.code === 'ENOENT' ? 'el archivo ya no está' : e.message}`, code: 'read', folder, file };
+  }
+  if (!looksLikeBinds(xml)) return { error: `${path.basename(file)} no parece un archivo de controles de Elite Dangerous.`, code: 'format', folder, file };
+  const m = xml.match(/PresetName="([^"]*)"/);
+  return { preset: (m && m[1]) || presetFromFile(file), file, folder, binds: parseBinds(xml), otherDevices: parseOtherDevices(xml) };
+}
+
+/**
+ * Carga el preset activo de la carpeta de controles. Devuelve { preset, file, binds } o
+ * { error, code }: 'nofolder' (no hay carpeta: el juego no ha guardado controles en este
+ * PC), 'nopreset' (sin StartPreset) o 'builtin' (preset del juego, sin archivo propio).
+ */
+function loadActive(folder = defaultBindingsFolder()) {
+  if (!fs.existsSync(folder)) return { error: 'No encuentro la carpeta de controles del juego.', code: 'nofolder', folder };
+  const preset = activePresetName(folder);
+  if (!preset) return { error: 'No encuentro el preset de controles activo (StartPreset.4.start).', code: 'nopreset', folder };
+  const file = presetFile(folder, preset);
+  if (!file) return { error: `Usas el esquema "${preset}", que viene con el juego y no tiene archivo propio.`, code: 'builtin', folder, preset };
+  const r = loadFile(file);
+  return r.error ? { ...r, preset } : r;
+}
+
+module.exports = { defaultBindingsFolder, activePresetName, presetFile, presetFromFile, looksLikeBinds, loadFile, parseBinds, parseOtherDevices, loadActive, bindLabel, keyLabel };

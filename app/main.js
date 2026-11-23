@@ -7,7 +7,7 @@
  * para la segunda pantalla; recuerda su posición y tamaño.
  */
 
-const { app, BrowserWindow, ipcMain, screen, clipboard, shell, net } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, clipboard, shell, net, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { Engine } = require('../core/engine');
@@ -65,7 +65,7 @@ function prefs() {
   delete p.ppTracked;
   return p;
 }
-const SECTION_IDS = ['puente', 'vuelo', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes'];
+const SECTION_IDS = ['puente', 'vuelo', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
 /** Valida un ajuste que llega de la ventana; devuelve el valor limpio o undefined. */
 function cleanPref(key, value) {
   const bool = (x) => (typeof x === 'boolean' ? x : undefined);
@@ -106,24 +106,34 @@ async function lookFuelStops(snap) {
 let controls = { error: 'Cargando controles…' };
 const keys = new KeySender({ simulate: process.env.ED_BUBBLE_SIMULATE === '1' || undefined });
 
-/** Lee el preset de controles activo y avisa a la ventana. */
+/** Lee los controles (preset activo del juego o archivo elegido) y avisa a la ventana. */
 function loadControls() {
-  controls = binds.loadActive(process.env.ED_BINDINGS_FOLDER || undefined);
-  if (controls.error) console.warn('[controles]', controls.error);
+  controls = settings.bindsFile ? binds.loadFile(settings.bindsFile) : binds.loadActive(process.env.ED_BINDINGS_FOLDER || undefined);
+  controls.source = settings.bindsFile ? 'file' : 'auto';
+  if (controls.error) { console.warn('[controles]', controls.error); logLine(`[controles] ${controls.error}`); }
   else console.log(`[controles] preset ${controls.preset} (${Object.keys(controls.binds).length} acciones de teclado)`);
+  watchControls();
   if (win && !win.isDestroyed()) win.webContents.send('ed:controls', controlsInfo());
 }
 
 function controlsInfo() {
-  return { preset: controls.preset || null, error: controls.error || null, simulate: keys.simulate, actions: actions.describe(controls.binds), check: controls.error ? null : actions.checkControls(controls) };
+  return {
+    preset: controls.preset || null, error: controls.error || null, code: controls.code || null,
+    source: controls.source, file: controls.file || null, folder: controls.folder || null,
+    defaultFolder: process.env.ED_BINDINGS_FOLDER || binds.defaultBindingsFolder(),
+    simulate: keys.simulate, actions: actions.describe(controls.binds), check: controls.error ? null : actions.checkControls(controls),
+  };
 }
 
-/** Recarga los controles cuando el comandante los cambia en el juego. */
+/** Recarga los controles cuando el comandante los cambia en el juego (vigila su carpeta). */
+let ctlWatch = null;
 function watchControls() {
   const folder = controls.folder || process.env.ED_BINDINGS_FOLDER || binds.defaultBindingsFolder();
+  if (ctlWatch && ctlWatch.folder === folder) return;
+  if (ctlWatch) { try { ctlWatch.w.close(); } catch (e) { /* ya cerrado */ } ctlWatch = null; }
   let t = null;
   try {
-    fs.watch(folder, () => { clearTimeout(t); t = setTimeout(loadControls, 800); });
+    ctlWatch = { folder, w: fs.watch(folder, () => { clearTimeout(t); t = setTimeout(loadControls, 800); }) };
   } catch (e) { console.warn('[controles] no puedo vigilar', folder, e.message); }
 }
 
@@ -153,7 +163,7 @@ function createWindow() {
     win.webContents.once('did-finish-load', async () => {
       const out = process.env.ED_BUBBLE_SHOT;
       await new Promise((r) => setTimeout(r, 2500));
-      for (const sec of ['puente', 'vuelo', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes']) {
+      for (const sec of ['puente', 'vuelo', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles']) {
         await win.webContents.executeJavaScript(`ui.section='${sec}'; ui.autoJump=false; if ('${sec}' === 'ajustes') loadSettingsInfo(); render();`);
         await new Promise((r) => setTimeout(r, 400));
         const img = await win.webContents.capturePage();
@@ -196,6 +206,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Ajustes guardados: se leen lo primero (los controles dependen de ellos)
+  const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
+  try { settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')) || {}; } catch (e) { /* sin ajustes */ }
   spansh.setFetch((url, opts) => net.fetch(url, opts));
   // Solo desarrollo: ED_BUBBLE_SPANSH_FIXTURE=carpeta con search.json y suggest.json (sin red)
   if (process.env.ED_BUBBLE_SPANSH_FIXTURE) {
@@ -212,7 +225,6 @@ app.whenReady().then(() => {
   engine.start();
   ipcMain.handle('ed:snapshot', () => last || engine.snapshot());
   loadControls();
-  watchControls();
   keys.on('warning', (m) => console.warn('[teclas]', m));
   keys.start();
   ipcMain.on('ed:log', (_e, msg) => { console.warn('[ventana]', msg); logLine(`[ventana] ${msg}`); });
@@ -278,8 +290,6 @@ app.whenReady().then(() => {
     return res;
   });
   // Ajustes guardados (sistema de Powerplay seguido, …)
-  const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
-  try { settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')) || {}; } catch (e) { /* sin ajustes */ }
   const saveSettings = () => { try { fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2)); } catch (e) { logLine(`[ajustes] ${e.message}`); } };
   if (settings.ppTracked) engine.setTrackedSystem(settings.ppTracked);
   ipcMain.handle('ed:pp-track', (_e, name) => {
@@ -317,6 +327,22 @@ app.whenReady().then(() => {
     if (full) setTimeout(() => win.setFullScreen(true), 300);
     saveBounds(win);
     return displayList();
+  });
+  // Controles: importar un .binds, volver al preset activo del juego, releer, abrir carpeta
+  ipcMain.handle('ed:binds-import', async () => {
+    const def = controls.folder || binds.defaultBindingsFolder();
+    const r = await dialog.showOpenDialog(win, { title: 'Elige tu archivo de controles de Elite Dangerous', defaultPath: fs.existsSync(def) ? def : app.getPath('home'), filters: [{ name: 'Controles de Elite Dangerous', extensions: ['binds'] }], properties: ['openFile'] });
+    if (r.canceled || !r.filePaths[0]) return { ok: false, canceled: true };
+    const test = binds.loadFile(r.filePaths[0]);
+    if (test.error) return { ok: false, error: test.error };
+    settings.bindsFile = r.filePaths[0]; saveSettings(); loadControls();
+    return { ok: true };
+  });
+  ipcMain.handle('ed:binds-auto', () => { delete settings.bindsFile; saveSettings(); loadControls(); return true; });
+  ipcMain.handle('ed:binds-reload', () => { loadControls(); return true; });
+  ipcMain.handle('ed:binds-folder', () => {
+    const f = controls.folder || binds.defaultBindingsFolder();
+    return fs.existsSync(f) ? shell.openPath(f) : 'No existe la carpeta';
   });
   ipcMain.handle('ed:open-data', () => shell.openPath(app.getPath('userData')));
   // Coordenadas de destino en un planeta (se guardan entre sesiones)
