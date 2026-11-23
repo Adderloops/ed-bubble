@@ -124,3 +124,9 @@ button { font: inherit; }
 /* Estación */
 .svc-row { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; font-family: Rajdhani, sans-serif; font-weight: 700; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); background: var(--inner); border: 1px solid var(--inline); border-radius: 2px; white-space: nowrap; overflow: hidden; }
 .svc-row.on { color: var(--soft, #cfe3f5); border-color: var(--line2); }
+
+/* recuadros con esquinas en chaflán (brújula) */
+.chamf { --cut: 12px; padding: 1px; background: var(--line2); clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
+.chamf > div { background: #081627; clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
+.chamf.amber { background: #8a5a1e; }
+.chamf.amber > div { background: linear-gradient(180deg, #1a1408, #0a1220); }

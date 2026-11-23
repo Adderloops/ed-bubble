@@ -873,39 +873,67 @@ function coordControls(s) {
 }
 
 function compassSvg(nav, size) {
-  const C = 150; const hd = nav.heading || 0;
-  const ticks = Array.from({ length: 36 }, (_, i) => {
-    const a = i * 10; const long = a % 30 === 0;
-    return `<line x1="${C}" y1="${C - 128}" x2="${C}" y2="${C - (long ? 112 : 120)}" stroke="${long ? '#7f9bb8' : '#2f4a68'}" stroke-width="${long ? 2 : 1.2}" transform="rotate(${a} ${C} ${C})"/>`;
+  const C = 160; const hd = nav.heading || 0;
+  const ticks = Array.from({ length: 72 }, (_, i) => {
+    const a = i * 5; const major = a % 30 === 0; const mid = a % 10 === 0;
+    const len = major ? 18 : mid ? 10 : 5;
+    return `<line x1="${C}" y1="${C - 132}" x2="${C}" y2="${C - 132 + len}" stroke="${major ? '#9fc2e0' : mid ? '#3d6488' : '#25405e'}" stroke-width="${major ? 2.2 : 1.2}" transform="rotate(${a} ${C} ${C})"/>`;
   }).join('');
-  const label = (txt, a, col) => `<text x="${C}" y="${C - 96}" text-anchor="middle" dominant-baseline="middle" font-family="Rajdhani" font-weight="700" font-size="15" fill="${col}" transform="rotate(${a} ${C} ${C}) rotate(${-a + hd} ${C} ${C - 96})">${txt}</text>`;
+  const label = (txt, a, col) => `<text x="${C}" y="${C - 98}" text-anchor="middle" dominant-baseline="middle" font-family="Rajdhani" font-weight="700" font-size="17" fill="${col}" transform="rotate(${a} ${C} ${C}) rotate(${-a + hd} ${C} ${C - 98})">${txt}</text>`;
+  const arc = (r, a1, a2) => {
+    const p = (a) => [C + r * Math.sin((a * Math.PI) / 180), C - r * Math.cos((a * Math.PI) / 180)];
+    const [x1, y1] = p(a1); const [x2, y2] = p(a2);
+    return `M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+  };
   const rel = nav.relative; const on = rel != null && Math.abs(rel) <= 8;
   const col = on ? '#49c7e8' : '#f0a443';
-  return `<svg viewBox="0 0 300 300" width="${size}" height="${size}" style="display:block;flex:none">
-    <defs><filter id="cglow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-    <circle cx="${C}" cy="${C}" r="140" fill="#06101c" stroke="#1f3a5a"/>
-    <circle cx="${C}" cy="${C}" r="128" fill="none" stroke="#2b5379" stroke-width="2"/>
+  return `<svg viewBox="0 0 320 320" width="${size}" height="${size}" style="display:block;flex:none;overflow:visible">
+    <defs>
+      <filter id="cglow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <radialGradient id="cbg" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#0c2038"/><stop offset="1" stop-color="#050d18"/></radialGradient>
+    </defs>
+    <!-- arcos decorativos exteriores -->
+    <path d="${arc(152, 232, 292)}" fill="none" stroke="#2b5379" stroke-width="3"/>
+    <path d="${arc(152, 52, 112)}" fill="none" stroke="#2b5379" stroke-width="3"/>
+    <path d="${arc(152, 250, 268)}" fill="none" stroke="#49c7e8" stroke-width="3" opacity=".8" filter="url(#cglow)"/>
+    <path d="${arc(152, 70, 88)}" fill="none" stroke="#49c7e8" stroke-width="3" opacity=".8" filter="url(#cglow)"/>
+    <circle cx="${C}" cy="${C}" r="142" fill="url(#cbg)" stroke="#1f3a5a"/>
+    <circle cx="${C}" cy="${C}" r="134" fill="none" stroke="#49c7e8" stroke-width="1.6" opacity=".55" filter="url(#cglow)"/>
+    <!-- mira fija -->
+    <line x1="${C - 128}" y1="${C}" x2="${C + 128}" y2="${C}" stroke="#1f4a6e" stroke-width="1"/>
+    <line x1="${C}" y1="${C - 128}" x2="${C}" y2="${C + 128}" stroke="#1f4a6e" stroke-width="1"/>
+    <circle cx="${C}" cy="${C}" r="92" fill="none" stroke="#1f4a6e" stroke-width="1"/>
+    <circle cx="${C}" cy="${C}" r="58" fill="none" stroke="#2b5379" stroke-width="1.2"/>
+    <!-- anillo que gira con el rumbo -->
     <g transform="rotate(${-hd} ${C} ${C})">
       ${ticks}
       ${label('N', 0, '#ff6b6b')}${label('E', 90, '#cfe3f5')}${label('S', 180, '#cfe3f5')}${label('O', 270, '#cfe3f5')}
-      <g transform="rotate(${nav.bearing} ${C} ${C})"><path d="M${C} ${C - 138} l8 12 l-8 12 l-8 -12 z" fill="#f0a443" filter="url(#cglow)"/></g>
+      <g transform="rotate(${nav.bearing} ${C} ${C})"><path d="M${C} ${C - 146} l10 14 l-10 14 l-10 -14 z" fill="#f0a443" filter="url(#cglow)"/></g>
     </g>
-    <path d="M${C} ${C - 150} l9 16 h-18 z" fill="#cfe3f5"/>
-    <circle cx="${C}" cy="${C}" r="62" fill="#0a1a2e" stroke="#2b5379"/>
-    ${rel != null ? `<g transform="rotate(${rel} ${C} ${C})" filter="url(#cglow)"><path d="M${C} ${C - 56} l20 30 h-12 v40 h-16 v-40 h-12 z" fill="${col}"/></g>` : ''}
+    <!-- tu rumbo -->
+    <path d="M${C} ${C - 160} l11 18 h-22 z" fill="#cfe3f5" filter="url(#cglow)"/>
+    ${rel != null ? `<g transform="rotate(${rel} ${C} ${C})" filter="url(#cglow)"><path d="M${C} ${C - 62} l26 36 h-15 v52 h-22 v-52 h-15 z" fill="${col}"/></g>` : ''}
   </svg>`;
 }
 
 function compassBlock(s, nav) {
   if (!nav.sameBody) return '<div class="in empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">El destino está en otro cuerpo</span><span style="font-size:14px">La brújula aparecerá al acercarte al cuerpo donde lo fijaste.</span></div>';
   const rel = nav.relative;
-  const turn = rel == null ? 'Sin rumbo' : Math.abs(rel) <= 5 ? 'De frente' : Math.abs(rel) >= 165 ? 'Detrás · da la vuelta' : `Gira ${nf(Math.abs(rel), 0)}° a la ${rel > 0 ? 'derecha' : 'izquierda'}`;
-  return `<div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center;min-height:0">
-      ${compassSvg(nav, 300)}
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <span class="eb">Distancia</span><span class="num amber" style="font-size:40px;line-height:1">${fmtDist(nav.distance)}</span>
-        <span class="va ${Math.abs(rel || 0) <= 5 ? 'cyan' : ''}" style="font-size:20px">${turn}</span>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${stat('Rumbo obj.', `${nf(nav.bearing, 0)}°`)}${stat('Tu rumbo', nav.heading != null ? `${nav.heading}°` : '—')}${stat('Altitud', s.status.altitude != null ? fmtDist(s.status.altitude) : '—')}${stat('Gravedad', s.status.gravity != null ? `${nf(s.status.gravity, 2)} g` : '—')}</div>
+  const ahead = rel != null && Math.abs(rel) <= 5;
+  const turn = rel == null ? 'Sin rumbo' : ahead ? 'De frente' : Math.abs(rel) >= 165 ? 'Detrás · da la vuelta' : `Gira ${nf(Math.abs(rel), 0)}° a la ${rel > 0 ? 'derecha' : 'izquierda'}`;
+  const box = (label, value, cls) => `<div class="chamf"><div style="padding:8px 10px;display:flex;flex-direction:column;gap:2px"><span class="eb" style="font-size:10px">${label}</span><span class="num ${cls || ''}" style="font-size:20px">${value}</span></div></div>`;
+  return `<div style="display:flex;flex-direction:column;align-items:center;gap:12px;min-height:0;flex:1;justify-content:center">
+      ${compassSvg(nav, 370)}
+      <div style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px;width:100%">
+        <div class="chamf amber"><div style="padding:12px 14px;display:flex;flex-direction:column;gap:6px;height:100%">
+          <span class="eb">Distancia</span>
+          <span class="num amber" style="font-size:40px;line-height:1">${fmtDist(nav.distance)}</span>
+          <span class="va ${ahead ? 'cyan' : ''}" style="font-size:18px">${turn}</span>
+        </div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          ${box('Rumbo obj.', `${nf(nav.bearing, 0)}°`, 'amber')}${box('Tu rumbo', nav.heading != null ? `${nav.heading}°` : '—')}
+          ${box('Altitud', s.status.altitude != null ? fmtDist(s.status.altitude) : '—')}${box('Gravedad', s.status.gravity != null ? `${nf(s.status.gravity, 2)} g` : '—')}
+        </div>
       </div>
     </div>`;
 }
