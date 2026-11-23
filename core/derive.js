@@ -25,7 +25,7 @@ function flightMode(state) {
   if (f.isInSRV) return { key: 'srv', label: 'En SRV', section: 'srv' };
   if (f.isFSDJump) return { key: 'jump', label: 'Saltando', section: 'vuelo' };
   if (f.isDocked || state.location.docked) {
-    // en una obra de construcción, la sección es Colonización
+    // en una construcción, la sección es Colonización
     const atDepot = /construction/i.test(state.location.stationType || '') || /construction site/i.test(state.location.station || '');
     return { key: atDepot ? 'docked-depot' : 'docked', label: 'Atracado', section: atDepot ? 'colonizacion' : 'estacion' };
   }
@@ -103,7 +103,7 @@ function routeView(state) {
   };
 }
 
-/** Colonización: todas las obras vistas, con lo que falta, lo que llevas a bordo y los viajes. */
+/** Colonización: todas las construcciones vistas, con lo que falta, lo que llevas a bordo y los viajes. */
 function colonisationView(state) {
   const cap = state.ship.cargoCapacity || null;
   const aboard = {};
@@ -132,7 +132,7 @@ const SERVICES = [
   ['bartender', 'Bar'], ['vistagenomics', 'Vista Genomics'], ['apexinterstellar', 'Apex Interstellar'], ['frontlinesolutions', 'Frontline Solutions'],
 ];
 
-/** Estación: datos del atraque, servicios y mercado cruzado con tu carga y tu obra. */
+/** Estación: datos del atraque, servicios y mercado cruzado con tu carga y tu construcción. */
 function stationView(state) {
   const st = state.station;
   if (!st) return null;

@@ -63,7 +63,7 @@ function stationKind(type) {
   return k ? { icon: k[1], label: k[2], surface: k[3] } : { icon: null, label: type || 'Desconocido', surface: false };
 }
 
-/** Tamaño de plataforma más grande. Las obras de construcción siempre tienen L. */
+/** Tamaño de plataforma más grande. Las construcciones siempre tienen L. */
 function padSize(st) {
   if (/construction/i.test(st.type || '')) return 'L';
   if (st.has_large_pad || st.large_pads > 0) return 'L';

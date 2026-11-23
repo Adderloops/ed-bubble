@@ -8,7 +8,7 @@ Ventana para la segunda pantalla con datos en vivo de Elite Dangerous.
 
 El panel **Controles** del Puente de mando revisa las teclas que usa ED BUBBLE (Vuelo y, para la entrega 3, Trazar ruta) y señala las que faltan, las que solo están en el mando y las que comparten tecla.
 
-**Estación:** la estación en la que estás atracado (o la última): tipo, sistema, distancia a la estrella, facción y estado, gobierno, plataformas S/M/L y economías; servicios disponibles; y, si has abierto su mercado en el juego (Market.json), lo que le falta a tu obra y se vende aquí, lo que pagan por tu carga y lo que más paga la estación. También el objetivo comunitario activo y el resumen de ingenieros.
+**Estación:** la estación en la que estás atracado (o la última): tipo, sistema, distancia a la estrella, facción y estado, gobierno, plataformas S/M/L y economías; servicios disponibles; y, si has abierto su mercado en el juego (Market.json), lo que le falta a tu construcción y se vende aquí, lo que pagan por tu carga y lo que más paga la estación. También el objetivo comunitario activo y el resumen de ingenieros.
 
 **Coordenadas en planeta (Vuelo):** en Aproximación a planeta se escriben o pegan unas coordenadas (Pegar lee el portapapeles; acepta "12.345, -67.89", coma decimal o "Lat … Lon …") y se fijan. Una brújula gira con tu rumbo, marca el objetivo y dice cuánto girar, con la distancia sobre la superficie. El destino se guarda entre sesiones; Quitar lo borra.
 
@@ -16,7 +16,7 @@ El panel **Controles** del Puente de mando revisa las teclas que usa ED BUBBLE (
 
 **Combustible en ruta (naves sin recolector):** el consumo de cada salto se ajusta con tus saltos reales (fuel = k · distancia^p, con p según el tamaño del FSD y un 8 % de margen). Si con el combustible del tanque no llegas al destino, la cabecera avisa ("Combustible: solo N saltos · reposta antes"); Vuelo y Navegación dicen hasta qué sistema llegas, cuánto pide la ruta y la estación con repostaje más lejana a la que llegas (Spansh); la ruta muestra el combustible con el que llegas a cada sistema. "Saltos a alcance máx." en Combustible usa el mismo modelo.
 
-**Historial:** al arrancar, el motor repasa los Journals de las últimas semanas (máx. 25 archivos) para recuperar las obras de colonización, la última estación, los ingenieros y el control de Powerplay de los sistemas visitados, aunque hoy no hayas pasado por ellos.
+**Historial:** al arrancar, el motor repasa los Journals de las últimas semanas (máx. 25 archivos) para recuperar las construcciones de colonización, la última estación, los ingenieros y el control de Powerplay de los sistemas visitados, aunque hoy no hayas pasado por ellos.
 
 Registro de incidencias: `%APPDATA%\ed-bubble-app\ed-bubble.log` (errores al pintar, fallos de teclas o de Trazar ruta y cada atraque concedido con la sección en la que estaba la app). Si algo falla al pintar, la cabecera lo avisa en rojo.
 
@@ -28,7 +28,7 @@ Variables para desarrollo: `ED_BUBBLE_SIMULATE=1` (no envía teclas), `ED_BINDIN
 
 **Trazar ruta:** abre el mapa galáctico, pega el nombre (Ctrl+V), selecciona el resultado, mantiene Seleccionar para trazar y comprueba en `NavRoute.json` que la ruta va a ese sistema; después cierra el mapa. Se detiene si el juego pierde el foco y se puede cancelar. Necesita teclas de teclado para: Mapa galáctico, Cámara: acercar, Cámara: alejar, Interfaz: arriba / derecha / seleccionar (el panel Controles del Puente lo comprueba). Los tiempos de espera están en `core/plot.js` (`T`) por si hay que ajustarlos.
 
-**Colonización:** todas las obras en las que has atracado (pestañas), con progreso, toneladas que faltan, materiales completos y viajes con la bodega de tu nave; tabla de materiales ordenada por lo que más falta (pedido, entregado, faltan, progreso, a bordo, viajes); lo que llevas a bordo y si la obra lo necesita; y las entregas de la sesión. Al atracar en una obra, el salto automático lleva aquí.
+**Colonización:** todas las construcciones en las que has atracado (pestañas), con progreso, toneladas que faltan, materiales completos y viajes con la bodega de tu nave; tabla de materiales ordenada por lo que más falta (pedido, entregado, faltan, progreso, a bordo, viajes); lo que llevas a bordo y si la construcción lo necesita; y las entregas de la sesión. Al atracar en una construcción, el salto automático lleva aquí.
 
 **Dónde comprar (Colonización):** al pulsar un material, la pestaña "Dónde comprar" lista las estaciones más cercanas que lo venden según Spansh (datos de mercado de EDDN), con stock (cian si llena tu bodega), precio y antigüedad de los datos (amarillo si tienen más de un mes). Filtros: plataforma L (activado si tu nave la necesita), superficie y carriers. Al elegir una estación, "Trazar ruta" lleva hasta su sistema y la guarda como **destino final**: en Vuelo aparece bajo el Próximo salto y, al llegar al sistema, una tarjeta "Has llegado · ve a la estación" con distancia en ls, plataforma y qué comprar. Se borra al atracar en ella o con la ✕.
 
@@ -68,7 +68,7 @@ Para desarrollo: `ED_JOURNAL_FOLDER` apunta el motor a otra carpeta de Journals,
 
 Botón **Ajustes** de la cabecera (vuelve a pulsarlo para regresar a la sección anterior). Se guardan en `settings.json`, en la carpeta de datos de la app.
 
-- **Salto automático**: activarlo o no, y a qué secciones salta (vuelo, atraque concedido, estación, obra de colonización).
+- **Salto automático**: activarlo o no, y a qué secciones salta (vuelo, atraque concedido, estación, construcción de colonización).
 - **Pantalla**: llevar la ventana a otra pantalla y pantalla completa. La ventana nunca se pone por encima del juego.
 - **Al abrir**: empezar en Puente de mando o en la última sección vista.
 - **Avisos opcionales** en la cabecera: atraque concedido y combustible en ruta. Los de peligro se muestran siempre.

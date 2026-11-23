@@ -17,7 +17,7 @@ const ui = {
   sel: null, // sistema elegido: { name, loading, system, error }
   navTab: 'route', sysTab: 'stations', sysPage: 0,
   sysKinds: [], sysLarge: false, // filtro de estaciones: tipos elegidos (vacío = todos) y solo plataforma L
-  colDepot: null, colPage: 0, // Colonización: obra elegida y página de materiales
+  colDepot: null, colPage: 0, // Colonización: construcción elegida y página de materiales
   colAside: 'buy', colSel: null, // pestaña de la derecha y material elegido
   mk: { key: null, loading: false, list: [], error: null, page: 0, pick: null }, // dónde comprar
   mkFilter: { large: null, surface: true, carriers: false },
@@ -144,9 +144,9 @@ function screenPuente(s, v) {
 
   const colCard = c
     ? `<span class="ti" style="font-size:24px">Faltan ${nf(c.remaining)} t</span>
-       <span style="display:flex;justify-content:space-between;align-items:baseline"><span class="soft nowrap" style="font-size:15px">${esc(siteName(c.name) || 'Obra')}</span><span class="num cyan" style="font-size:24px">${pct(c.progress)}</span></span>
+       <span style="display:flex;justify-content:space-between;align-items:baseline"><span class="soft nowrap" style="font-size:15px">${esc(siteName(c.name) || 'Construcción')}</span><span class="num cyan" style="font-size:24px">${pct(c.progress)}</span></span>
        <span class="bar"><span style="width:${(c.progress || 0) * 100}%;background:#2a7fa3"></span></span>`
-    : '<span class="soft" style="font-size:14px">Sin obras de colonización en esta sesión.</span>';
+    : '<span class="soft" style="font-size:14px">Sin construcciones de colonización en esta sesión.</span>';
 
   return `
   <div style="display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:12px;min-height:0">
@@ -199,7 +199,7 @@ function screenPuente(s, v) {
        <div style="display:grid;grid-template-columns:52px minmax(0,1fr);gap:9px 12px;font-size:14px;align-items:baseline">${log || '<span class="dim">—</span>'}</div>
      </div>
      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
-       ${stat('Saltos sesión', nf(s.session.jumps))}${stat('Distancia', `${nf(s.session.distance, 0)} al`)}${stat('Entregado obra', `${nf(s.session.deliveredToConstruction)} t`)}
+       ${stat('Saltos sesión', nf(s.session.jumps))}${stat('Distancia', `${nf(s.session.distance, 0)} al`)}${stat('Entregas', `${nf(s.session.deliveredToConstruction)} t`)}
      </div>
    </aside>
   </div>`;
@@ -757,11 +757,11 @@ function screenColonizacion(s, v) {
   const c = v.col;
   if (!c.depots.length) {
     return `<section class="pn card"><span class="ti" style="font-size:16px">Colonización</span>
-      <div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:22px;color:var(--soft)">Sin obras todavía</span><span style="font-size:15px">Atraca en una obra de construcción (orbital o de superficie) y aquí aparecerán sus materiales, lo que falta y los viajes.</span></div></section>`;
+      <div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:22px;color:var(--soft)">Sin construcciones todavía</span><span style="font-size:15px">Atraca en una construcción (orbital o de superficie) y aquí aparecerán sus materiales, lo que falta y los viajes.</span></div></section>`;
   }
   if (!ui.colDepot || !c.depots.find((d) => d.marketId === ui.colDepot)) ui.colDepot = c.current && c.depots.find((d) => d.marketId === c.current) ? c.current : c.depots[0].marketId;
   const d = c.depots.find((x) => x.marketId === ui.colDepot);
-  const typeLabel = STATION_TYPES[d.type] || (d.type ? d.type : 'Obra de construcción');
+  const typeLabel = STATION_TYPES[d.type] || (d.type ? d.type : 'Construcción');
   const tabs = c.depots.length > 1 ? `<div style="display:flex;gap:8px;flex-wrap:nowrap;overflow:hidden">${c.depots.slice(0, 6).map((x) => `<button type="button" class="tab small ${x.marketId === d.marketId ? 'on' : ''}" data-depot="${esc(x.marketId)}"><span class="nowrap" style="max-width:260px;display:inline-block;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom">${esc(siteName(x.name) || x.marketId)}</span> · ${pct(x.progress, 0)}</button>`).join('')}</div>` : '';
   const shipCap = c.capacity;
   const hero = `
@@ -812,13 +812,13 @@ function screenColonizacion(s, v) {
   const usefulT = useful.reduce((a, i) => a + i.count, 0);
   const cargoRows = c.cargo.length
     ? [...useful, ...other].slice(0, 16).map((i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--inline)">
-        <span style="display:flex;flex-direction:column;min-width:0"><span class="nowrap" style="font-size:15px">${esc(i.name)}</span><span class="eb ${i.useful ? 'cyan' : 'dim'}" style="font-size:10px">${i.useful ? 'La obra lo necesita' : 'No lo pide esta obra'}${i.stolen ? ' · <span class="red">robada</span>' : ''}</span></span>
+        <span style="display:flex;flex-direction:column;min-width:0"><span class="nowrap" style="font-size:15px">${esc(i.name)}</span><span class="eb ${i.useful ? 'cyan' : 'dim'}" style="font-size:10px">${i.useful ? 'La construcción lo necesita' : 'No lo pide esta construcción'}${i.stolen ? ' · <span class="red">robada</span>' : ''}</span></span>
         <span class="num ${i.useful ? 'cyan' : 'soft'}">${nf(i.count)} t</span></div>`).join('')
     : '<div class="empty">Bodega vacía.</div>';
   const cargoCard = `
     <div style="display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden">
       <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="eb">Bodega</span><span class="num soft">${nf(c.cargoCount)} / ${nf(c.capacity)} t</span></div>
-      ${c.cargo.length ? `<span class="eb ${usefulT ? 'cyan' : 'dim'}">${usefulT ? `${nf(usefulT)} t útiles para la obra` : 'Nada de lo que llevas lo pide la obra actual'}</span>` : ''}
+      ${c.cargo.length ? `<span class="eb ${usefulT ? 'cyan' : 'dim'}">${usefulT ? `${nf(usefulT)} t útiles para la construcción` : 'Nada de lo que llevas lo pide la construcción actual'}</span>` : ''}
       <div style="display:flex;flex-direction:column;min-height:0">${cargoRows}</div>
     </div>`;
   const contrib = c.contributions.slice(0, 18).map((x) => `<div style="display:grid;grid-template-columns:52px minmax(0,1fr) 90px;gap:8px;align-items:baseline;font-size:14px">
@@ -874,7 +874,7 @@ function buyPanel(s, d, c) {
   const head = `
     <div style="display:flex;flex-direction:column;gap:4px">
       <span class="ti nowrap" style="font-size:22px">${esc(res.name)}</span>
-      <span class="eb">${res.remaining ? `Faltan ${nf(res.remaining)} t · stock mínimo ${nf(q.minSupply)} t` : '<span class="cyan">Completado en esta obra</span>'}</span>
+      <span class="eb">${res.remaining ? `Faltan ${nf(res.remaining)} t · stock mínimo ${nf(q.minSupply)} t` : '<span class="cyan">Completado en esta construcción</span>'}</span>
     </div>
     <div style="display:flex;gap:6px">${chip('large', large, 'Plataforma L')}${chip('surface', f.surface, 'Superficie')}${chip('carriers', f.carriers, 'Carriers')}</div>`;
   if (ui.mk.loading || ui.mk.key !== q.key) return `${head}<div class="empty">Buscando en Spansh…</div>`;
@@ -1193,7 +1193,7 @@ function screenEstacion(s, v) {
     const sell = m.sellCargo.slice(0, 5).map((c) => row('minmax(0,1fr) 90px 110px 90px 140px', `<span class="nowrap" style="padding-left:12px">${esc(c.name)}${c.stolen ? ' <span class="eb red" style="font-size:10px">robada</span>' : ''}</span><span class="num soft" style="text-align:right">${nf(c.count)} t</span><span class="num" style="text-align:right">${c.sell ? `${nf(c.sell)} cr` : '<span class="dim">no compra</span>'}</span><span class="num" style="text-align:right">${c.sell ? vsMean(c.sell, c.mean) : ''}</span><span class="num cyan" style="text-align:right;padding-right:12px">${c.total ? `${nf(c.total)} cr` : '—'}</span>`)).join('');
     const best = m.bestSells.slice(0, 6).map((b) => row('minmax(0,1fr) 140px 120px 90px', `<span class="nowrap" style="padding-left:12px">${esc(b.name)}</span><span class="num" style="text-align:right">${nf(b.sell)} cr</span><span class="num soft" style="text-align:right">${nf(b.demand)} t</span><span class="num" style="text-align:right;padding-right:12px">${vsMean(b.sell, b.mean)}</span>`)).join('');
     market = `
-      ${block(`Para tu obra${m.depotName ? ` · ${esc(siteName(m.depotName))}` : ''}`, '<span class="eb dim">faltan · stock · precio</span>', dep, m.depotName ? 'Aquí no se vende nada de lo que le falta a tu obra.' : 'No tienes obras con material pendiente.')}
+      ${block(`Para tu construcción${m.depotName ? ` · ${esc(siteName(m.depotName))}` : ''}`, '<span class="eb dim">faltan · stock · precio</span>', dep, m.depotName ? 'Aquí no se vende nada de lo que le falta a tu construcción.' : 'No tienes construcciones con material pendiente.')}
       ${block('Vender tu carga', m.sellCargo.length ? `<span class="eb">Total <span class="num cyan" style="font-size:15px;letter-spacing:0">${nf(m.sellTotal)} cr</span></span>` : '', sell, 'Bodega vacía.')}
       ${block('Lo que más paga aquí', '<span class="eb dim">precio · demanda · vs media</span>', best, 'Esta estación no compra nada.')}`;
   }
@@ -1341,7 +1341,7 @@ function screenAjustes(s, v) {
       ${setRow('jump.vuelo', 'Vuelas, saltas o vas en supercrucero', '→ Vuelo', p.jump.vuelo, off)}
       ${setRow('jump.approach', 'Te conceden el atraque', '→ Vuelo, con el esquema de plataformas', p.jump.approach, off)}
       ${setRow('jump.docked', 'Atracas en una estación', '→ Estación', p.jump.docked, off)}
-      ${setRow('jump.depot', 'Atracas en una obra de colonización', '→ Colonización', p.jump.depot, off)}
+      ${setRow('jump.depot', 'Atracas en una construcción de colonización', '→ Colonización', p.jump.depot, off)}
     </section>`;
 
   const ds = ui.displays;

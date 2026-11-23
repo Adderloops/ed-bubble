@@ -317,7 +317,7 @@ function fmtNum(n, d) {
 
 function applyEvent(state, e) {
   if (!e || typeof e.event !== 'string') return false;
-  // recordar nombre de estación por MarketID (para las obras de colonización)
+  // recordar nombre de estación por MarketID (para las construcciones de colonización)
   if (e.MarketID && e.StationName) {
     state._markets = state._markets || {};
     state._markets[String(e.MarketID)] = e.StationName;

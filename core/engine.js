@@ -60,7 +60,7 @@ class Engine extends EventEmitter {
 
   /**
    * Historial: repasa los Journals anteriores (últimas semanas) solo para
-   * recuperar lo que no está en la sesión actual: obras de colonización,
+   * recuperar lo que no está en la sesión actual: construcciones de colonización,
    * última estación atracada e ingenieros. Lo demás sale del Journal en curso.
    */
   loadHistory({ maxFiles = 25, maxDays = 45, maxBytes = 60 * 1024 * 1024 } = {}) {
