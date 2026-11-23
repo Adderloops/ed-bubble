@@ -358,15 +358,17 @@ test('combustible: sin recolector avisa dónde te quedas corto; con recolector n
   assert.strictEqual(fuel.fuelPlan(s), null);
 });
 
-test('plataformas: regla general (n-1) mod 12, con las comprobadas corrigiéndola', () => {
+test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
   const pads = require('../../core/pads');
-  assert.strictEqual(pads.padHour('Dodec', 32), 8);
-  assert.strictEqual(pads.padHour('Dodec', 17), 4);
-  assert.strictEqual(pads.padHour('Coriolis', '9'), 8);
-  assert.strictEqual(pads.padHour('Coriolis', 7), 6);
+  // comprobadas en el juego (Coriolis): 9 a las 8, 25 a las 12, 27 a la 1
+  assert.strictEqual(pads.padHour('Coriolis', 9), 8);
+  assert.strictEqual(pads.padHour('Coriolis', 25), 0);
   assert.strictEqual(pads.padHour('Coriolis', 27), 1);
-  assert.strictEqual(pads.padHour('Coriolis', 29), 2);
-  assert.strictEqual(pads.padHour('Orbis', 1), 0);
+  assert.deepStrictEqual(pads.padInfo('Coriolis', 29), { hour: 1, depth: 3, size: 'S', source: 'mapa' });
+  assert.strictEqual(pads.padInfo('Orbis', 1).hour, 6); // la 1, bajo la ranura
+  assert.strictEqual(pads.padInfo('Bernal', 24).hour, 0); // la 24, encima
+  assert.strictEqual(pads.padHour('Dodec', 32), 8);
+  assert.strictEqual(pads.padInfo('Dodec', 5).source, 'regla');
   assert.strictEqual(pads.padHour('Orbis', 0), null);
 });
 

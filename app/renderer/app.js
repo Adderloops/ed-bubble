@@ -348,7 +348,8 @@ function screenVuelo(s, v) {
     <section class="pn card" style="flex:1;min-height:0;align-items:center">
       <div style="display:flex;justify-content:space-between;width:100%"><span class="ti" style="font-size:16px">Atraque concedido</span><span class="eb">${esc(STATION_TYPES[dock.stationType] || dock.stationType || '—')}</span></div>
       <span class="va" style="font-size:20px;align-self:flex-start">${esc(siteName(dock.station) || '—')}</span>
-      ${showDiagram ? `${dockingSvg(dock.pad, 430, v.dockPadHour)}
+      ${showDiagram ? `${dockingSvg(dock.pad, 430, v.dockPadHour, v.dockPad && v.dockPad.depth)}
+        ${v.dockPad && v.dockPad.depth != null ? `<span class="eb amber">${['Junto a la entrada', 'Cerca de la entrada', 'A media profundidad', 'Hacia el fondo', 'Al fondo'][v.dockPad.depth]} · plataforma ${({ S: 'pequeña', M: 'mediana', L: 'grande' })[v.dockPad.size]}</span>` : ''}
         <div style="display:flex;justify-content:space-between;width:430px"><span class="eb" style="color:#ff6b6b">● Luz roja</span><span class="eb dim">Vista al entrar</span><span class="eb" style="color:#3be37a">Luz verde ●</span></div>`
       : `<div class="empty" style="flex-direction:column;gap:10px"><span class="eb">Plataforma</span><span class="num amber" style="font-size:120px;line-height:1">${String(Number(dock.pad) || 0).padStart(2, '0')}</span><span style="font-size:14px">Sin esquema para este tipo de estación.</span></div>`}
     </section>` : '';
@@ -1215,7 +1216,7 @@ function arrivedCard(s) {
 }
 
 /* ---------- esquema de atraque (SVG) ---------- */
-function dockingSvg(padNum, width, hour) {
+function dockingSvg(padNum, width, hour, depth) {
   const pad = Number(padNum) || 0;
   const hot = hour != null ? hour % 12 : -1; // hora de la plataforma (core/pads.js)
   const C = 150; const RP = 94;
@@ -1226,7 +1227,8 @@ function dockingSvg(padNum, width, hour) {
       <circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="2" fill="#f08a3a"/><circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="2" fill="#f08a3a"/>`;
   }).join('');
   const pads = Array.from({ length: 12 }, (_, i) => {
-    const [x, y] = pt(RP, i * 30); const on = i === hot; const h = 11;
+    const on = i === hot;
+    const [x, y] = pt(on && depth != null ? 112 - depth * 10 : RP, i * 30); const h = on ? 12 : 11;
     return `<g${on ? ' filter="url(#glow)"' : ''}>
       <rect x="${(x - h).toFixed(1)}" y="${(y - h).toFixed(1)}" width="${2 * h}" height="${2 * h}" rx="3" fill="${on ? 'rgba(240,164,67,.28)' : '#081627'}" stroke="${on ? '#f0a443' : '#2f7fb0'}" stroke-width="${on ? 2.2 : 1.4}"/>
       <path d="M${x - 3} ${y}h6M${x} ${y - 3}v6" stroke="${on ? '#ffd08a' : '#2f7fb0'}" stroke-width="1"/></g>`;

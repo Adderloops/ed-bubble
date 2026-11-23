@@ -197,9 +197,11 @@ function powerplayView(state, now = Date.now()) {
 }
 
 function view(state) {
-  const { padHour } = require('./pads');
+  const { padInfo } = require('./pads');
+  const dockPad = state.docking && state.docking.active ? padInfo(state.docking.stationType, state.docking.pad) : null;
   return {
-    dockPadHour: state.docking && state.docking.active ? padHour(state.docking.stationType, state.docking.pad) : null,
+    dockPadHour: dockPad ? dockPad.hour : null,
+    dockPad,
     mode: flightMode(state),
     alerts: alerts(state),
     fuel: fuel(state),
