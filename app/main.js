@@ -16,6 +16,7 @@ const actions = require('../core/actions');
 const { KeySender } = require('../core/keysender');
 const spansh = require('../core/spansh');
 const { plotRoute } = require('../core/plot');
+const geo = require('../core/geo');
 
 // Registro de incidencias: %APPDATA%\\ed-bubble-app\\ed-bubble.log (máx. ~1 MB)
 const LOG_FILE = () => path.join(app.getPath('userData'), 'ed-bubble.log');
@@ -220,6 +221,20 @@ app.whenReady().then(() => {
     if (!res.ok) { console.warn('[ruta]', target, res); logLine(`[ruta] ${target} ${JSON.stringify(res)}`); }
     return res;
   });
+  // Coordenadas de destino en un planeta (se guardan entre sesiones)
+  const TARGET_FILE = path.join(app.getPath('userData'), 'surface-target.json');
+  try { engine.setSurfaceTarget(JSON.parse(fs.readFileSync(TARGET_FILE, 'utf8'))); } catch (e) { /* sin destino guardado */ }
+  ipcMain.handle('ed:clipboard-read', () => clipboard.readText().slice(0, 200));
+  ipcMain.handle('ed:target-set', (_e, text) => {
+    const c = geo.parseCoords(String(text || '').slice(0, 200));
+    if (!c) return { ok: false, error: 'No entiendo esas coordenadas. Ejemplo: 12.345, -67.89' };
+    const st = (last || engine.snapshot()).state;
+    const t = { ...c, body: st.status.bodyName || st.location.body || null, at: new Date().toISOString() };
+    engine.setSurfaceTarget(t);
+    try { fs.writeFileSync(TARGET_FILE, JSON.stringify(t)); } catch (e) { /* no se guarda */ }
+    return { ok: true, target: t };
+  });
+  ipcMain.handle('ed:target-clear', () => { engine.setSurfaceTarget(null); try { fs.unlinkSync(TARGET_FILE); } catch (e) { /* ya no estaba */ } return true; });
   ipcMain.handle('ed:plot-cancel', () => { if (plotting) plotting.cancelled = true; return true; });
   ipcMain.handle('ed:info', () => ({ version: require('./package.json').version, journalFolder: engine.folder, log: LOG_FILE() }));
   logLine(`[inicio] ED BUBBLE ${require('./package.json').version} · Journal: ${engine.folder}`);

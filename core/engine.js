@@ -105,6 +105,9 @@ class Engine extends EventEmitter {
 
   stop() { this.tailer.stop(); this.status.stop(); this.cargo.stop(); this.navroute.stop(); this.market.stop(); }
 
+  /** Fija (o quita, con null) las coordenadas de destino en un planeta. */
+  setSurfaceTarget(t) { this.state.surfaceTarget = t || null; this.changed(); }
+
   snapshot() {
     this.state.updatedAt = new Date().toISOString();
     return { state: this.state, view: derive.view(this.state) };

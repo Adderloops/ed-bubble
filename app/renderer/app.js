@@ -20,6 +20,7 @@ const ui = {
   colAside: 'buy', colSel: null, // pestaña de la derecha y material elegido
   mk: { key: null, loading: false, list: [], error: null, page: 0, pick: null }, // dónde comprar
   mkFilter: { large: null, surface: true, carriers: false },
+  coordText: '', coordMsg: null, // coordenadas en planeta: texto escrito y aviso
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
   plot: null, // { running, target, text, ok, error }
   extOk: null, // última consulta a Spansh: true / false
@@ -351,9 +352,10 @@ function screenVuelo(s, v) {
       : `<div class="empty" style="flex-direction:column;gap:10px"><span class="eb">Plataforma</span><span class="num amber" style="font-size:120px;line-height:1">${String(Number(dock.pad) || 0).padStart(2, '0')}</span><span style="font-size:14px">Sin esquema para este tipo de estación.</span></div>`}
     </section>` : '';
   const approachCard = `
-    <section class="pn card" style="flex:1;min-height:0">
-      <div style="display:flex;justify-content:space-between;gap:10px"><span class="ti nowrap" style="font-size:16px">Aproximación a planeta</span><span class="eb dim">Solo cerca de un cuerpo</span></div>
-      ${approach}
+    <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;gap:10px"><span class="ti nowrap" style="font-size:16px">Aproximación a planeta</span><span class="eb dim">${s.surfaceTarget ? 'Destino fijado' : 'Solo cerca de un cuerpo'}</span></div>
+      ${coordControls(s)}
+      ${s.surfaceTarget && v.surfaceNav ? compassBlock(s, v.surfaceNav) : approach}
     </section>`;
 
   const r = v.route;
@@ -850,6 +852,72 @@ function buyPanel(s, d, c) {
     <div style="margin-top:auto">${action}</div>`;
 }
 
+/* ---------- coordenadas en planeta y brújula ---------- */
+const fmtDist = (m) => (m == null ? '—' : m < 1000 ? `${nf(m, 0)} m` : m < 100000 ? `${nf(m / 1000, 1)} km` : `${nf(m / 1000, 0)} km`);
+
+function coordControls(s) {
+  const t = s.surfaceTarget;
+  const msg = ui.coordMsg && Date.now() - ui.coordMsg.at < 5000 ? `<span class="eb ${ui.coordMsg.ok ? 'cyan' : 'red'}">${esc(ui.coordMsg.text)}</span>` : '';
+  if (t) {
+    const other = t.body && s.status.bodyName && t.body !== s.status.bodyName;
+    return `<div class="in" style="padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border-color:#5a4524">
+        <span style="display:flex;flex-direction:column;min-width:0"><span class="num amber" style="font-size:18px">${nf(t.lat, 4)} · ${nf(t.lon, 4)}</span><span class="eb nowrap" style="font-size:10px">${t.body ? esc(clean(t.body)) : 'Cuerpo sin indicar'}${other ? ' · <span class="red">estás en otro cuerpo</span>' : ''}</span></span>
+        <button type="button" class="nav-btn" style="width:110px" data-coord="clear">Quitar</button>
+      </div>${msg}`;
+  }
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 96px 96px;gap:8px">
+      <input id="coord-input" class="search" type="text" spellcheck="false" autocomplete="off" placeholder="Lat, Long  (ej. 12.345, -67.89)" value="${esc(ui.coordText)}">
+      <button type="button" class="nav-btn" data-coord="paste">Pegar</button>
+      <button type="button" class="nav-btn" data-coord="set" style="color:#1a1402;background:var(--amber);border-color:var(--amber)">Fijar</button>
+    </div>${msg}`;
+}
+
+function compassSvg(nav, size) {
+  const C = 150; const hd = nav.heading || 0;
+  const ticks = Array.from({ length: 36 }, (_, i) => {
+    const a = i * 10; const long = a % 30 === 0;
+    return `<line x1="${C}" y1="${C - 128}" x2="${C}" y2="${C - (long ? 112 : 120)}" stroke="${long ? '#7f9bb8' : '#2f4a68'}" stroke-width="${long ? 2 : 1.2}" transform="rotate(${a} ${C} ${C})"/>`;
+  }).join('');
+  const label = (txt, a, col) => `<text x="${C}" y="${C - 96}" text-anchor="middle" dominant-baseline="middle" font-family="Rajdhani" font-weight="700" font-size="15" fill="${col}" transform="rotate(${a} ${C} ${C}) rotate(${-a + hd} ${C} ${C - 96})">${txt}</text>`;
+  const rel = nav.relative; const on = rel != null && Math.abs(rel) <= 8;
+  const col = on ? '#49c7e8' : '#f0a443';
+  return `<svg viewBox="0 0 300 300" width="${size}" height="${size}" style="display:block;flex:none">
+    <defs><filter id="cglow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <circle cx="${C}" cy="${C}" r="140" fill="#06101c" stroke="#1f3a5a"/>
+    <circle cx="${C}" cy="${C}" r="128" fill="none" stroke="#2b5379" stroke-width="2"/>
+    <g transform="rotate(${-hd} ${C} ${C})">
+      ${ticks}
+      ${label('N', 0, '#ff6b6b')}${label('E', 90, '#cfe3f5')}${label('S', 180, '#cfe3f5')}${label('O', 270, '#cfe3f5')}
+      <g transform="rotate(${nav.bearing} ${C} ${C})"><path d="M${C} ${C - 138} l8 12 l-8 12 l-8 -12 z" fill="#f0a443" filter="url(#cglow)"/></g>
+    </g>
+    <path d="M${C} ${C - 150} l9 16 h-18 z" fill="#cfe3f5"/>
+    <circle cx="${C}" cy="${C}" r="62" fill="#0a1a2e" stroke="#2b5379"/>
+    ${rel != null ? `<g transform="rotate(${rel} ${C} ${C})" filter="url(#cglow)"><path d="M${C} ${C - 56} l20 30 h-12 v40 h-16 v-40 h-12 z" fill="${col}"/></g>` : ''}
+  </svg>`;
+}
+
+function compassBlock(s, nav) {
+  if (!nav.sameBody) return '<div class="in empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">El destino está en otro cuerpo</span><span style="font-size:14px">La brújula aparecerá al acercarte al cuerpo donde lo fijaste.</span></div>';
+  const rel = nav.relative;
+  const turn = rel == null ? 'Sin rumbo' : Math.abs(rel) <= 5 ? 'De frente' : Math.abs(rel) >= 165 ? 'Detrás · da la vuelta' : `Gira ${nf(Math.abs(rel), 0)}° a la ${rel > 0 ? 'derecha' : 'izquierda'}`;
+  return `<div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center;min-height:0">
+      ${compassSvg(nav, 300)}
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span class="eb">Distancia</span><span class="num amber" style="font-size:40px;line-height:1">${fmtDist(nav.distance)}</span>
+        <span class="va ${Math.abs(rel || 0) <= 5 ? 'cyan' : ''}" style="font-size:20px">${turn}</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${stat('Rumbo obj.', `${nf(nav.bearing, 0)}°`)}${stat('Tu rumbo', nav.heading != null ? `${nav.heading}°` : '—')}${stat('Altitud', s.status.altitude != null ? fmtDist(s.status.altitude) : '—')}${stat('Gravedad', s.status.gravity != null ? `${nf(s.status.gravity, 2)} g` : '—')}</div>
+      </div>
+    </div>`;
+}
+
+async function coordAction(kind) {
+  const say = (ok, text) => { ui.coordMsg = { ok, text, at: Date.now() }; render(); setTimeout(render, 5100); };
+  if (kind === 'paste') { ui.coordText = await window.edbubble.clipboardRead(); render(); return; }
+  if (kind === 'clear') { await window.edbubble.targetClear(); ui.coordText = ''; say(true, 'Destino quitado'); return; }
+  const r = await window.edbubble.targetSet(ui.coordText);
+  say(r.ok, r.ok ? 'Destino fijado' : r.error);
+}
+
 /* ---------- Estación ---------- */
 const STATION_ICON = { Coriolis: 'coriolis', Orbis: 'orbis', Bernal: 'ocellus', Ocellus: 'ocellus', Dodec: 'dodec', Outpost: 'outpost', AsteroidBase: 'asteroid', MegaShip: 'megaship', FleetCarrier: 'carrier', CraterPort: 'surface_port', CraterOutpost: 'surface_outpost', OnFootSettlement: 'settlement', SpaceConstructionDepot: 'outpost', PlanetaryConstructionDepot: 'surface_outpost' };
 const STATE_ES = { Expansion: 'Expansión', Boom: 'Auge', Bust: 'Quiebra', CivilUnrest: 'Disturbios', CivilWar: 'Guerra civil', War: 'Guerra', Election: 'Elecciones', Lockdown: 'Confinamiento', Outbreak: 'Epidemia', Famine: 'Hambruna', Retreat: 'Retirada', InfrastructureFailure: 'Fallo de infraestructuras', Investment: 'Inversión', PirateAttack: 'Ataque pirata', PublicHoliday: 'Festividad', Drought: 'Sequía', Blight: 'Plaga', None: 'Sin estado' };
@@ -1044,7 +1112,7 @@ function render() {
 function renderNow() {
   const snap = ui.snap; if (!snap) return;
   const { state: s, view: v } = snap;
-  const typing = document.activeElement && document.activeElement.id === 'nav-search';
+  const typing = document.activeElement && document.activeElement.tagName === 'INPUT' && !!document.activeElement.id;
   if (ui.autoJump && v.mode.key !== ui.lastModeKey && !typing) {
     if (ui.lastModeKey !== null && BUILT.has(v.mode.section) && v.mode.section !== ui.section) ui.section = v.mode.section;
     ui.lastModeKey = v.mode.key;
@@ -1055,9 +1123,10 @@ function renderNow() {
   if (ui.finalDest && s.location.docked && s.location.station && siteName(s.location.station).toLowerCase() === siteName(ui.finalDest.station).toLowerCase()) ui.finalDest = null;
   renderHeader(s, v);
   renderRail(v);
+  const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
   $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : screenPuente(s, v);
-  if (sel) { const el = $('nav-search'); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
+  if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
 function fit() {
@@ -1078,6 +1147,7 @@ document.addEventListener('click', (ev) => {
 // Buscador: sugerencias de Spansh mientras se escribe (con pausa de 300 ms)
 let searchTimer = null;
 document.addEventListener('input', (ev) => {
+  if (ev.target.id === 'coord-input') { ui.coordText = ev.target.value; return; }
   if (ev.target.id !== 'nav-search') return;
   ui.search.q = ev.target.value;
   clearTimeout(searchTimer);
@@ -1096,6 +1166,7 @@ document.addEventListener('input', (ev) => {
   }, 300);
 });
 document.addEventListener('keydown', (ev) => {
+  if (ev.target.id === 'coord-input' && ev.key === 'Enter') { coordAction('set'); return; }
   if (ev.target.id === 'nav-search' && ev.key === 'Enter') {
     const q = ui.search.q.trim();
     const exact = ui.search.results.find((r) => r.name.toLowerCase() === q.toLowerCase());
@@ -1139,6 +1210,8 @@ document.addEventListener('pointerdown', (ev) => {
     window.edbubble.plot(ui.sel.name, d || 0);
     return;
   }
+  const co = ev.target.closest('button[data-coord]');
+  if (co) { ev.preventDefault(); coordAction(co.dataset.coord); return; }
   const go = ev.target.closest('[data-goto]');
   if (go) { ev.preventDefault(); ui.section = go.dataset.goto; render(); return; }
   const mt = ev.target.closest('[data-mat]');

@@ -10,6 +10,8 @@ El panel **Controles** del Puente de mando revisa las teclas que usa ED BUBBLE (
 
 **Estación:** la estación en la que estás atracado (o la última): tipo, sistema, distancia a la estrella, facción y estado, gobierno, plataformas S/M/L y economías; servicios disponibles; y, si has abierto su mercado en el juego (Market.json), lo que le falta a tu obra y se vende aquí, lo que pagan por tu carga y lo que más paga la estación. También el objetivo comunitario activo y el resumen de ingenieros.
 
+**Coordenadas en planeta (Vuelo):** en Aproximación a planeta se escriben o pegan unas coordenadas (Pegar lee el portapapeles; acepta "12.345, -67.89", coma decimal o "Lat … Lon …") y se fijan. Una brújula gira con tu rumbo, marca el objetivo y dice cuánto girar, con la distancia sobre la superficie. El destino se guarda entre sesiones; Quitar lo borra.
+
 **Historial:** al arrancar, el motor repasa los Journals de las últimas semanas (máx. 25 archivos) para recuperar las obras de colonización, la última estación y los ingenieros, aunque hoy no hayas pasado por ellos.
 
 Registro de incidencias: `%APPDATA%\ed-bubble-app\ed-bubble.log` (errores al pintar, fallos de teclas o de Trazar ruta y cada atraque concedido con la sección en la que estaba la app). Si algo falla al pintar, la cabecera lo avisa en rojo.
@@ -55,3 +57,7 @@ npm test
 ```
 
 Para desarrollo: `ED_JOURNAL_FOLDER` apunta el motor a otra carpeta de Journals, y `ED_BUBBLE_SHOT=<carpeta>` guarda capturas de las pantallas y cierra la app.
+
+## Pendiente
+
+- Brújula de coordenadas (y quizá el esquema de atraque) en **overlay** sobre la pantalla del juego: ventana transparente, siempre encima y que no capture el ratón, con el juego en ventana sin bordes.

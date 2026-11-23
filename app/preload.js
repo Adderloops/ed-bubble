@@ -16,6 +16,9 @@ contextBridge.exposeInMainWorld('edbubble', {
   plotCancel: () => ipcRenderer.invoke('ed:plot-cancel'),
   onPlotStatus: (cb) => ipcRenderer.on('ed:plot-status', (_e, st) => cb(st)),
   log: (msg) => ipcRenderer.send('ed:log', String(msg).slice(0, 4000)),
+  clipboardRead: () => ipcRenderer.invoke('ed:clipboard-read'),
+  targetSet: (text) => ipcRenderer.invoke('ed:target-set', text),
+  targetClear: () => ipcRenderer.invoke('ed:target-clear'),
   copy: (text) => ipcRenderer.invoke('ed:copy', text),
   open: (site, name, address) => ipcRenderer.invoke('ed:open', { site, name, address }),
 });

@@ -303,6 +303,24 @@ test('historial: recupera obras y última estación de Journals anteriores, sin 
   assert.strictEqual(e.state.log.length, 0); assert.strictEqual(e.state.location.docked, false);
 });
 
+test('coordenadas: lee formatos pegados y calcula rumbo, distancia y giro', () => {
+  const geo = require('../../core/geo');
+  assert.deepStrictEqual(geo.parseCoords('12.345, -67.89'), { lat: 12.345, lon: -67.89 });
+  assert.deepStrictEqual(geo.parseCoords('12,345 -67,89'), { lat: 12.345, lon: -67.89 });
+  assert.deepStrictEqual(geo.parseCoords('Lat: -5.5 Lon: 120.25'), { lat: -5.5, lon: 120.25 });
+  assert.strictEqual(geo.parseCoords('95, 10'), null);
+  assert.strictEqual(geo.parseCoords('hola'), null);
+  assert.strictEqual(Math.round(geo.bearing(0, 0, 0, 10)), 90); // al este
+  assert.strictEqual(Math.round(geo.bearing(0, 0, 10, 0)), 0); // al norte
+  const d = geo.distance(0, 0, 0, 1, 1000000); // 1° de longitud en un planeta de 1.000 km de radio
+  assert.ok(Math.abs(d - 17453) < 2);
+  assert.strictEqual(geo.relative(90, 350), 100); // giro a la derecha
+  assert.strictEqual(geo.relative(10, 40), -30); // giro a la izquierda
+  const n = geo.surfaceNav({ latitude: 0, longitude: 0, heading: 0, planetRadius: 1000000, bodyName: 'A 1' }, { lat: 0, lon: 1, body: 'A 1' });
+  assert.strictEqual(Math.round(n.relative), 90); assert.strictEqual(n.sameBody, true);
+  assert.strictEqual(geo.surfaceNav({ latitude: 0, longitude: 0, heading: 0, bodyName: 'B' }, { lat: 1, lon: 1, body: 'A 1' }).sameBody, false);
+});
+
 test('plataformas: regla general (n-1) mod 12, con las comprobadas corrigiéndola', () => {
   const pads = require('../../core/pads');
   assert.strictEqual(pads.padHour('Dodec', 32), 8);

@@ -35,6 +35,7 @@ function createState() {
     docking: { active: false, pad: null, station: null, stationType: null, at: null },
     powerplay: { power: null, rank: null, merits: null, system: null, control: null, controlAt: null },
     colonisation: { depots: {}, current: null, contributions: [] },
+    surfaceTarget: null, // coordenadas fijadas en un planeta: { lat, lon, body, at }
     station: null, // última estación en la que has atracado (datos del evento Docked / Location)
     market: null, // Market.json: { marketId, station, at, items[] }
     communityGoals: [], // objetivos comunitarios activos (evento CommunityGoal)

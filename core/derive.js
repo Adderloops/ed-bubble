@@ -164,6 +164,7 @@ function view(state) {
     colonisation: state.colonisation.current ? state.colonisation.depots[state.colonisation.current] : null,
     col: colonisationView(state),
     station: stationView(state),
+    surfaceNav: require('./geo').surfaceNav(state.status, state.surfaceTarget),
   };
 }
 
