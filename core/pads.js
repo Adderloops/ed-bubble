@@ -12,8 +12,8 @@
  */
 const KNOWN = {
   // Macgregor's Progress (Pegasi Sector IH-V c2-28), 2026-11-22
-  // pad 27: 2026-11-23, a la 1 (la regla la ponía a las 2)
-  Coriolis: { 9: 8, 27: 1 },
+  // pad 27: 2026-11-23, a la 1 (la regla la ponía a las 2); pad 29: a las 2 (la regla, a las 4)
+  Coriolis: { 9: 8, 27: 1, 29: 2 },
   // Cleopatra Vista (Pegasi Sector JN-S b4-7), 2026-11-22: captura desde dentro
   // con el holograma "32" (a las 4 vista desde dentro -> a las 8 al entrar)
   // Pad 17: captura desde dentro, nave abajo a la izquierda con la cúpula de la
