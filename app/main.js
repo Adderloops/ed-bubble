@@ -101,7 +101,7 @@ function createWindow() {
     win.webContents.once('did-finish-load', async () => {
       const out = process.env.ED_BUBBLE_SHOT;
       await new Promise((r) => setTimeout(r, 2500));
-      for (const sec of ['puente', 'vuelo', 'navegacion', 'colonizacion', 'estacion']) {
+      for (const sec of ['puente', 'vuelo', 'navegacion', 'colonizacion', 'estacion', 'powerplay']) {
         await win.webContents.executeJavaScript(`ui.section='${sec}'; ui.autoJump=false; render();`);
         await new Promise((r) => setTimeout(r, 400));
         const img = await win.webContents.capturePage();
@@ -220,6 +220,18 @@ app.whenReady().then(() => {
     plotStatus({ running: false, target, ...res });
     if (!res.ok) { console.warn('[ruta]', target, res); logLine(`[ruta] ${target} ${JSON.stringify(res)}`); }
     return res;
+  });
+  // Ajustes guardados (sistema de Powerplay seguido, …)
+  const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
+  let settings = {};
+  try { settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')) || {}; } catch (e) { /* sin ajustes */ }
+  const saveSettings = () => { try { fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2)); } catch (e) { logLine(`[ajustes] ${e.message}`); } };
+  if (settings.ppTracked) engine.setTrackedSystem(settings.ppTracked);
+  ipcMain.handle('ed:pp-track', (_e, name) => {
+    settings.ppTracked = name ? String(name).slice(0, 120) : null;
+    engine.setTrackedSystem(settings.ppTracked);
+    saveSettings();
+    return true;
   });
   // Coordenadas de destino en un planeta (se guardan entre sesiones)
   const TARGET_FILE = path.join(app.getPath('userData'), 'surface-target.json');

@@ -64,7 +64,7 @@ class Engine extends EventEmitter {
    * última estación atracada e ingenieros. Lo demás sale del Journal en curso.
    */
   loadHistory({ maxFiles = 25, maxDays = 45, maxBytes = 60 * 1024 * 1024 } = {}) {
-    const KEEP = ['Location', 'Docked', 'Undocked', 'ColonisationConstructionDepot', 'EngineerProgress', 'EngineerCraft'];
+    const KEEP = ['Location', 'Docked', 'Undocked', 'ColonisationConstructionDepot', 'EngineerProgress', 'EngineerCraft', 'FSDJump', 'Powerplay'];
     let files;
     try { files = fs.readdirSync(this.folder).filter((f) => /^Journal\..*\.log$/.test(f)).sort(); } catch (e) { return 0; }
     files = files.slice(0, -1); // el último lo lee el tailer en vivo
@@ -84,7 +84,10 @@ class Engine extends EventEmitter {
         if (!line || !KEEP.some((k) => line.includes(`"${k}"`))) continue;
         let e; try { e = JSON.parse(line); } catch (x) { continue; }
         if (!KEEP.includes(e.event)) continue;
-        model.applyEvent(this.state, e); n += 1;
+        // de los saltos antiguos solo interesa el control de Powerplay (no cuentan como sesión)
+        if (e.event === 'FSDJump') model.recordControl(this.state, e);
+        else model.applyEvent(this.state, e);
+        n += 1;
       }
     }
     // lo de sesiones pasadas no es "sesión" ni "ahora"
@@ -104,6 +107,9 @@ class Engine extends EventEmitter {
   }
 
   stop() { this.tailer.stop(); this.status.stop(); this.cargo.stop(); this.navroute.stop(); this.market.stop(); }
+
+  /** Sistema de Powerplay que se sigue (se mantiene aunque saltes a otro). */
+  setTrackedSystem(name) { this.state.powerplay.tracked = name || null; this.changed(); }
 
   /** Fija (o quita, con null) las coordenadas de destino en un planeta. */
   setSurfaceTarget(t) { this.state.surfaceTarget = t || null; this.changed(); }

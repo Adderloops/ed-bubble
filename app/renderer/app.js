@@ -6,7 +6,7 @@ const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo' }, { id: 'srv', label: 'SRV' },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie' },
-  { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay' }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería' }, { id: 'colonizacion', label: 'Colonización', built: true },
+  { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería' }, { id: 'colonizacion', label: 'Colonización', built: true },
   { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' },
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
@@ -946,6 +946,101 @@ async function coordAction(kind) {
   say(r.ok, r.ok ? 'Destino fijado' : r.error);
 }
 
+/* ---------- Powerplay ---------- */
+const PP_STATE = { Exploited: 'Explotado', Fortified: 'Fortificado', Stronghold: 'Stronghold', Unoccupied: 'Sin ocupar' };
+const fmtCut = (ms) => { const d = ms - Date.now(); if (d <= 0) return 'ahora'; const h = Math.floor(d / 3600000); return h >= 24 ? `${Math.floor(h / 24)} d ${h % 24} h` : `${h} h ${Math.floor((d % 3600000) / 60000)} min`; };
+
+function screenPowerplay(s, v) {
+  const p = v.powerplay; const y = p.system;
+  const pilot = p.pilot;
+  const right = `
+    <aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">
+      <section class="pn card">
+        <span class="ti" style="font-size:16px">Piloto</span>
+        <div class="kv" style="font-size:16px">
+          <span class="eb" style="font-size:10px">Potencia</span><span class="amber">${esc(or(pilot.power))}</span>
+          <span class="eb" style="font-size:10px">Rango</span><span class="num">${or(pilot.rank)}</span>
+          <span class="eb" style="font-size:10px">Para subir</span><span class="num">${pilot.toNext ? `${nf(pilot.toNext.remainingMerits)} méritos` : '—'}</span>
+          <span class="eb" style="font-size:10px">Méritos</span><span class="num">${nf(pilot.merits)}</span>
+          <span class="eb" style="font-size:10px">Esta sesión</span><span class="num cyan">+${nf(pilot.session)}</span>
+        </div>
+        ${pilot.toNext && pilot.rankStart != null ? `<span class="bar" style="height:8px"><span style="width:${Math.max(0, Math.min(1, (pilot.merits - pilot.rankStart) / Math.max(1, pilot.toNext.requiredMerits - pilot.rankStart))) * 100}%;background:var(--amber)"></span></span><span class="eb dim" style="font-size:10px">Rango ${pilot.toNext.nextRank} a ${nf(pilot.toNext.requiredMerits)} méritos</span>` : ''}
+      </section>
+      <section class="pn card">
+        <span class="ti" style="font-size:16px">Sistema seguido</span>
+        <span class="va nowrap" style="font-size:18px">${esc(p.tracked || '—')}</span>
+        <span class="soft" style="font-size:13px">${p.pinned ? 'Se mantiene aunque saltes a otro sistema.' : 'Sin fijar: se muestra el sistema actual si tiene Powerplay.'}</span>
+        <div style="display:flex;gap:8px">
+          ${p.canTrackHere ? `<button type="button" class="nav-btn" style="flex:1" data-pptrack="${esc(p.here)}">Seguir ${esc(p.here)}</button>` : ''}
+          ${p.pinned ? '<button type="button" class="nav-btn" style="width:150px" data-pptrack="">Dejar de fijar</button>' : ''}
+        </div>
+      </section>
+      <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
+        <span class="ti" style="font-size:16px">Sistemas con datos</span>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          ${Object.entries(s.powerplay.systems).map(([name, list]) => ({ name, x: list[list.length - 1] })).sort((a, b) => String(b.x.at).localeCompare(String(a.x.at))).slice(0, 7).map(({ name, x }) => `<button type="button" class="pick ${name === p.tracked ? 'on' : ''}" data-pptrack="${esc(name)}" title="Seguir este sistema"><span class="nowrap">${esc(name)}</span><span class="num soft" style="font-size:13px">${esc(PP_STATE[x.control.state] || x.control.state)} · ${nf(x.control.progress * 100, 1)} %</span></button>`).join('') || '<span class="soft" style="font-size:14px">Entra en un sistema con Powerplay para ver sus datos.</span>'}
+        </div>
+        <span class="note" style="margin-top:auto">Topes: Explotado 350.000 · Fortificado 650.000 · Stronghold 1.000.000 PC. El Journal solo da estos datos al entrar en el sistema.</span>
+      </section>
+    </aside>`;
+  if (!y) {
+    return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:12px;min-height:0">
+      <section class="pn card"><span class="ti" style="font-size:16px">Control del sistema</span><div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:20px;color:var(--soft)">Sin sistema que seguir</span><span style="font-size:15px">Entra en un sistema con Powerplay (o elige uno de la lista) para ver su progreso de control.</span></div></section>${right}</div>`;
+  }
+  const pct = (x) => `${nf(x * 100, 1)} %`;
+  const segColor = { 0: '#0c1b2e', 1: '#2a7fa3', 2: '#49c7e8', 3: '#ff4b4b' };
+  const segs = y.segments.map((k) => `<span style="flex:1;height:28px;background:${segColor[k]};border:1px solid ${k ? 'transparent' : 'var(--line2)'};border-radius:2px;${k === 2 ? 'box-shadow:0 0 8px rgba(73,199,232,.6)' : ''}"></span>`).join('');
+  const scale = [0, 0.25, 0.5, 0.75, 1].map((f) => `<span class="num soft" style="font-size:12px">${nf(y.cap * f)}</span>`).join('');
+  const prev = y.previous;
+  const bar = (label, cur, old, col) => {
+    const mx = Math.max(cur || 0, (old && old.v) || 0, 1);
+    return `<div style="display:grid;grid-template-columns:120px minmax(0,1fr) 110px;gap:10px;align-items:center">
+      <span class="eb">${label}</span>
+      <span style="display:flex;flex-direction:column;gap:3px"><span class="bar" style="height:10px"><span style="width:${(cur / mx) * 100}%;background:${col}"></span></span>${old ? `<span class="bar" style="height:6px;opacity:.5"><span style="width:${(old.v / mx) * 100}%;background:${col}"></span></span>` : ''}</span>
+      <span class="num" style="text-align:right">${nf(cur)}${old ? `<br><span class="soft" style="font-size:12px">${nf(old.v)}</span>` : ''}</span></div>`;
+  };
+  const head = y.nextState
+    ? `<span class="num amber" style="font-size:36px">Faltan ${nf(y.remaining)} PC</span><span class="soft" style="font-size:15px">${esc(y.name)} está ${esc((PP_STATE[y.state] || y.state).toLowerCase())} al ${pct(y.progress)}. Al llegar al 100 % sube a ${esc(PP_STATE[y.nextState])} en el siguiente corte del jueves y el sobrante pasa al estado nuevo.</span>`
+    : `<span class="num amber" style="font-size:36px">Nivel máximo</span><span class="soft" style="font-size:15px">${esc(y.name)} es Stronghold al ${pct(y.progress)}. El progreso protege el sistema frente al undermining.</span>`;
+  const main = `
+    <main style="display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0">
+      <section class="pn card" style="border-left:3px solid var(--amber)">
+        <span class="eb">Control del sistema · ${esc(y.power || '—')}${y.stale ? ' · <span class="yellow">datos de un ciclo anterior</span>' : ''}</span>
+        <span class="ti nowrap" style="font-size:32px">${esc(y.name)}</span>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:20px;align-items:end">
+          <div style="display:flex;flex-direction:column;gap:6px">${head}</div>
+          <div style="display:flex;flex-direction:column;gap:4px;text-align:right"><span class="eb">Siguiente estado</span><span class="va" style="font-size:22px">${esc(y.nextState ? PP_STATE[y.nextState] : '—')}</span><span class="eb dim" style="font-size:10px">Tope ${nf(y.cap)} PC · datos ${String(y.at).slice(0, 10)} ${hhmm(y.at)} UTC</span></div>
+        </div>
+      </section>
+      <section class="pn card">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">Progreso · ${esc(PP_STATE[y.state] || y.state)}</span><span class="num amber" style="font-size:34px">${pct(y.progress)}</span></div>
+        <div style="display:flex;gap:4px">${segs}</div>
+        <div style="display:flex;justify-content:space-between">${scale}</div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap"><span class="eb"><span style="color:#2a7fa3">■</span> Antes del ciclo · ${pct(y.baseProgress)}</span><span class="eb"><span class="cyan">■</span> Ganado este ciclo</span><span class="eb"><span class="red">■</span> Perdido</span></div>
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+          ${stat('Puntos de control', `${nf(y.totalCp)}`)}${stat('Refuerzo', `+${nf(y.reinforcement)}`, 'cyan')}${stat('Undermining', y.undermining ? `−${nf(y.undermining)}` : '0', y.undermining ? 'red' : '')}${stat('Neto del ciclo', `${y.net >= 0 ? '+' : '−'}${nf(Math.abs(y.net))}`, y.net >= 0 ? 'cyan' : 'red')}
+        </div>
+      </section>
+      <section class="pn card" style="flex:1;min-height:0">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">Ciclo actual frente al anterior · historial</span><span class="eb">Corte semanal · jueves 07:00 UTC · faltan ${fmtCut(p.nextCut)}</span></div>
+        ${bar('Refuerzo', y.reinforcement, prev && { v: prev.reinforcement }, 'var(--cyan)')}
+        ${bar('Undermining', y.undermining, prev && { v: prev.undermining }, 'var(--red,#ff4b4b)')}
+        <span class="note">${prev ? `Barra clara: ciclo actual · barra oscura: ciclo anterior (datos del ${String(prev.at).slice(0, 10)}).` : 'Sin datos del ciclo anterior: aparecerán cuando entres en el sistema en dos semanas distintas.'}${y.stale ? ' Los datos son de antes del último corte: entra en el sistema para actualizarlos.' : ''}</span>
+        <div style="display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden;margin-top:6px">
+          <div class="eb dim" style="display:grid;grid-template-columns:190px 140px minmax(0,1fr) 130px 130px;font-size:10px;padding:0 12px"><span>Visita</span><span>Estado</span><span>Progreso</span><span style="text-align:right">Refuerzo</span><span style="text-align:right">Undermining</span></div>
+          ${(s.powerplay.systems[y.name] || []).slice().reverse().slice(0, 9).map((x) => `<div class="in row" style="grid-template-columns:190px 140px minmax(0,1fr) 130px 130px;height:34px">
+            <span class="num soft" style="padding-left:12px">${String(x.at).slice(0, 10)} ${hhmm(x.at)}</span>
+            <span>${esc(PP_STATE[x.control.state] || x.control.state)}</span>
+            <span style="display:flex;align-items:center;gap:8px"><span class="bar" style="flex:1;height:6px"><span style="width:${Math.min(1, x.control.progress) * 100}%;background:var(--amber)"></span></span><span class="num" style="width:64px;text-align:right">${pct(x.control.progress)}</span></span>
+            <span class="num cyan" style="text-align:right">+${nf(x.control.reinforcement)}</span>
+            <span class="num ${x.control.undermining ? 'red' : 'soft'}" style="text-align:right;padding-right:12px">${x.control.undermining ? `−${nf(x.control.undermining)}` : '0'}</span>
+          </div>`).join('')}
+        </div>
+      </section>
+    </main>`;
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:12px;min-height:0">${main}${right}</div>`;
+}
+
 /* ---------- Estación ---------- */
 const STATION_ICON = { Coriolis: 'coriolis', Orbis: 'orbis', Bernal: 'ocellus', Ocellus: 'ocellus', Dodec: 'dodec', Outpost: 'outpost', AsteroidBase: 'asteroid', MegaShip: 'megaship', FleetCarrier: 'carrier', CraterPort: 'surface_port', CraterOutpost: 'surface_outpost', OnFootSettlement: 'settlement', SpaceConstructionDepot: 'outpost', PlanetaryConstructionDepot: 'surface_outpost' };
 const STATE_ES = { Expansion: 'Expansión', Boom: 'Auge', Bust: 'Quiebra', CivilUnrest: 'Disturbios', CivilWar: 'Guerra civil', War: 'Guerra', Election: 'Elecciones', Lockdown: 'Confinamiento', Outbreak: 'Epidemia', Famine: 'Hambruna', Retreat: 'Retirada', InfrastructureFailure: 'Fallo de infraestructuras', Investment: 'Inversión', PirateAttack: 'Ataque pirata', PublicHoliday: 'Festividad', Drought: 'Sequía', Blight: 'Plaga', None: 'Sin estado' };
@@ -1153,7 +1248,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -1238,6 +1333,8 @@ document.addEventListener('pointerdown', (ev) => {
     window.edbubble.plot(ui.sel.name, d || 0);
     return;
   }
+  const pt = ev.target.closest('button[data-pptrack]');
+  if (pt) { ev.preventDefault(); window.edbubble.ppTrack(pt.dataset.pptrack || null); return; }
   const co = ev.target.closest('button[data-coord]');
   if (co) { ev.preventDefault(); coordAction(co.dataset.coord); return; }
   const go = ev.target.closest('[data-goto]');

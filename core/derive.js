@@ -152,6 +152,39 @@ function stationView(state) {
   return { ...st, here, services, market, communityGoals: cg, engineering: state.engineering };
 }
 
+/** Último corte semanal de Powerplay (jueves 07:00 UTC) antes de `now`. */
+function lastWeeklyCut(now = Date.now()) {
+  const d = new Date(now);
+  const cut = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 7, 0, 0));
+  const back = (cut.getUTCDay() - 4 + 7) % 7; // 4 = jueves
+  cut.setUTCDate(cut.getUTCDate() - back);
+  if (cut.getTime() > now) cut.setUTCDate(cut.getUTCDate() - 7);
+  return cut.getTime();
+}
+
+/** Powerplay: piloto, sistema seguido (progreso, ciclo actual y anterior). */
+function powerplayView(state, now = Date.now()) {
+  const { getMeritsToNextRank, getMeritsRequiredForRank } = require('../src/services/powerplay-ranks');
+  const { segmentStates } = require('../src/services/powerplay-control');
+  const pp = state.powerplay;
+  const pilot = { power: pp.power, rank: pp.rank, merits: pp.merits, session: state.session.merits || 0, toNext: pp.rank != null && pp.merits != null ? getMeritsToNextRank(pp.rank, pp.merits) : null, rankStart: pp.rank > 1 ? getMeritsRequiredForRank(pp.rank - 1) : 0 }; // méritos con los que empezó el rango actual
+  const here = state.location.system;
+  const tracked = pp.tracked || (pp.systems[here] ? here : null);
+  const snaps = tracked ? pp.systems[tracked] || [] : [];
+  const latest = snaps[snaps.length - 1] || null;
+  const cut = lastWeeklyCut(now);
+  const prev = [...snaps].reverse().find((x) => x.at && Date.parse(x.at) < cut) || null;
+  const latestInCycle = latest && latest.at && Date.parse(latest.at) >= cut;
+  const system = latest ? {
+    name: tracked, at: latest.at, power: latest.power, ...latest.control,
+    segments: segmentStates(latest.control.baseProgress, latest.control.progress),
+    stale: !latestInCycle, // datos de un ciclo anterior: aún no has entrado esta semana
+    previous: prev && prev !== latest ? { at: prev.at, reinforcement: prev.control.reinforcement, undermining: prev.control.undermining, net: prev.control.net, progress: prev.control.progress } : null,
+  } : null;
+  const canTrackHere = !!(here && pp.systems[here] && here !== tracked);
+  return { pilot, tracked, system, cut, nextCut: cut + 7 * 86400000, canTrackHere, here, pinned: !!pp.tracked };
+}
+
 function view(state) {
   const { padHour } = require('./pads');
   return {
@@ -164,8 +197,9 @@ function view(state) {
     colonisation: state.colonisation.current ? state.colonisation.depots[state.colonisation.current] : null,
     col: colonisationView(state),
     station: stationView(state),
+    powerplay: powerplayView(state),
     surfaceNav: require('./geo').surfaceNav(state.status, state.surfaceTarget),
   };
 }
 
-module.exports = { view, colonisationView, stationView, flightMode, alerts, fuel, routeView, isScoopable, FUEL_ALERT, HULL_ALERT };
+module.exports = { view, colonisationView, stationView, powerplayView, lastWeeklyCut, flightMode, alerts, fuel, routeView, isScoopable, FUEL_ALERT, HULL_ALERT };

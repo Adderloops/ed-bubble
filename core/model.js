@@ -33,7 +33,7 @@ function createState() {
     routeFull: [],
     lastJump: { distance: null, fuelUsed: null, at: null },
     docking: { active: false, pad: null, station: null, stationType: null, at: null },
-    powerplay: { power: null, rank: null, merits: null, system: null, control: null, controlAt: null },
+    powerplay: { power: null, rank: null, merits: null, system: null, control: null, controlAt: null, systems: {}, tracked: null },
     colonisation: { depots: {}, current: null, contributions: [] },
     surfaceTarget: null, // coordenadas fijadas en un planeta: { lat, lon, body, at }
     station: null, // última estación en la que has atracado (datos del evento Docked / Location)
@@ -106,6 +106,21 @@ function setSystemInfo(state, e) {
     state.powerplay.control = control;
     state.powerplay.controlAt = e.timestamp || null;
   }
+  recordControl(state, e, control);
+}
+
+/**
+ * Guarda el control de Powerplay de un sistema cada vez que entras en él
+ * (FSDJump/Location), para el sistema seguido y la comparación entre ciclos.
+ */
+function recordControl(state, e, control = computeControl(e)) {
+  const name = e.StarSystem;
+  if (!name || !control) return;
+  const list = state.powerplay.systems[name] || (state.powerplay.systems[name] = []);
+  const last = list[list.length - 1];
+  if (last && last.at === e.timestamp) return;
+  list.push({ at: e.timestamp || null, control, power: e.ControllingPower || null, powers: e.Powers || [] });
+  if (list.length > 40) list.splice(0, list.length - 40);
 }
 
 function clearDocking(state) {
@@ -359,4 +374,4 @@ function applyNavRoute(state, raw) {
   state.route = i >= 0 ? route.slice(i) : route;
 }
 
-module.exports = { createState, applyEvent, applyStatus, applyCargo, applyNavRoute, applyMarket, HANDLERS, fmtNum, commodityKey };
+module.exports = { recordControl, createState, applyEvent, applyStatus, applyCargo, applyNavRoute, applyMarket, HANDLERS, fmtNum, commodityKey };

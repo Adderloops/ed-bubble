@@ -321,6 +321,21 @@ test('coordenadas: lee formatos pegados y calcula rumbo, distancia y giro', () =
   assert.strictEqual(geo.surfaceNav({ latitude: 0, longitude: 0, heading: 0, bodyName: 'B' }, { lat: 1, lon: 1, body: 'A 1' }).sameBody, false);
 });
 
+test('powerplay: corte semanal del jueves 07:00 UTC y sistema seguido con su ciclo anterior', () => {
+  assert.strictEqual(new Date(derive.lastWeeklyCut(Date.parse('2026-11-23T13:00:00Z'))).toISOString(), '2026-11-19T07:00:00.000Z');
+  assert.strictEqual(new Date(derive.lastWeeklyCut(Date.parse('2026-11-19T06:59:00Z'))).toISOString(), '2026-11-12T07:00:00.000Z');
+  const s = model.createState();
+  const jump = (at, progress, r, u) => ev('FSDJump', { timestamp: at, StarSystem: 'JN', PowerplayState: 'Fortified', ControllingPower: 'Li Yong-Rui', PowerplayStateControlProgress: progress, PowerplayStateReinforcement: r, PowerplayStateUndermining: u, JumpDist: 1, FuelUsed: 1 });
+  model.applyEvent(s, jump('2026-11-15T10:00:00Z', 0.5, 90000, 10000));
+  model.applyEvent(s, jump('2026-11-22T10:00:00Z', 0.6, 40000, 0));
+  model.applyEvent(s, ev('FSDJump', { timestamp: '2026-11-22T11:00:00Z', StarSystem: 'Otro', JumpDist: 1, FuelUsed: 1 }));
+  s.powerplay.tracked = 'JN';
+  const p = derive.powerplayView(s, Date.parse('2026-11-23T13:00:00Z'));
+  assert.strictEqual(p.system.name, 'JN'); assert.strictEqual(p.system.reinforcement, 40000);
+  assert.strictEqual(p.system.previous.reinforcement, 90000); assert.strictEqual(p.system.stale, false);
+  assert.strictEqual(p.system.nextState, 'Stronghold');
+});
+
 test('plataformas: regla general (n-1) mod 12, con las comprobadas corrigiéndola', () => {
   const pads = require('../../core/pads');
   assert.strictEqual(pads.padHour('Dodec', 32), 8);
