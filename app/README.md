@@ -62,6 +62,8 @@ npm test
 
 Para desarrollo: `ED_JOURNAL_FOLDER` apunta el motor a otra carpeta de Journals, y `ED_BUBBLE_SHOT=<carpeta>` guarda capturas de las pantallas y cierra la app.
 
+**Filtro de estaciones** (ficha de un sistema en Navegación): un botón con el icono y el número de cada tipo de estación (las obras llevan la etiqueta «Obra»). Se pueden marcar varios a la vez; «Solo L» deja las que tienen plataforma grande y «Todas» quita el filtro.
+
 ## Ajustes
 
 Botón **Ajustes** de la cabecera (vuelve a pulsarlo para regresar a la sección anterior). Se guardan en `settings.json`, en la carpeta de datos de la app.

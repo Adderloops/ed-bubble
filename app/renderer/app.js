@@ -16,6 +16,7 @@ const ui = {
   search: { q: '', results: [], loading: false, error: null, seq: 0 }, // buscador de Navegación
   sel: null, // sistema elegido: { name, loading, system, error }
   navTab: 'route', sysTab: 'stations', sysPage: 0,
+  sysKinds: [], sysLarge: false, // filtro de estaciones: tipos elegidos (vacío = todos) y solo plataforma L
   colDepot: null, colPage: 0, // Colonización: obra elegida y página de materiales
   colAside: 'buy', colSel: null, // pestaña de la derecha y material elegido
   mk: { key: null, loading: false, list: [], error: null, page: 0, pick: null }, // dónde comprar
@@ -690,14 +691,32 @@ function systemDetail(s) {
     </div>
     <div class="in" style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px"><span class="eb">Powerplay</span><span class="amber nowrap" style="font-size:16px">${pp}${conflict}</span></div>`;
 
-  const tabs = [['stations', `Estaciones · ${y.stations.length}`], ['factions', `Facciones · ${y.factions.length}`], ['bodies', `Cuerpos · ${y.bodyCount}`]];
+  const tabs = [['stations', `Estaciones · ${ui.sysKinds.length || ui.sysLarge ? `${y.stations.filter((st) => (!ui.sysKinds.length || ui.sysKinds.includes(st.label)) && (!ui.sysLarge || st.pad === 'L')).length}/` : ''}${y.stations.length}`], ['factions', `Facciones · ${y.factions.length}`], ['bodies', `Cuerpos · ${y.bodyCount}`]];
+  // filtro por tipo de estación (iconos), en el orden de spansh.js
+  const kinds = [];
+  for (const st of y.stations) {
+    const k = kinds.find((x) => x.label === st.label);
+    if (k) k.n += 1; else kinds.push({ label: st.label, icon: st.icon, obra: /^Obra/.test(st.label), n: 1 });
+  }
+  const KIND_ORDER = ['Coriolis', 'Orbis', 'Ocellus', 'Dodec', 'Base en asteroide', 'Puesto orbital', 'Puerto planetario', 'Puesto planetario', 'Asentamiento', 'Obra orbital', 'Obra en superficie', 'Meganave', 'Fleet carrier'];
+  const ord = (l) => { const i = KIND_ORDER.indexOf(l); return i < 0 ? 99 : i; };
+  kinds.sort((a, b) => ord(a.label) - ord(b.label));
+  ui.sysKinds = ui.sysKinds.filter((k) => kinds.some((x) => x.label === k));
+  const shown = y.stations.filter((st) => (!ui.sysKinds.length || ui.sysKinds.includes(st.label)) && (!ui.sysLarge || st.pad === 'L'));
+  const filtering = ui.sysKinds.length || ui.sysLarge;
+  const filterBar = ui.sysTab === 'stations' && y.stations.length > 1 ? `
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:nowrap;overflow:hidden">
+      <button type="button" class="kf all${filtering ? '' : ' on'}" data-kind="" title="Todas las estaciones">Todas</button>
+      ${kinds.map((k) => `<button type="button" class="kf${ui.sysKinds.includes(k.label) ? ' on' : ''}" data-kind="${esc(k.label)}" title="${esc(k.label)}">${k.icon ? `<img src="icons/${k.icon}.png" alt="">` : '<span class="soft">?</span>'}${k.obra ? '<span class="kf-obra">Obra</span>' : ''}<span class="num">${k.n}</span></button>`).join('')}
+      <button type="button" class="kf${ui.sysLarge ? ' on' : ''}" data-kind="L" title="Solo con plataforma grande" style="margin-left:auto"><span class="pad pad-L" style="width:24px;height:24px;font-size:13px">L</span>Solo L</button>
+    </div>` : '';
   const per = { stations: 7, factions: 9, bodies: 11 }[ui.sysTab];
-  const items = ui.sysTab === 'stations' ? y.stations : ui.sysTab === 'factions' ? y.factions : y.bodies;
+  const items = ui.sysTab === 'stations' ? shown : ui.sysTab === 'factions' ? y.factions : y.bodies;
   const pages = Math.max(1, Math.ceil(items.length / per));
   ui.sysPage = Math.min(ui.sysPage, pages - 1);
   const slice = items.slice(ui.sysPage * per, (ui.sysPage + 1) * per);
   let rows;
-  if (!items.length) rows = `<div class="empty">${ui.sysTab === 'stations' ? 'Sin estaciones conocidas.' : ui.sysTab === 'factions' ? 'Sin facciones (sistema sin poblar).' : 'Sin cuerpos registrados.'}</div>`;
+  if (!items.length) rows = `<div class="empty">${ui.sysTab === 'stations' ? (filtering ? 'Ninguna estación con este filtro.' : 'Sin estaciones conocidas.') : ui.sysTab === 'factions' ? 'Sin facciones (sistema sin poblar).' : 'Sin cuerpos registrados.'}</div>`;
   else if (ui.sysTab === 'stations') {
     rows = slice.map((st) => {
       const sv = st.services;
@@ -727,7 +746,7 @@ function systemDetail(s) {
   }
   const pager = pages > 1 ? `<span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-pager="sys" data-d="-1" ${ui.sysPage === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.sysPage + 1}/${pages}</span><button type="button" class="pg" data-pager="sys" data-d="1" ${ui.sysPage >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
   return `${head(extra)}${stats}
-    <div style="display:flex;gap:8px;align-items:center">${tabs.map(([k, t]) => `<button type="button" class="tab small ${ui.sysTab === k ? 'on' : ''}" data-systab="${k}">${t}</button>`).join('')}<span style="margin-left:auto">${pager}</span></div>
+    <div style="display:flex;gap:8px;align-items:center">${tabs.map(([k, t]) => `<button type="button" class="tab small ${ui.sysTab === k ? 'on' : ''}" data-systab="${k}">${t}</button>`).join('')}<span style="margin-left:auto">${pager}</span></div>${filterBar}
     <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${rows}</div>`;
 }
 
@@ -1452,7 +1471,7 @@ document.addEventListener('keydown', (ev) => {
 
 async function selectSystem(name) {
   ui.sel = { name, loading: true };
-  ui.navTab = 'system'; ui.sysTab = 'stations'; ui.sysPage = 0;
+  ui.navTab = 'system'; ui.sysTab = 'stations'; ui.sysPage = 0; ui.sysKinds = []; ui.sysLarge = false;
   render();
   const r = await window.edbubble.system(name);
   if (!ui.sel || ui.sel.name !== name) return;
@@ -1473,6 +1492,14 @@ document.addEventListener('pointerdown', (ev) => {
   if (nt) { ev.preventDefault(); ui.navTab = nt.dataset.navtab; render(); return; }
   const st = ev.target.closest('button[data-systab]');
   if (st) { ev.preventDefault(); ui.sysTab = st.dataset.systab; ui.sysPage = 0; render(); return; }
+  const kf = ev.target.closest('button[data-kind]');
+  if (kf) {
+    ev.preventDefault();
+    const k = kf.dataset.kind;
+    if (k === '') { ui.sysKinds = []; ui.sysLarge = false; } else if (k === 'L') ui.sysLarge = !ui.sysLarge;
+    else ui.sysKinds = ui.sysKinds.includes(k) ? ui.sysKinds.filter((x) => x !== k) : [...ui.sysKinds, k];
+    ui.sysPage = 0; render(); return;
+  }
   const sp = ev.target.closest('button[data-pager="sys"]');
   if (sp && !sp.disabled) { ev.preventDefault(); ui.sysPage = Math.max(0, ui.sysPage + Number(sp.dataset.d)); render(); return; }
   const pc = ev.target.closest('button[data-plotcancel]');
