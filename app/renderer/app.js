@@ -20,6 +20,7 @@ const ui = {
   colAside: 'buy', colSel: null, // pestaña de la derecha y material elegido
   mk: { key: null, loading: false, list: [], error: null, page: 0, pick: null }, // dónde comprar
   mkFilter: { large: null, surface: true, carriers: false },
+  fuelStops: {}, // sistema -> estación con repostaje (Spansh) o null
   coordText: '', coordMsg: null, // coordenadas en planeta: texto escrito y aviso
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
   plot: null, // { running, target, text, ok, error }
@@ -374,6 +375,7 @@ function screenVuelo(s, v) {
         <span style="display:flex;flex-direction:column;min-width:0"><span class="ti nowrap" style="font-size:24px">${esc(tgtName)}</span><span class="eb ${scls}">Combustible ${stxt.toLowerCase()}</span></span>
       </div>
       ${r.legs.length ? `<div style="display:flex;flex-direction:column;gap:2px"><span class="eb amber" style="font-size:11px">${esc(routeProgressText(r))}</span>${routeGraph(r, 516, false)}</div>` : ''}
+      ${fuelBlock(s, v)}
       <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
         ${stat('Distancia', nextLeg && nextLeg.distance != null ? `${nf(nextLeg.distance, 2)} al` : '—')}${stat('Saltos restantes', r.legs.length ? nf(r.jumps) : or(s.fsdTarget.remainingJumps))}${stat('Destino', r.destination ? esc(r.destination) : esc(tgtName))}
       </div>${finalStrip(s)}` : `<div class="empty" style="flex-direction:column;gap:6px;padding:18px"><span class="va" style="font-size:18px;color:var(--soft)">Sin objetivo de salto</span><span style="font-size:14px">Fija un sistema o traza una ruta en el mapa galáctico.</span></div>`}
@@ -410,7 +412,7 @@ function screenVuelo(s, v) {
       ${seg(f.ratio, f.ratio != null && f.ratio < 0.25 ? 'warn' : 'on').replace('height: 12px', 'height:18px')}
       <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px">
         ${stat('Reserva', `${nf(f.reservoir, 2)} t`)}${stat('Último salto', f.lastUsed != null ? `${nf(f.lastUsed, 2)} t` : '—')}${stat('Distancia últ.', f.lastDistance != null ? `${nf(f.lastDistance, 2)} al` : '—')}
-        ${stat('Saltos con esto', f.jumpsLeft != null ? `≈ ${f.jumpsLeft}` : '—')}${stat('Recogida', f.scooping ? 'Activa' : 'Inactiva', f.scooping ? 'cyan' : 'dim')}${stat('Hasta destino', r.legs.length ? `${r.jumps} saltos` : 'Sin ruta', r.legs.length ? '' : 'dim')}
+        ${stat(f.jumpsAtMax ? 'Saltos a alcance máx.' : 'Saltos con esto', f.jumpsLeft != null ? `≈ ${f.jumpsLeft}` : '—')}${stat('Recogida', f.scooping ? 'Activa' : 'Inactiva', f.scooping ? 'cyan' : 'dim')}${stat('Hasta destino', r.legs.length ? `${r.jumps} saltos` : 'Sin ruta', r.legs.length ? '' : 'dim')}
       </div>
     </section>
    </main>
@@ -514,17 +516,30 @@ function screenNavegacion(s, v) {
     routeBody = '<div class="empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:20px;color:var(--soft)">Sin ruta trazada</span><span style="font-size:14px">Traza una en el mapa galáctico y aparecerá aquí.</span></div>';
   } else {
     if (ui.navRouteKey !== r.destination + r.legs.length) { ui.navRouteKey = r.destination + r.legs.length; ui.navPage = 0; }
-    const pages = Math.ceil(r.legs.length / NAV_PAGE);
+    const fp = v.fuelPlan;
+    // sin recolector: combustible con el que llegas a cada sistema (en lugar de "recogible")
+    const after = fp ? new Map(fp.legs.map((x) => [x.index, x.fuelAfter])) : null;
+    const fuelCol = (l) => {
+      if (after) {
+        if (l.here) return `<span class="num soft">${nf(fp.have, 1)} t</span>`;
+        const f = after.get(l.index);
+        return f == null ? '<span></span>' : f < 0 ? '<span class="eb red">no llegas</span>' : `<span class="num ${f < 2 ? 'yellow' : 'cyan'}">${nf(f, 1)} t</span>`;
+      }
+      return `<span class="eb" style="color:${l.scoopable === false ? 'var(--amber)' : l.scoopable ? 'var(--cyan)' : 'var(--dim)'}">${l.scoopable === false ? 'No recogible' : l.scoopable ? 'Recogible' : 'Desconocida'}</span>`;
+    };
+    const per = fp && !fp.ok ? 10 : NAV_PAGE;
+    const pages = Math.ceil(r.legs.length / per);
     ui.navPage = Math.min(ui.navPage || 0, pages - 1);
     let acc = 0; const cum = r.legs.map((l) => { acc += l.here ? 0 : (l.distance || 0); return acc; });
-    const rows = r.legs.slice(ui.navPage * NAV_PAGE, (ui.navPage + 1) * NAV_PAGE).map((l) => {
+    const rows = r.legs.slice(ui.navPage * per, (ui.navPage + 1) * per).map((l) => {
       const next = l.index === 1 && r.legs[0].here;
+      const short = fp && fp.shortAt != null && l.index >= fp.shortAt;
       const mark = l.here ? 'border-left:3px solid var(--amber);border-color:#8a5a1e' : next ? 'border-left:3px solid var(--cyan);border-color:var(--cyandim)' : '';
-      return `<div class="in row" style="grid-template-columns:52px 44px minmax(0,1fr) 150px 110px 120px;height:44px;${mark}">
+      return `<div class="in row" style="grid-template-columns:52px 44px minmax(0,1fr) 150px 110px 120px;height:44px;${mark}${short ? 'background:rgba(255,75,75,.08);' : ''}">
         <span class="num" style="padding-left:12px;color:${l.here ? 'var(--amber)' : next ? 'var(--cyan)' : 'var(--eb)'}">${String(l.index).padStart(2, '0')}</span>
         <span class="starc ${l.scoopable === false ? 'no' : l.scoopable == null ? 'unk' : ''}">${esc(or(l.starClass, '?')).slice(0, 3)}</span>
-        <span class="va nowrap" style="font-size:17px">${esc(l.system)}${l.here ? ' <span class="eb amber" style="font-size:10px">aquí</span>' : next ? ' <span class="eb cyan" style="font-size:10px">siguiente</span>' : ''}</span>
-        <span class="eb" style="color:${l.scoopable === false ? 'var(--amber)' : l.scoopable ? 'var(--cyan)' : 'var(--dim)'}">${l.scoopable === false ? 'No recogible' : l.scoopable ? 'Recogible' : 'Desconocida'}</span>
+        <span class="va nowrap" style="font-size:17px">${esc(l.system)}${l.here ? ' <span class="eb amber" style="font-size:10px">aquí</span>' : next ? ' <span class="eb cyan" style="font-size:10px">siguiente</span>' : ''}${fp && fp.shortAt === l.index ? ' <span class="eb red" style="font-size:10px">sin combustible</span>' : ''}${fp && !fp.ok && ui.fuelStops[l.system] ? ' <span class="eb yellow" style="font-size:10px">⛽ repostar</span>' : ''}</span>
+        ${fuelCol(l)}
         <span class="num" style="text-align:right">${l.here ? '—' : `${nf(l.distance, 2)} al`}</span>
         <span class="num soft" style="text-align:right;padding-right:14px">${nf(cum[l.index], 1)} al</span></div>`;
     }).join('');
@@ -535,11 +550,12 @@ function screenNavegacion(s, v) {
         <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="eb amber">${esc(routeProgressText(r))}</span><span class="eb dim">Combustible: <span class="cyan">●</span> recogible · <span class="amber">●</span> no recogible</span></div>
         ${routeGraph(r, 920, true)}
       </div>
+      ${fp && !fp.ok ? fuelBlock(s, v) : ''}
       <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
         ${stat('Saltos', nf(r.jumps))}${stat('Distancia', `${nf(r.distance, 1)} al`)}${stat('No recogibles', nf(noScoop), noScoop ? 'amber' : 'cyan')}${stat('Destino', esc(r.destination))}
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <span class="eb dim" style="display:grid;grid-template-columns:52px 44px minmax(0,1fr);width:60%"><span style="padding-left:12px">#</span><span>Estr.</span><span>Sistema</span></span>${pager}
+        <span class="eb dim" style="display:grid;grid-template-columns:52px 44px minmax(0,1fr) 150px;width:calc(100% - 330px)"><span style="padding-left:12px">#</span><span>Estr.</span><span>Sistema</span><span>${fp ? 'Combustible al llegar' : ''}</span></span>${pager}
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${rows}</div>
       <span class="note" style="margin-top:auto">Desde NavRoute.json · salto y distancia acumulada · cian = combustible recogible, ámbar = no recogible</span>`;
@@ -850,6 +866,37 @@ function buyPanel(s, d, c) {
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0"><span class="eb dim nowrap" style="min-width:0;overflow:hidden;text-overflow:ellipsis">Spansh · más cercanas a ti</span>${pager}</div>
     <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${rows}</div>
     <div style="margin-top:auto">${action}</div>`;
+}
+
+/* ---------- combustible de la ruta (sin recolector) ---------- */
+/** Estación para repostar más lejana dentro de lo que alcanzas. */
+function bestFuelStop(s, p) {
+  const route = s.route || [];
+  for (let i = Math.min(p.reachable, route.length - 1); i >= 0; i -= 1) {
+    const st = ui.fuelStops[route[i].system];
+    if (st) return { system: route[i].system, index: i, ...st };
+  }
+  const pending = route.slice(0, p.reachable + 1).some((x) => ui.fuelStops[x.system] === undefined);
+  return pending ? 'buscando' : null;
+}
+
+function fuelBlock(s, v) {
+  const p = v.fuelPlan;
+  if (!p) {
+    if (s.ship.hasFuelScoop === false && s.route.length > 1) return '<span class="eb dim" style="font-size:10px">Combustible: haz un par de saltos con esta nave para calcular su consumo.</span>';
+    return '';
+  }
+  if (p.ok) return `<span class="eb cyan" style="font-size:11px">Sin recolector · combustible suficiente para la ruta (sobran ${nf(p.spare, 1)} t)</span>`;
+  const stop = bestFuelStop(s, p);
+  const where = stop === 'buscando' ? '<span class="soft">Buscando estaciones con repostaje en la ruta…</span>'
+    : stop ? `Reposta en <b>${esc(siteName(stop.name))}</b> · ${esc(stop.system)} · ${nf(stop.ls, 0)} ls${stop.index === 0 ? ' (aquí)' : ` (salto ${stop.index})`}`
+    : '<span class="red">Ninguna estación con repostaje en los sistemas a los que llegas: cambia la ruta.</span>';
+  const danger = p.jumpsOk <= 1;
+  return `<div class="in" style="padding:10px 12px;display:flex;flex-direction:column;gap:4px;border-color:${danger ? 'var(--red,#ff4b4b)' : '#8a7a1e'}">
+      <span class="eb ${danger ? 'red' : 'yellow'}">Sin recolector · no llegas al destino</span>
+      <span style="font-size:15px">Combustible para <b>${p.jumpsOk} de ${p.jumpsLeft}</b> saltos (hasta ${esc(p.reachableSystem || '—')}). La ruta pide ≈ ${nf(p.need, 1)} t y tienes ${nf(p.have, 1)} t${p.fitsFullTank === false ? `; no cabe ni con el depósito lleno (${nf(p.capacity, 0)} t)` : ''}.</span>
+      <span style="font-size:15px">${where}</span>
+    </div>`;
 }
 
 /* ---------- coordenadas en planeta y brújula ---------- */
@@ -1402,6 +1449,7 @@ renderRail(null);
 if (window.edbubble) {
   window.edbubble.onUpdate((snap) => { ui.snap = snap; render(); });
   window.edbubble.onControls((c) => { ui.controls = c; render(); });
+  window.edbubble.onFuelStops((x) => { ui.fuelStops = x || {}; render(); });
   window.edbubble.onPlotStatus((p) => {
     ui.plot = { ...p, at: Date.now() };
     if (!p.running && p.ok) ui.navTab = 'route'; // ver la ruta recién trazada

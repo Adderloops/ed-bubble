@@ -14,6 +14,8 @@ El panel **Controles** del Puente de mando revisa las teclas que usa ED BUBBLE (
 
 **Powerplay:** piloto (potencia, rango, méritos para subir, méritos de la sesión) y control del sistema seguido: estado, progreso con barra de 12 segmentos (antes del ciclo, ganado, perdido), puntos de control, refuerzo, undermining y neto, comparación con el ciclo anterior, cuenta atrás al corte del jueves 07:00 UTC e historial de visitas. El sistema seguido se elige en la lista de sistemas con datos o con "Seguir …" y se guarda en `settings.json`.
 
+**Combustible en ruta (naves sin recolector):** el consumo de cada salto se ajusta con tus saltos reales (fuel = k · distancia^p, con p según el tamaño del FSD y un 8 % de margen). Si con el combustible del tanque no llegas al destino, la cabecera avisa ("Combustible: solo N saltos · reposta antes"); Vuelo y Navegación dicen hasta qué sistema llegas, cuánto pide la ruta y la estación con repostaje más lejana a la que llegas (Spansh); la ruta muestra el combustible con el que llegas a cada sistema. "Saltos a alcance máx." en Combustible usa el mismo modelo.
+
 **Historial:** al arrancar, el motor repasa los Journals de las últimas semanas (máx. 25 archivos) para recuperar las obras de colonización, la última estación, los ingenieros y el control de Powerplay de los sistemas visitados, aunque hoy no hayas pasado por ellos.
 
 Registro de incidencias: `%APPDATA%\ed-bubble-app\ed-bubble.log` (errores al pintar, fallos de teclas o de Trazar ruta y cada atraque concedido con la sección en la que estaba la app). Si algo falla al pintar, la cabecera lo avisa en rojo.

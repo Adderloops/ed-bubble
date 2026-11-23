@@ -16,7 +16,7 @@ function createState() {
     updatedAt: null,
     connection: { journal: false, journalFile: null, lastEventAt: null, status: false },
     cmdr: { name: null, credits: null, legalState: 'Clean' },
-    ship: { type: null, typeLocalised: null, name: null, ident: null, maxJumpRange: null, fuelCapacity: null, reserveCapacity: null, cargoCapacity: null, hull: null, rebuy: null },
+    ship: { type: null, typeLocalised: null, name: null, ident: null, maxJumpRange: null, fuelCapacity: null, reserveCapacity: null, cargoCapacity: null, hull: null, rebuy: null, fsdSize: null, hasFuelScoop: null },
     location: {
       system: null, body: null, bodyType: null, station: null, stationType: null, docked: false, landed: false,
       starClass: null, allegiance: null, economy: null, secondEconomy: null, government: null, security: null, population: null,
@@ -35,6 +35,7 @@ function createState() {
     docking: { active: false, pad: null, station: null, stationType: null, at: null },
     powerplay: { power: null, rank: null, merits: null, system: null, control: null, controlAt: null, systems: {}, tracked: null },
     colonisation: { depots: {}, current: null, contributions: [] },
+    jumpFuel: [], // saltos recientes { ship, fsd, dist, fuel } para calcular el consumo
     surfaceTarget: null, // coordenadas fijadas en un planeta: { lat, lon, body, at }
     station: null, // última estación en la que has atracado (datos del evento Docked / Location)
     market: null, // Market.json: { marketId, station, at, items[] }
@@ -109,6 +110,15 @@ function setSystemInfo(state, e) {
   recordControl(state, e, control);
 }
 
+/** Consumo real de un salto (para estimar el combustible de la ruta con esta nave). */
+function recordJumpFuel(state, e) {
+  const d = Number(e.JumpDist); const f = Number(e.FuelUsed);
+  if (!(d >= 3) || !(f > 0) || !state.ship.type) return;
+  const list = state.jumpFuel;
+  list.push({ ship: state.ship.type, fsd: state.ship.fsdSize || null, dist: d, fuel: f, at: e.timestamp || null });
+  if (list.length > 60) list.splice(0, list.length - 60);
+}
+
 /**
  * Guarda el control de Powerplay de un sistema cada vez que entras en él
  * (FSDJump/Location), para el sistema seguido y la comparación entre ciclos.
@@ -154,6 +164,12 @@ const HANDLERS = {
     if (e.CargoCapacity !== undefined) S.cargoCapacity = e.CargoCapacity;
     if (e.HullHealth !== undefined) S.hull = e.HullHealth;
     if (e.Rebuy !== undefined) S.rebuy = e.Rebuy;
+    if (Array.isArray(e.Modules)) {
+      const fsd = e.Modules.find((m) => /hyperdrive/i.test(m.Item || ''));
+      const mm = fsd && String(fsd.Item).match(/size(\d)_class(\d)/i);
+      S.fsdSize = mm ? Number(mm[1]) : null;
+      S.hasFuelScoop = e.Modules.some((m) => /fuelscoop/i.test(m.Item || ''));
+    }
   },
   Location(state, e) {
     if (e.Docked) setStation(state, e);
@@ -168,6 +184,7 @@ const HANDLERS = {
     state.location.docked = false; state.location.station = null; state.location.stationType = null;
     state.location.landed = false;
     state.lastJump = { distance: e.JumpDist ?? null, fuelUsed: e.FuelUsed ?? null, at: e.timestamp || null };
+    recordJumpFuel(state, e);
     if (e.StarClass) state.location.starClass = e.StarClass;
     state.session.jumps += 1;
     state.session.distance += Number(e.JumpDist) || 0;
@@ -374,4 +391,4 @@ function applyNavRoute(state, raw) {
   state.route = i >= 0 ? route.slice(i) : route;
 }
 
-module.exports = { recordControl, createState, applyEvent, applyStatus, applyCargo, applyNavRoute, applyMarket, HANDLERS, fmtNum, commodityKey };
+module.exports = { recordJumpFuel, recordControl, createState, applyEvent, applyStatus, applyCargo, applyNavRoute, applyMarket, HANDLERS, fmtNum, commodityKey };

@@ -64,7 +64,7 @@ class Engine extends EventEmitter {
    * última estación atracada e ingenieros. Lo demás sale del Journal en curso.
    */
   loadHistory({ maxFiles = 25, maxDays = 45, maxBytes = 60 * 1024 * 1024 } = {}) {
-    const KEEP = ['Location', 'Docked', 'Undocked', 'ColonisationConstructionDepot', 'EngineerProgress', 'EngineerCraft', 'FSDJump', 'Powerplay'];
+    const KEEP = ['Location', 'Docked', 'Undocked', 'ColonisationConstructionDepot', 'EngineerProgress', 'EngineerCraft', 'FSDJump', 'Powerplay', 'Loadout'];
     let files;
     try { files = fs.readdirSync(this.folder).filter((f) => /^Journal\..*\.log$/.test(f)).sort(); } catch (e) { return 0; }
     files = files.slice(0, -1); // el último lo lee el tailer en vivo
@@ -85,7 +85,7 @@ class Engine extends EventEmitter {
         let e; try { e = JSON.parse(line); } catch (x) { continue; }
         if (!KEEP.includes(e.event)) continue;
         // de los saltos antiguos solo interesa el control de Powerplay (no cuentan como sesión)
-        if (e.event === 'FSDJump') model.recordControl(this.state, e);
+        if (e.event === 'FSDJump') { model.recordControl(this.state, e); model.recordJumpFuel(this.state, e); }
         else model.applyEvent(this.state, e);
         n += 1;
       }

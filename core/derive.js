@@ -52,6 +52,12 @@ function alerts(state) {
   if (state.cmdr.legalState && !['Clean', 'Allied', 'Thargoid'].includes(state.cmdr.legalState)) out.push({ level: 'warn', text: `Estado legal: ${legalLabel(state.cmdr.legalState)}` });
   const stolen = (state.cargo.inventory || []).reduce((a, i) => a + (i.stolen || 0), 0);
   if (stolen > 0) out.push({ level: 'warn', text: `Carga robada a bordo · ${stolen} t` });
+  // combustible insuficiente para la ruta (sin recolector)
+  const fp = require('./fuel').fuelPlan(state);
+  if (fp && !fp.ok) {
+    const left = fp.jumpsOk;
+    out.unshift({ level: left <= 1 ? 'danger' : 'warn', text: left <= 0 ? 'Sin combustible para el siguiente salto' : `Combustible: solo ${left} salto${left === 1 ? '' : 's'} · reposta antes` });
+  }
   // atraque concedido: visible desde cualquier sección
   if (state.docking && state.docking.active && state.docking.pad) out.unshift({ level: 'info', text: `Atraque · plataforma ${state.docking.pad}` });
   return out;
@@ -65,11 +71,16 @@ function fuel(state) {
   const cap = state.ship.fuelCapacity;
   const main = state.status.fuelMain;
   const used = state.lastJump.fuelUsed;
+  // saltos que quedan a alcance máximo (el caso más exigente), con el consumo real de la nave
+  const m = require('./fuel').fuelModel(state);
+  const range = state.ship.maxJumpRange;
+  const perMax = m && range ? m.perJump(range) : null;
   return {
     main, cap, ratio: cap && main !== null ? Math.max(0, Math.min(1, main / cap)) : null,
     reservoir: state.status.fuelReservoir, reservoirCap: state.ship.reserveCapacity,
     lastUsed: used, lastDistance: state.lastJump.distance,
-    jumpsLeft: used && main ? Math.floor(main / used) : null,
+    jumpsLeft: main != null && perMax ? Math.floor(main / perMax) : used && main ? Math.floor(main / used) : null,
+    jumpsAtMax: !!perMax,
     scooping: !!(state.status.flags || {}).isScoopingFuel,
   };
 }
@@ -198,6 +209,7 @@ function view(state) {
     col: colonisationView(state),
     station: stationView(state),
     powerplay: powerplayView(state),
+    fuelPlan: require('./fuel').fuelPlan(state),
     surfaceNav: require('./geo').surfaceNav(state.status, state.surfaceTarget),
   };
 }

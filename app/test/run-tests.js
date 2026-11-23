@@ -336,6 +336,28 @@ test('powerplay: corte semanal del jueves 07:00 UTC y sistema seguido con su cic
   assert.strictEqual(p.system.nextState, 'Stronghold');
 });
 
+test('combustible: sin recolector avisa dónde te quedas corto; con recolector no', () => {
+  const fuel = require('../../core/fuel');
+  const s = model.createState();
+  model.applyEvent(s, ev('Loadout', { Ship: 'smallcombat01_nx', FuelCapacity: { Main: 16, Reserve: 0.6 }, MaxJumpRange: 23, Modules: [{ Slot: 'FrameShiftDrive', Item: 'int_hyperdrive_overcharge_size4_class5' }] }));
+  s.location.system = 'A';
+  model.applyEvent(s, ev('FSDJump', { StarSystem: 'B', JumpDist: 22.302, FuelUsed: 3.189156 }));
+  model.applyEvent(s, ev('FSDJump', { StarSystem: 'A', JumpDist: 13.768, FuelUsed: 0.983253 }));
+  assert.strictEqual(s.ship.hasFuelScoop, false); assert.strictEqual(s.ship.fsdSize, 4);
+  const m = fuel.fuelModel(s);
+  assert.ok(Math.abs(m.k - 0.00244) < 0.0001, `k = ${m.k}`);
+  s.status.fuelMain = 16;
+  const R = [{ StarSystem: 'A', StarPos: [0, 0, 0] }];
+  for (let i = 1; i <= 7; i += 1) R.push({ StarSystem: `S${i}`, StarPos: [22.2 * i, 0, 0] });
+  model.applyNavRoute(s, { Route: R });
+  const p = fuel.fuelPlan(s);
+  assert.strictEqual(p.ok, false); assert.strictEqual(p.reachableSystem, 'S4'); assert.strictEqual(p.shortSystem, 'S5'); assert.strictEqual(p.fitsFullTank, false);
+  assert.ok(derive.alerts(s).some((a) => /Combustible: solo 4 saltos/.test(a.text)));
+  assert.strictEqual(derive.fuel(s).jumpsLeft, 4, 'saltos a alcance máximo, no con el último salto');
+  s.ship.hasFuelScoop = true;
+  assert.strictEqual(fuel.fuelPlan(s), null);
+});
+
 test('plataformas: regla general (n-1) mod 12, con las comprobadas corrigiéndola', () => {
   const pads = require('../../core/pads');
   assert.strictEqual(pads.padHour('Dodec', 32), 8);

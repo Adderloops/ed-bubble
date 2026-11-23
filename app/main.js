@@ -52,6 +52,27 @@ let win = null;
 let engine = null;
 let last = null;
 let plotting = null; // { cancelled } mientras se traza una ruta
+// Repostaje en ruta: estaciones con "Refuel" en los sistemas a los que llegas (Spansh)
+const fuelStops = { key: null, busy: false, systems: {} };
+async function lookFuelStops(snap) {
+  const p = snap.view.fuelPlan;
+  if (!p || p.ok || process.env.ED_BUBBLE_OFFLINE === '1') return;
+  const route = snap.state.route;
+  const cands = route.slice(0, p.reachable + 1).map((x) => x.system).reverse().slice(0, 25); // los más lejanos primero
+  const key = cands.join('|');
+  if (fuelStops.key === key || fuelStops.busy) return;
+  fuelStops.key = key; fuelStops.busy = true;
+  for (const name of cands) {
+    if (fuelStops.systems[name] !== undefined) continue;
+    try {
+      const y = await spansh.system(name);
+      const st = y ? y.stations.filter((x) => x.services && x.services.refuel && !/carrier/i.test(x.type || '')).sort((a, b) => (a.distance ?? 1e12) - (b.distance ?? 1e12)) : [];
+      fuelStops.systems[name] = st.length ? { name: st[0].name, label: st[0].label, ls: st[0].distance, pad: st[0].pad, icon: st[0].icon, count: st.length } : null;
+    } catch (e) { fuelStops.key = null; break; } // sin red: se reintenta en la siguiente actualización
+    if (win && !win.isDestroyed()) win.webContents.send('ed:fuelstops', fuelStops.systems);
+  }
+  fuelStops.busy = false;
+}
 let controls = { error: 'Cargando controles…' };
 const keys = new KeySender({ simulate: process.env.ED_BUBBLE_SIMULATE === '1' || undefined });
 
@@ -151,6 +172,7 @@ app.whenReady().then(() => {
   engine.on('update', (snap) => {
     last = snap;
     if (win && !win.isDestroyed()) win.webContents.send('ed:update', snap);
+    lookFuelStops(snap);
   });
   engine.on('warning', (msg) => { console.warn('[engine]', msg); logLine(`[motor] ${msg}`); });
   engine.start();
