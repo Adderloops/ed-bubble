@@ -84,6 +84,25 @@ Botón **Ajustes** de la cabecera (vuelve a pulsarlo para regresar a la sección
 - **Idioma**: de momento solo español.
 - **Información**: versión, carpeta del Journal, preset de controles, registro y botón para abrir la carpeta de datos.
 
+## Instalador (beta)
+
+```
+cd app
+npm install
+npm run dist
+```
+
+Crea `app/dist/release/ED-BUBBLE-Setup-<versión>.exe`:
+
+1. `scripts/stage.js` copia en `dist/stage` lo que necesita la app (app/, core/, los servicios de src/, definitions/flags.js y las fuentes).
+2. `electron-builder --dir` empaqueta la app (`win-unpacked`), con `keysender.ps1` fuera del .asar para que PowerShell lo pueda leer.
+3. `scripts/after-pack.js` pone el icono (`build/icon.ico`) y la versión en `ED BUBBLE.exe`.
+4. `scripts/make-installer.js` compila `build/installer.nsi` con NSIS. Funciona en Windows y en Linux sin Wine.
+
+El instalador no pide permisos de administrador: instala en `%LOCALAPPDATA%\Programs\ED BUBBLE`, crea accesos directos en el escritorio y el menú Inicio, y aparece en Aplicaciones instaladas para desinstalar. Al actualizar, cierra la app si está abierta. Los ajustes y el registro (`%APPDATA%\ed-bubble-app`) se conservan.
+
+No está firmado: la primera vez Windows SmartScreen avisa («Windows protegió su PC» › Más información › Ejecutar de todas formas).
+
 ## Pendiente
 
 - Interfaz en inglés.

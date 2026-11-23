@@ -72,7 +72,8 @@ class KeySender extends EventEmitter {
 
   start() {
     if (this.simulate || this.proc) return;
-    const script = path.join(__dirname, 'keysender.ps1');
+    // en el instalador el script va fuera del .asar (PowerShell no puede leer dentro)
+    const script = path.join(__dirname, 'keysender.ps1').replace(/app\.asar([\\/])/, 'app.asar.unpacked$1');
     this.proc = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script], { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
     this.proc.stdout.setEncoding('utf8');
     this.proc.stdout.on('data', (d) => this._onData(d));
