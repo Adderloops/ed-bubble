@@ -35,6 +35,7 @@ function loadBounds() {
 }
 
 function saveBounds(win) {
+  if (win.isFullScreen()) return; // en pantalla completa se guarda el tamaño normal
   try { fs.writeFileSync(BOUNDS_FILE(), JSON.stringify({ ...win.getBounds(), maximized: win.isMaximized() })); } catch (e) { /* sin importancia */ }
 }
 
@@ -46,6 +47,35 @@ function defaultBounds() {
   const { x, y, width, height } = target.workArea;
   const w = Math.min(1920, width); const h = Math.min(1080, height);
   return { x: x + Math.round((width - w) / 2), y: y + Math.round((height - h) / 2), width: w, height: h, maximized: target.id !== primary.id };
+}
+
+// Ajustes del comandante (settings.json en la carpeta de datos de la app)
+const DEFAULT_PREFS = {
+  autoJump: true,
+  jump: { vuelo: true, approach: true, docked: true, depot: true }, // a qué secciones salta solo
+  startSection: 'puente', lastSection: 'puente', // al abrir: Puente o la última sección vista
+  alerts: { dock: true, fuelRoute: true }, // avisos opcionales en la cabecera
+  fullscreen: false,
+};
+let settings = {};
+function prefs() {
+  const p = { ...DEFAULT_PREFS, ...settings };
+  p.jump = { ...DEFAULT_PREFS.jump, ...(settings.jump || {}) };
+  p.alerts = { ...DEFAULT_PREFS.alerts, ...(settings.alerts || {}) };
+  delete p.ppTracked;
+  return p;
+}
+const SECTION_IDS = ['puente', 'vuelo', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes'];
+/** Valida un ajuste que llega de la ventana; devuelve el valor limpio o undefined. */
+function cleanPref(key, value) {
+  const bool = (x) => (typeof x === 'boolean' ? x : undefined);
+  if (key === 'autoJump' || key === 'fullscreen') return bool(value);
+  if (key === 'startSection') return ['puente', 'ultima'].includes(value) ? value : undefined;
+  if (key === 'lastSection') return SECTION_IDS.includes(value) ? value : undefined;
+  const [group, sub] = String(key).split('.');
+  if (group === 'jump' && sub in DEFAULT_PREFS.jump) return bool(value);
+  if (group === 'alerts' && sub in DEFAULT_PREFS.alerts) return bool(value);
+  return undefined;
 }
 
 let win = null;
@@ -109,6 +139,7 @@ function createWindow() {
   });
   win.removeMenu(); // sin barra de menú: Alt no debe hacer nada en esta ventana
   if (b.maximized) win.maximize();
+  if (settings.fullscreen) win.setFullScreen(true);
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   // No robar el foco al juego al abrir: se muestra sin activarse.
   win.once('ready-to-show', () => win.showInactive());
@@ -122,8 +153,8 @@ function createWindow() {
     win.webContents.once('did-finish-load', async () => {
       const out = process.env.ED_BUBBLE_SHOT;
       await new Promise((r) => setTimeout(r, 2500));
-      for (const sec of ['puente', 'vuelo', 'navegacion', 'colonizacion', 'estacion', 'powerplay']) {
-        await win.webContents.executeJavaScript(`ui.section='${sec}'; ui.autoJump=false; render();`);
+      for (const sec of ['puente', 'vuelo', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes']) {
+        await win.webContents.executeJavaScript(`ui.section='${sec}'; ui.autoJump=false; if ('${sec}' === 'ajustes') loadSettingsInfo(); render();`);
         await new Promise((r) => setTimeout(r, 400));
         const img = await win.webContents.capturePage();
         fs.writeFileSync(path.join(out, `${sec}.png`), img.toPNG());
@@ -245,7 +276,6 @@ app.whenReady().then(() => {
   });
   // Ajustes guardados (sistema de Powerplay seguido, …)
   const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
-  let settings = {};
   try { settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')) || {}; } catch (e) { /* sin ajustes */ }
   const saveSettings = () => { try { fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2)); } catch (e) { logLine(`[ajustes] ${e.message}`); } };
   if (settings.ppTracked) engine.setTrackedSystem(settings.ppTracked);
@@ -255,6 +285,37 @@ app.whenReady().then(() => {
     saveSettings();
     return true;
   });
+  ipcMain.handle('ed:settings', () => prefs());
+  ipcMain.handle('ed:settings-set', (_e, key, value) => {
+    const v = cleanPref(key, value);
+    if (v === undefined) return prefs();
+    const [group, sub] = String(key).split('.');
+    if (sub) settings[group] = { ...(settings[group] || {}), [sub]: v }; else settings[key] = v;
+    saveSettings();
+    if (key === 'fullscreen' && win && !win.isDestroyed()) win.setFullScreen(v);
+    return prefs();
+  });
+  // Pantallas conectadas: para mover la ventana a otra
+  const displayList = () => {
+    const prim = screen.getPrimaryDisplay().id;
+    const cur = win && !win.isDestroyed() ? screen.getDisplayMatching(win.getBounds()).id : null;
+    return screen.getAllDisplays().sort((a, b) => a.bounds.x - b.bounds.x || a.bounds.y - b.bounds.y)
+      .map((d, i) => ({ id: d.id, n: i + 1, label: d.label || '', width: d.size.width, height: d.size.height, scale: d.scaleFactor, primary: d.id === prim, current: d.id === cur }));
+  };
+  ipcMain.handle('ed:displays', () => displayList());
+  ipcMain.handle('ed:display-move', (_e, id) => {
+    const d = screen.getAllDisplays().find((x) => x.id === Number(id));
+    if (!d || !win || win.isDestroyed()) return displayList();
+    const full = win.isFullScreen();
+    if (full) win.setFullScreen(false);
+    if (win.isMaximized()) win.unmaximize();
+    win.setBounds(d.workArea);
+    win.maximize();
+    if (full) setTimeout(() => win.setFullScreen(true), 300);
+    saveBounds(win);
+    return displayList();
+  });
+  ipcMain.handle('ed:open-data', () => shell.openPath(app.getPath('userData')));
   // Coordenadas de destino en un planeta (se guardan entre sesiones)
   const TARGET_FILE = path.join(app.getPath('userData'), 'surface-target.json');
   try { engine.setSurfaceTarget(JSON.parse(fs.readFileSync(TARGET_FILE, 'utf8'))); } catch (e) { /* sin destino guardado */ }

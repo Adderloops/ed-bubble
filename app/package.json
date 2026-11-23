@@ -1,6 +1,6 @@
 {
   "name": "ed-bubble-app",
-  "version": "0.6.0-alpha",
+  "version": "0.7.0-alpha",
   "description": "ED BUBBLE: ventana de Windows para Elite Dangerous con datos en vivo del Journal.",
   "main": "main.js",
   "private": true,

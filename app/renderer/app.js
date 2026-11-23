@@ -7,7 +7,7 @@ const SECTIONS = [
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo' }, { id: 'srv', label: 'SRV' },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie' },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería' }, { id: 'colonizacion', label: 'Colonización', built: true },
-  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' },
+  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
 
@@ -25,7 +25,36 @@ const ui = {
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
   plot: null, // { running, target, text, ok, error }
   extOk: null, // última consulta a Spansh: true / false
+  prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true }, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
+  displays: null, info: null, // Ajustes: pantallas conectadas y datos de la app
 };
+
+/** Cambia un ajuste y lo guarda (settings.json). */
+function setPref(key, value) {
+  const [g, k] = key.split('.');
+  if (k) ui.prefs[g] = { ...ui.prefs[g], [k]: value }; else ui.prefs[key] = value;
+  if (key === 'autoJump') { ui.autoJump = value; if (value) ui.lastModeKey = null; }
+  render();
+  if (window.edbubble && window.edbubble.setSetting) window.edbubble.setSetting(key, value).then((p) => { if (p) { ui.prefs = p; ui.autoJump = p.autoJump; render(); } });
+}
+/** ¿Se salta solo a la sección de esta situación? */
+function jumpAllowed(key) {
+  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : 'vuelo';
+  return ui.prefs.jump[g] !== false;
+}
+/** Abre una sección (y la recuerda para la próxima vez). */
+function goSection(id) {
+  if (ui.section === id) return;
+  if (id === 'ajustes') ui.prevSection = ui.section;
+  ui.section = id;
+  if (id === 'ajustes') loadSettingsInfo();
+  if (window.edbubble && window.edbubble.setSetting) window.edbubble.setSetting('lastSection', id);
+}
+function loadSettingsInfo() {
+  if (!window.edbubble || !window.edbubble.displays) return;
+  window.edbubble.displays().then((d) => { ui.displays = d; render(); });
+  window.edbubble.info().then((i) => { ui.info = i; render(); });
+}
 
 /* ---------- utilidades ---------- */
 const $ = (id) => document.getElementById(id);
@@ -63,8 +92,9 @@ function seg(ratio, cls = 'on') {
 /* ---------- cabecera y menú ---------- */
 function renderHeader(s, v) {
   $('hdr-section').textContent = `ED BUBBLE · ${SECTIONS.find((x) => x.id === ui.section).label}`;
+  $('hdr-settings').classList.toggle('on', ui.section === 'ajustes');
   $('hdr-system').textContent = or(clean(s.location.system), 'Esperando al juego…');
-  const a = v.alerts;
+  const a = v.alerts.filter((x) => !x.kind || ui.prefs.alerts[x.kind] !== false);
   $('hdr-alerts').innerHTML = a.length
     ? `<span class="eb">Alertas</span>${a.map((x) => `<span class="alert ${x.level}"${x.level === 'info' ? ' data-goto="vuelo" title="Ver el esquema de atraque en Vuelo"' : ''}>${esc(x.text)}</span>`).join('')}`
     : '<span class="eb dim">Alertas</span><span class="va soft" style="font-size:17px">Sin alertas activas</span>';
@@ -79,6 +109,7 @@ function renderRail(v) {
   const live = v ? v.mode.section : null;
   $('rail').innerHTML = SECTIONS.map((x) => {
     if (x.group) return `<span class="gp">${x.group}</span>`;
+    if (x.hidden) return '';
     const on = x.id === ui.section ? ' on' : '';
     const dis = x.built ? '' : ' disabled title="Próximamente"';
     const dot = live === x.id ? '<span class="dot on"></span>' : '';
@@ -1273,6 +1304,77 @@ function reportError(where, e) {
 window.addEventListener('error', (ev) => reportError('error', ev.error || ev.message));
 window.addEventListener('unhandledrejection', (ev) => reportError('promesa', ev.reason));
 
+/* ---------- Ajustes ---------- */
+function setRow(key, label, sub, on, disabled) {
+  return `<button type="button" class="set-row${on ? ' on' : ''}" data-set="${key}"${disabled ? ' disabled' : ''}>
+    <span style="display:flex;flex-direction:column;gap:2px;min-width:0;text-align:left"><span class="va nowrap" style="font-size:18px">${label}</span>${sub ? `<span class="soft nowrap" style="font-size:13px">${sub}</span>` : ''}</span>
+    <span class="sw${on ? ' on' : ''}"></span></button>`;
+}
+
+function screenAjustes(s, v) {
+  const p = { ...ui.prefs, autoJump: ui.autoJump }; const off = !p.autoJump;
+  const jump = `
+    <section class="pn card">
+      <span class="ti" style="font-size:16px">Salto automático</span>
+      <span class="soft" style="font-size:14px">La app cambia sola a la sección que corresponde a lo que haces en el juego. Si tocas otra sección, se queda ahí hasta el siguiente cambio.</span>
+      ${setRow('autoJump', 'Salto automático', p.autoJump ? 'Activado' : 'Desactivado: la app solo cambia de sección cuando tú la eliges', p.autoJump)}
+      <span class="eb" style="margin-top:4px">Saltar a la sección cuando…</span>
+      ${setRow('jump.vuelo', 'Vuelas, saltas o vas en supercrucero', '→ Vuelo', p.jump.vuelo, off)}
+      ${setRow('jump.approach', 'Te conceden el atraque', '→ Vuelo, con el esquema de plataformas', p.jump.approach, off)}
+      ${setRow('jump.docked', 'Atracas en una estación', '→ Estación', p.jump.docked, off)}
+      ${setRow('jump.depot', 'Atracas en una obra de colonización', '→ Colonización', p.jump.depot, off)}
+    </section>`;
+
+  const ds = ui.displays;
+  const screens = `
+    <section class="pn card">
+      <span class="ti" style="font-size:16px">Pantalla</span>
+      <span class="soft" style="font-size:14px">Pulsa una pantalla para llevar la ventana allí. La ventana nunca se pone por encima del juego.</span>
+      <div style="display:grid;grid-template-columns:repeat(${Math.min(Math.max(ds ? ds.length : 1, 1), 3)},minmax(0,1fr));gap:10px">
+        ${ds ? ds.slice(0, 3).map((d) => `<button type="button" class="disp${d.current ? ' on' : ''}" data-display="${d.id}">
+          <span class="num" style="font-size:30px;color:${d.current ? 'var(--amber)' : 'var(--eb)'}">${d.n}</span>
+          <span class="va" style="font-size:16px">${d.width} × ${d.height}</span>
+          <span class="eb" style="font-size:11px">${d.current ? '<span class="amber">Aquí</span>' : 'Mover aquí'}${d.primary ? ' · principal' : ''}</span></button>`).join('') : '<span class="soft">Buscando pantallas…</span>'}
+      </div>
+      ${ds && ds.length > 3 ? `<span class="soft" style="font-size:13px">Hay ${ds.length} pantallas; se muestran las tres primeras.</span>` : ''}
+      ${setRow('fullscreen', 'Pantalla completa', 'Sin bordes ni barra de título', p.fullscreen)}
+    </section>`;
+
+  const start = `
+    <section class="pn card">
+      <span class="ti" style="font-size:16px">Al abrir y avisos</span>
+      <span class="eb">Al abrir la app, mostrar</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button type="button" class="tab${p.startSection !== 'ultima' ? ' on' : ''}" data-set="startSection" data-val="puente">Puente de mando</button>
+        <button type="button" class="tab${p.startSection === 'ultima' ? ' on' : ''}" data-set="startSection" data-val="ultima">Última sección</button>
+      </div>
+      <span class="eb" style="margin-top:6px">Avisos en la cabecera</span>
+      ${setRow('alerts.dock', 'Atraque concedido', 'Número de plataforma, desde cualquier sección', p.alerts.dock)}
+      ${setRow('alerts.fuelRoute', 'Combustible en ruta', 'Naves sin recolector: avisa antes de quedarte sin combustible', p.alerts.fuelRoute)}
+      <span class="soft" style="font-size:13px">Los avisos de peligro (casco, calor, interdicción, ataque…) siempre se muestran.</span>
+    </section>`;
+
+  const i = ui.info || {}; const c = ui.controls || {};
+  const about = `
+    <section class="pn card">
+      <span class="ti" style="font-size:16px">Idioma e información</span>
+      <span class="eb">Idioma</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button type="button" class="tab on">Español</button>
+        <button type="button" class="tab" disabled title="Próximamente" style="opacity:.45;cursor:default">English · pronto</button>
+      </div>
+      <div class="kv" style="font-size:15px;margin-top:6px">
+        <span class="eb" style="font-size:10px">Versión</span><span class="num">${esc(i.version || '—')}</span>
+        <span class="eb" style="font-size:10px">Journal</span><span title="${esc(i.journalFolder || '')}">${esc(i.journalFolder || '—')}</span>
+        <span class="eb" style="font-size:10px">Controles</span><span>${esc(c.preset || c.error || '—')}</span>
+        <span class="eb" style="font-size:10px">Registro</span><span title="${esc(i.log || '')}">${esc(i.log || '—')}</span>
+      </div>
+      <button type="button" class="tab" data-opendata style="align-self:flex-start">Abrir carpeta de datos</button>
+    </section>`;
+
+  return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto minmax(0,1fr);gap:12px;min-height:0;height:100%">${jump}${screens}${start}${about}</div>`;
+}
+
 function render() {
   try { renderNow(); } catch (e) {
     reportError(`render(${ui.section})`, e);
@@ -1286,7 +1388,7 @@ function renderNow() {
   const { state: s, view: v } = snap;
   const typing = document.activeElement && document.activeElement.tagName === 'INPUT' && !!document.activeElement.id;
   if (ui.autoJump && v.mode.key !== ui.lastModeKey && !typing) {
-    if (ui.lastModeKey !== null && BUILT.has(v.mode.section) && v.mode.section !== ui.section) ui.section = v.mode.section;
+    if (ui.lastModeKey !== null && BUILT.has(v.mode.section) && v.mode.section !== ui.section && ui.section !== 'ajustes' && jumpAllowed(v.mode.key)) goSection(v.mode.section);
     ui.lastModeKey = v.mode.key;
   }
   // diagnóstico: qué veía la app al conceder un atraque
@@ -1297,7 +1399,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -1311,10 +1413,11 @@ function fit() {
 
 $('rail').addEventListener('click', (ev) => {
   const b = ev.target.closest('button[data-sec]');
-  if (b && !b.disabled) { ui.section = b.dataset.sec; render(); }
+  if (b && !b.disabled) { goSection(b.dataset.sec); render(); }
 });
 document.addEventListener('click', (ev) => {
-  if (ev.target.closest('#autojump')) { ui.autoJump = !ui.autoJump; render(); }
+  if (ev.target.closest('#autojump')) setPref('autoJump', !ui.autoJump);
+  if (ev.target.closest('#hdr-settings')) { goSection(ui.section === 'ajustes' ? (ui.prevSection || 'puente') : 'ajustes'); render(); }
 });
 // Buscador: sugerencias de Spansh mientras se escribe (con pausa de 300 ms)
 let searchTimer = null;
@@ -1440,6 +1543,17 @@ document.addEventListener('pointerdown', (ev) => {
   }
   const rp = ev.target.closest('button[data-pager="route"]');
   if (rp && !rp.disabled) { ev.preventDefault(); ui.routePage = Math.max(0, (ui.routePage || 0) + Number(rp.dataset.d)); render(); return; }
+  const sw = ev.target.closest('button[data-set]');
+  if (sw && !sw.disabled) {
+    ev.preventDefault();
+    const key = sw.dataset.set;
+    if (sw.dataset.val !== undefined) setPref(key, sw.dataset.val);
+    else { const [g, k] = key.split('.'); setPref(key, !(k ? ui.prefs[g][k] : ui.prefs[key])); }
+    return;
+  }
+  const dm = ev.target.closest('button[data-display]');
+  if (dm && !dm.disabled) { ev.preventDefault(); window.edbubble.moveToDisplay(Number(dm.dataset.display)).then((d) => { ui.displays = d; render(); }); return; }
+  if (ev.target.closest('button[data-opendata]')) { ev.preventDefault(); window.edbubble.openData(); return; }
   const pg = ev.target.closest('button[data-ctlpage]');
   if (pg && !pg.disabled) { ev.preventDefault(); ui.ctlPage = Math.max(0, (ui.ctlPage || 0) + Number(pg.dataset.ctlpage)); render(); }
 });
@@ -1459,5 +1573,11 @@ if (window.edbubble) {
     if (!p.running) setTimeout(render, 8100);
   });
   window.edbubble.controls().then((c) => { ui.controls = c; render(); });
+  if (window.edbubble.settings) window.edbubble.settings().then((p) => {
+    if (!p) return;
+    ui.prefs = p; ui.autoJump = p.autoJump;
+    if (p.startSection === 'ultima' && BUILT.has(p.lastSection)) { ui.section = p.lastSection; if (p.lastSection === 'ajustes') loadSettingsInfo(); }
+    render();
+  });
   window.edbubble.snapshot().then((snap) => { if (snap && !ui.snap) { ui.snap = snap; render(); } });
 }

@@ -130,3 +130,18 @@ button { font: inherit; }
 .chamf > div { background: #081627; clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
 .chamf.amber { background: #8a5a1e; }
 .chamf.amber > div { background: linear-gradient(180deg, #1a1408, #0a1220); }
+
+/* Ajustes */
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 58px; padding: 6px 16px; background: #0c1b2e; border: 1px solid var(--line2); border-radius: 2px; color: inherit; font: inherit; cursor: pointer; }
+.set-row:hover:not(:disabled) { border-color: var(--cyan); }
+.set-row:disabled { opacity: .45; cursor: default; }
+.sw { flex: none; position: relative; width: 52px; height: 26px; border-radius: 13px; background: #142436; border: 1px solid var(--line2); }
+.sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #5a7088; transition: left .15s; }
+.sw.on { background: #0f3a52; border-color: var(--cyan); }
+.sw.on::after { left: 29px; background: var(--cyan); }
+.disp { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 8px; background: #0c1b2e; border: 1px solid var(--line2); border-radius: 2px; color: inherit; font: inherit; cursor: pointer; }
+.disp:hover { border-color: var(--cyan); }
+.disp.on { border-color: var(--amber); background: #221a0e; }
+.bt#hdr-settings:not(:disabled) { cursor: pointer; }
+.bt#hdr-settings:hover { border-color: var(--cyan); }
+.bt.on { color: var(--amber); border-color: var(--amber); background: #221a0e; }

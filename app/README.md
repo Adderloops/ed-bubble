@@ -62,6 +62,19 @@ npm test
 
 Para desarrollo: `ED_JOURNAL_FOLDER` apunta el motor a otra carpeta de Journals, y `ED_BUBBLE_SHOT=<carpeta>` guarda capturas de las pantallas y cierra la app.
 
+## Ajustes
+
+Botón **Ajustes** de la cabecera (vuelve a pulsarlo para regresar a la sección anterior). Se guardan en `settings.json`, en la carpeta de datos de la app.
+
+- **Salto automático**: activarlo o no, y a qué secciones salta (vuelo, atraque concedido, estación, obra de colonización).
+- **Pantalla**: llevar la ventana a otra pantalla y pantalla completa. La ventana nunca se pone por encima del juego.
+- **Al abrir**: empezar en Puente de mando o en la última sección vista.
+- **Avisos opcionales** en la cabecera: atraque concedido y combustible en ruta. Los de peligro se muestran siempre.
+- **Idioma**: de momento solo español.
+- **Información**: versión, carpeta del Journal, preset de controles, registro y botón para abrir la carpeta de datos.
+
 ## Pendiente
+
+- Interfaz en inglés.
 
 - Brújula de coordenadas (y quizá el esquema de atraque) en **overlay** sobre la pantalla del juego: ventana transparente, siempre encima y que no capture el ratón, con el juego en ventana sin bordes.

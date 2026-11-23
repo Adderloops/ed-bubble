@@ -279,7 +279,7 @@ testAsync('trazar ruta: sin las teclas necesarias no envía nada', async () => {
 test('atraque concedido: aviso en la cabecera visible desde cualquier sección', () => {
   const s = model.createState();
   model.applyEvent(s, ev('DockingGranted', { LandingPad: 25, StationName: 'Macgregor', StationType: 'Coriolis' }));
-  assert.deepStrictEqual(derive.alerts(s)[0], { level: 'info', text: 'Atraque · plataforma 25' });
+  assert.deepStrictEqual(derive.alerts(s)[0], { kind: 'dock', level: 'info', text: 'Atraque · plataforma 25' });
   model.applyEvent(s, ev('Docked', { StationName: 'Macgregor', StationType: 'Coriolis', StarSystem: 'S' }));
   assert.ok(!derive.alerts(s).some((a) => a.level === 'info'));
 });

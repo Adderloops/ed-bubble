@@ -56,10 +56,10 @@ function alerts(state) {
   const fp = require('./fuel').fuelPlan(state);
   if (fp && !fp.ok) {
     const left = fp.jumpsOk;
-    out.unshift({ level: left <= 1 ? 'danger' : 'warn', text: left <= 0 ? 'Sin combustible para el siguiente salto' : `Combustible: solo ${left} salto${left === 1 ? '' : 's'} · reposta antes` });
+    out.unshift({ kind: 'fuelRoute', level: left <= 1 ? 'danger' : 'warn', text: left <= 0 ? 'Sin combustible para el siguiente salto' : `Combustible: solo ${left} salto${left === 1 ? '' : 's'} · reposta antes` });
   }
   // atraque concedido: visible desde cualquier sección
-  if (state.docking && state.docking.active && state.docking.pad) out.unshift({ level: 'info', text: `Atraque · plataforma ${state.docking.pad}` });
+  if (state.docking && state.docking.active && state.docking.pad) out.unshift({ kind: 'dock', level: 'info', text: `Atraque · plataforma ${state.docking.pad}` });
   return out;
 }
 
