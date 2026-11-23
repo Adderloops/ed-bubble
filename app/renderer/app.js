@@ -882,9 +882,7 @@ function arrivedCard(s) {
 /* ---------- esquema de atraque (SVG) ---------- */
 function dockingSvg(padNum, width, hour) {
   const pad = Number(padNum) || 0;
-  // hora de la plataforma (core/pads.js); si es media hora se dibuja en su ángulo exacto
-  const exact = hour != null && !Number.isInteger(hour) ? hour % 12 : null;
-  const hot = hour != null && exact == null ? hour % 12 : -1;
+  const hot = hour != null ? hour % 12 : -1; // hora de la plataforma (core/pads.js)
   const C = 150; const RP = 94;
   const pt = (r, deg) => { const a = (deg - 90) * Math.PI / 180; return [C + r * Math.cos(a), C + r * Math.sin(a)]; };
   const spokes = Array.from({ length: 12 }, (_, i) => {
@@ -898,11 +896,6 @@ function dockingSvg(padNum, width, hour) {
       <rect x="${(x - h).toFixed(1)}" y="${(y - h).toFixed(1)}" width="${2 * h}" height="${2 * h}" rx="3" fill="${on ? 'rgba(240,164,67,.28)' : '#081627'}" stroke="${on ? '#f0a443' : '#2f7fb0'}" stroke-width="${on ? 2.2 : 1.4}"/>
       <path d="M${x - 3} ${y}h6M${x} ${y - 3}v6" stroke="${on ? '#ffd08a' : '#2f7fb0'}" stroke-width="1"/></g>`;
   }).join('');
-  const extra = exact != null ? (() => {
-    const [x, y] = pt(RP, exact * 30); const h = 11;
-    return `<g filter="url(#glow)"><rect x="${(x - h).toFixed(1)}" y="${(y - h).toFixed(1)}" width="${2 * h}" height="${2 * h}" rx="3" fill="rgba(240,164,67,.35)" stroke="#f0a443" stroke-width="2.4"/>
-      <path d="M${x - 3} ${y}h6M${x} ${y - 3}v6" stroke="#ffd08a" stroke-width="1"/></g>`;
-  })() : '';
   const br = (x, y, dx, dy) => `<path d="M${x} ${y + dy * 9}V${y}H${x + dx * 9}" fill="none" stroke="#49c7e8" stroke-width="1.4"/>`;
   return `<svg viewBox="0 0 300 330" width="${width}" height="${Math.round(width * 330 / 300)}" style="display:block;overflow:visible;flex:none">
     <defs>
@@ -916,7 +909,7 @@ function dockingSvg(padNum, width, hour) {
     ${spokes}
     <circle cx="${C}" cy="${C}" r="62" fill="url(#hub)" stroke="#2b5379" stroke-width="1.5"/>
     <circle cx="${C}" cy="${C}" r="54" fill="none" stroke="#1f4a6e" stroke-width="1"/>
-    ${pads}${extra}
+    ${pads}
     ${br(118, 138, 1, 1)}${br(182, 138, -1, 1)}${br(118, 180, 1, -1)}${br(182, 180, -1, -1)}
     <text x="${C}" y="127" text-anchor="middle" font-family="Rajdhani" font-weight="600" font-size="9" letter-spacing="2.5" fill="#7f9bb8">PLATAFORMA</text>
     <text x="${C}" y="172" text-anchor="middle" font-family="Share Tech Mono" font-size="38" fill="#f0a443" filter="url(#glow)">${String(pad).padStart(2, '0')}</text>

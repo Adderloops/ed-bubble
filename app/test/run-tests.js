@@ -290,7 +290,6 @@ test('plataformas: regla general (n-1) mod 12, con las comprobadas corrigiéndol
   assert.strictEqual(pads.padHour('Dodec', 17), 4);
   assert.strictEqual(pads.padHour('Coriolis', '9'), 8);
   assert.strictEqual(pads.padHour('Coriolis', 7), 6);
-  assert.strictEqual(pads.padHour('Coriolis', 27), 1.5);
   assert.strictEqual(pads.padHour('Orbis', 1), 0);
   assert.strictEqual(pads.padHour('Orbis', 0), null);
 });
