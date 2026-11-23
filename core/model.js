@@ -35,6 +35,10 @@ function createState() {
     docking: { active: false, pad: null, station: null, stationType: null, at: null },
     powerplay: { power: null, rank: null, merits: null, system: null, control: null, controlAt: null },
     colonisation: { depots: {}, current: null, contributions: [] },
+    station: null, // última estación en la que has atracado (datos del evento Docked / Location)
+    market: null, // Market.json: { marketId, station, at, items[] }
+    communityGoals: [], // objetivos comunitarios activos (evento CommunityGoal)
+    engineering: { last: null, ranks: {} }, // último trabajo de ingeniero y rangos
     cargo: { count: 0, vessel: 'Ship', inventory: [] },
     session: { startedAt: null, jumps: 0, distance: 0, merits: 0, bounties: 0, mined: 0, deliveredToConstruction: 0 },
     log: [],
@@ -48,6 +52,35 @@ const loc = (e, key) => e[`${key}_Localised`] || e[key] || null;
 function pushLog(state, e, title, detail, level) {
   state.log.unshift({ at: e.timestamp || null, event: e.event, title, detail: detail || '', level: level || 'info' });
   if (state.log.length > MAX_LOG) state.log.length = MAX_LOG;
+}
+
+/** Datos de la estación (Docked, o Location estando atracado). */
+function setStation(state, e) {
+  if (!e.StationName) return;
+  const f = e.StationFaction || {};
+  const pads = e.LandingPads || {};
+  state.station = {
+    name: e.StationName, type: e.StationType || null, system: e.StarSystem || state.location.system, marketId: e.MarketID != null ? String(e.MarketID) : null,
+    faction: f.Name || null, factionState: f.FactionState || null,
+    government: e.StationGovernment_Localised || null, allegiance: e.StationAllegiance || null,
+    economies: (e.StationEconomies || []).map((x) => ({ name: x.Name_Localised || x.Name, proportion: x.Proportion || 0 })),
+    services: Array.isArray(e.StationServices) ? e.StationServices.map((x) => String(x).toLowerCase()) : [],
+    distLs: e.DistFromStarLS ?? null,
+    pads: { S: pads.Small ?? null, M: pads.Medium ?? null, L: pads.Large ?? null },
+    at: e.timestamp || null,
+  };
+}
+
+/** Market.json: lo que compra y vende la estación (solo al abrir el mercado en el juego). */
+function applyMarket(state, raw) {
+  if (!raw || !Array.isArray(raw.Items)) return;
+  state.market = {
+    marketId: raw.MarketID != null ? String(raw.MarketID) : null, station: raw.StationName || null, system: raw.StarSystem || null, at: raw.timestamp || null,
+    items: raw.Items.map((i) => ({
+      key: commodityKey(i.Name), name: i.Name_Localised || i.Name, category: i.Category_Localised || null,
+      buy: i.BuyPrice || 0, sell: i.SellPrice || 0, mean: i.MeanPrice || 0, stock: i.Stock || 0, demand: i.Demand || 0, rare: !!i.Rare,
+    })),
+  };
 }
 
 function setSystemInfo(state, e) {
@@ -107,6 +140,7 @@ const HANDLERS = {
     if (e.Rebuy !== undefined) S.rebuy = e.Rebuy;
   },
   Location(state, e) {
+    if (e.Docked) setStation(state, e);
     setSystemInfo(state, e);
     state.location.docked = !!e.Docked;
     state.location.station = e.Docked ? (e.StationName || null) : null;
@@ -159,11 +193,26 @@ const HANDLERS = {
   DockingTimeout(state, e) { clearDocking(state); pushLog(state, e, 'Atraque caducado', e.StationName, 'warn'); },
   Docked(state, e) {
     clearDocking(state);
+    setStation(state, e);
     state.location.docked = true;
     state.location.station = e.StationName || null;
     state.location.stationType = e.StationType || null;
     if (e.StarSystem) state.location.system = e.StarSystem;
     pushLog(state, e, 'Atracado', e.StationName);
+  },
+  CommunityGoal(state, e) {
+    state.communityGoals = (e.CurrentGoals || []).map((g) => ({
+      id: g.CGID, title: g.Title, system: g.SystemName, station: g.MarketName, expiry: g.Expiry || null, complete: !!g.IsComplete,
+      total: g.CurrentTotal ?? null, contribution: g.PlayerContribution ?? 0, contributors: g.NumContributors ?? null,
+      band: g.PlayerPercentileBand ?? null, topTier: g.TopTier ? g.TopTier.Name : null, tier: g.TierReached || null,
+    }));
+  },
+  EngineerProgress(state, e) {
+    for (const x of e.Engineers || (e.Engineer ? [e] : [])) state.engineering.ranks[x.Engineer] = { rank: x.Rank ?? null, progress: x.Progress || null };
+  },
+  EngineerCraft(state, e) {
+    state.engineering.last = { engineer: e.Engineer, blueprint: e.BlueprintName, level: e.Level ?? null, module: e.Slot || e.Module || null, at: e.timestamp || null };
+    pushLog(state, e, 'Ingeniería', `${e.Engineer} · ${e.BlueprintName} G${e.Level}`);
   },
   Undocked(state, e) {
     state.location.docked = false; state.location.station = null; state.location.stationType = null;
@@ -309,4 +358,4 @@ function applyNavRoute(state, raw) {
   state.route = i >= 0 ? route.slice(i) : route;
 }
 
-module.exports = { createState, applyEvent, applyStatus, applyCargo, applyNavRoute, HANDLERS, fmtNum, commodityKey };
+module.exports = { createState, applyEvent, applyStatus, applyCargo, applyNavRoute, applyMarket, HANDLERS, fmtNum, commodityKey };

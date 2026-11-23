@@ -46,6 +46,7 @@ class Engine extends EventEmitter {
     this.tailer = new JournalTailer(this.folder, opts.journalPollMs || 400);
     this.status = new StatusReader(this.folder, opts.statusPollMs || 400);
     this.cargo = new JsonFileWatcher(path.join(this.folder, 'Cargo.json'), 1000, (j) => { model.applyCargo(this.state, j); this.changed(); });
+    this.market = new JsonFileWatcher(path.join(this.folder, 'Market.json'), 1500, (j) => { model.applyMarket(this.state, j); this.changed(); });
     this.navroute = new JsonFileWatcher(path.join(this.folder, 'NavRoute.json'), 1000, (j) => { model.applyNavRoute(this.state, j); this.changed(); });
 
     this.tailer.on('event', (e) => { if (model.applyEvent(this.state, e)) this.changed(); });
@@ -57,14 +58,52 @@ class Engine extends EventEmitter {
     this.tailer.on('error', (err) => { this.state.connection.journal = false; this.emit('warning', err.message); this.changed(); });
   }
 
+  /**
+   * Historial: repasa los Journals anteriores (últimas semanas) solo para
+   * recuperar lo que no está en la sesión actual: obras de colonización,
+   * última estación atracada e ingenieros. Lo demás sale del Journal en curso.
+   */
+  loadHistory({ maxFiles = 25, maxDays = 45, maxBytes = 60 * 1024 * 1024 } = {}) {
+    const KEEP = ['Location', 'Docked', 'Undocked', 'ColonisationConstructionDepot', 'EngineerProgress', 'EngineerCraft'];
+    let files;
+    try { files = fs.readdirSync(this.folder).filter((f) => /^Journal\..*\.log$/.test(f)).sort(); } catch (e) { return 0; }
+    files = files.slice(0, -1); // el último lo lee el tailer en vivo
+    const since = Date.now() - maxDays * 86400000;
+    const picked = [];
+    let bytes = 0;
+    for (const f of files.reverse()) {
+      if (picked.length >= maxFiles) break;
+      let st; try { st = fs.statSync(path.join(this.folder, f)); } catch (e) { continue; }
+      if (st.mtimeMs < since || bytes + st.size > maxBytes) break;
+      picked.unshift(f); bytes += st.size;
+    }
+    let n = 0;
+    for (const f of picked) {
+      let text; try { text = fs.readFileSync(path.join(this.folder, f), 'utf8'); } catch (e) { continue; }
+      for (const line of text.split(/\r?\n/)) {
+        if (!line || !KEEP.some((k) => line.includes(`"${k}"`))) continue;
+        let e; try { e = JSON.parse(line); } catch (x) { continue; }
+        if (!KEEP.includes(e.event)) continue;
+        model.applyEvent(this.state, e); n += 1;
+      }
+    }
+    // lo de sesiones pasadas no es "sesión" ni "ahora"
+    this.state.log = [];
+    this.state.location.docked = false;
+    this.state.colonisation.current = null;
+    return n;
+  }
+
   start() {
+    try { this.historyEvents = this.loadHistory(); } catch (e) { this.emit('warning', `historial: ${e.message}`); }
     this.tailer.start();
     this.status.start((decoded) => { model.applyStatus(this.state, decoded.raw, decoded); this.changed(); });
     this.cargo.start();
     this.navroute.start();
+    this.market.start();
   }
 
-  stop() { this.tailer.stop(); this.status.stop(); this.cargo.stop(); this.navroute.stop(); }
+  stop() { this.tailer.stop(); this.status.stop(); this.cargo.stop(); this.navroute.stop(); this.market.stop(); }
 
   snapshot() {
     this.state.updatedAt = new Date().toISOString();

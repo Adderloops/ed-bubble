@@ -5,7 +5,7 @@
 const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo' }, { id: 'srv', label: 'SRV' },
-  { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación' }, { id: 'apie', label: 'A pie' },
+  { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie' },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay' }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería' }, { id: 'colonizacion', label: 'Colonización', built: true },
   { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' },
 ];
@@ -850,6 +850,103 @@ function buyPanel(s, d, c) {
     <div style="margin-top:auto">${action}</div>`;
 }
 
+/* ---------- Estación ---------- */
+const STATION_ICON = { Coriolis: 'coriolis', Orbis: 'orbis', Bernal: 'ocellus', Ocellus: 'ocellus', Dodec: 'dodec', Outpost: 'outpost', AsteroidBase: 'asteroid', MegaShip: 'megaship', FleetCarrier: 'carrier', CraterPort: 'surface_port', CraterOutpost: 'surface_outpost', OnFootSettlement: 'settlement', SpaceConstructionDepot: 'outpost', PlanetaryConstructionDepot: 'surface_outpost' };
+const STATE_ES = { Expansion: 'Expansión', Boom: 'Auge', Bust: 'Quiebra', CivilUnrest: 'Disturbios', CivilWar: 'Guerra civil', War: 'Guerra', Election: 'Elecciones', Lockdown: 'Confinamiento', Outbreak: 'Epidemia', Famine: 'Hambruna', Retreat: 'Retirada', InfrastructureFailure: 'Fallo de infraestructuras', Investment: 'Inversión', PirateAttack: 'Ataque pirata', PublicHoliday: 'Festividad', Drought: 'Sequía', Blight: 'Plaga', None: 'Sin estado' };
+
+function screenEstacion(s, v) {
+  const st = v.station;
+  if (!st) return '<section class="pn card"><span class="ti" style="font-size:16px">Estación</span><div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:22px;color:var(--soft)">Aún no has atracado</span><span style="font-size:15px">Al atracar en una estación aparecerán aquí sus servicios, su mercado y lo que te interesa comprar o vender.</span></div></section>';
+  const icon = STATION_ICON[st.type];
+  const econ = st.economies.slice(0, 4);
+  const econTotal = st.economies.reduce((a, e) => a + e.proportion, 0) || 1;
+  const hero = `
+    <section class="pn card" style="display:grid;grid-template-columns:96px minmax(0,1fr) 420px 360px;gap:22px;align-items:center">
+      <span style="display:flex;justify-content:center">${icon ? `<img src="icons/${icon}.png" alt="" style="width:88px;height:88px;object-fit:contain">` : ''}</span>
+      <span style="display:flex;flex-direction:column;gap:4px;min-width:0">
+        <span class="eb">${st.here ? '<span class="cyan">Atracado</span>' : `Último atraque · ${st.at ? `${String(st.at).slice(0, 10)} ${hhmm(st.at)} UTC` : '—'}`}</span>
+        <span class="ti nowrap" style="font-size:34px">${esc(siteName(st.name))}</span>
+        <span class="eb">${esc(STATION_TYPES[st.type] || st.type || '—')} · ${esc(clean(st.system) || '—')} · ${nf(st.distLs, 0)} ls de la estrella</span>
+      </span>
+      <div class="kv" style="font-size:15px">
+        <span class="eb" style="font-size:10px">Facción</span><span class="nowrap">${esc(or(st.faction))}</span>
+        <span class="eb" style="font-size:10px">Estado</span><span class="amber">${esc(STATE_ES[st.factionState] || tr(st.factionState) || '—')}</span>
+        <span class="eb" style="font-size:10px">Gobierno</span><span>${esc(tr(st.government) || '—')}</span>
+        <span class="eb" style="font-size:10px">Plataformas</span><span class="num">${st.pads.S ?? '—'} S · ${st.pads.M ?? '—'} M · <span class="amber">${st.pads.L ?? '—'} L</span></span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span class="eb">Economías</span>
+        ${econ.map((e) => `<div style="display:grid;grid-template-columns:130px minmax(0,1fr) 40px;gap:8px;align-items:center"><span class="nowrap" style="font-size:14px">${esc(tr(e.name))}</span><span class="bar" style="height:7px"><span style="width:${(e.proportion / econTotal) * 100}%;background:var(--cyan)"></span></span><span class="num soft" style="font-size:12px;text-align:right">${nf((e.proportion / econTotal) * 100, 0)} %</span></div>`).join('') || '<span class="soft">—</span>'}
+      </div>
+    </section>`;
+
+  const services = `
+    <section class="pn card" style="min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between"><span class="ti" style="font-size:16px">Servicios</span><span class="eb dim">${st.services.filter((x) => x.on).length} de ${st.services.length}</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        ${st.services.map((x) => `<span class="svc-row ${x.on ? 'on' : ''}"><span class="dot ${x.on ? 'on' : ''}"></span>${esc(x.label)}</span>`).join('')}
+      </div>
+    </section>`;
+
+  const m = st.market;
+  const block = (title, right, rows, empty) => `
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="eb amber">${title}</span>${right || ''}</div>
+      ${rows || `<span class="soft" style="font-size:14px;padding:4px 0">${empty}</span>`}
+    </div>`;
+  let market;
+  if (!m) {
+    market = `<div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:18px;color:var(--soft)">Abre el mercado en el juego</span><span style="font-size:14px">El juego solo guarda los precios de esta estación (Market.json) cuando abres su mercado de mercancías.</span></div>`;
+  } else {
+    const row = (cols, cells) => `<div class="in row" style="grid-template-columns:${cols};height:34px">${cells}</div>`;
+    const vsMean = (p, mean) => (mean ? `<span class="${p >= mean ? 'cyan' : 'yellow'}">${p >= mean ? '+' : ''}${nf(((p - mean) / mean) * 100, 0)} %</span>` : '');
+    const dep = m.forDepot.slice(0, 5).map((r) => row('minmax(0,1fr) 120px 140px 110px', `<span class="nowrap" style="padding-left:12px">${esc(r.name)}</span><span class="num amber" style="text-align:right">faltan ${nf(r.remaining)}</span><span class="num cyan" style="text-align:right">${nf(r.stock)} t</span><span class="num soft" style="text-align:right;padding-right:12px">${nf(r.buy)} cr</span>`)).join('');
+    const sell = m.sellCargo.slice(0, 5).map((c) => row('minmax(0,1fr) 90px 110px 90px 140px', `<span class="nowrap" style="padding-left:12px">${esc(c.name)}${c.stolen ? ' <span class="eb red" style="font-size:10px">robada</span>' : ''}</span><span class="num soft" style="text-align:right">${nf(c.count)} t</span><span class="num" style="text-align:right">${c.sell ? `${nf(c.sell)} cr` : '<span class="dim">no compra</span>'}</span><span class="num" style="text-align:right">${c.sell ? vsMean(c.sell, c.mean) : ''}</span><span class="num cyan" style="text-align:right;padding-right:12px">${c.total ? `${nf(c.total)} cr` : '—'}</span>`)).join('');
+    const best = m.bestSells.slice(0, 6).map((b) => row('minmax(0,1fr) 140px 120px 90px', `<span class="nowrap" style="padding-left:12px">${esc(b.name)}</span><span class="num" style="text-align:right">${nf(b.sell)} cr</span><span class="num soft" style="text-align:right">${nf(b.demand)} t</span><span class="num" style="text-align:right;padding-right:12px">${vsMean(b.sell, b.mean)}</span>`)).join('');
+    market = `
+      ${block(`Para tu obra${m.depotName ? ` · ${esc(siteName(m.depotName))}` : ''}`, '<span class="eb dim">faltan · stock · precio</span>', dep, m.depotName ? 'Aquí no se vende nada de lo que le falta a tu obra.' : 'No tienes obras con material pendiente.')}
+      ${block('Vender tu carga', m.sellCargo.length ? `<span class="eb">Total <span class="num cyan" style="font-size:15px;letter-spacing:0">${nf(m.sellTotal)} cr</span></span>` : '', sell, 'Bodega vacía.')}
+      ${block('Lo que más paga aquí', '<span class="eb dim">precio · demanda · vs media</span>', best, 'Esta estación no compra nada.')}`;
+  }
+  const marketCard = `
+    <section class="pn card" style="min-height:0;overflow:hidden;gap:16px">
+      <div style="display:flex;justify-content:space-between"><span class="ti" style="font-size:16px">Mercado</span>${m ? `<span class="eb dim">Market.json · ${String(m.at || '').slice(0, 10) === new Date().toISOString().slice(0, 10) ? '' : `${String(m.at || '').slice(0, 10)} `}${hhmm(m.at)} UTC</span>` : ''}</div>
+      ${market}
+    </section>`;
+
+  const cg = st.communityGoals;
+  const cgCard = `
+    <section class="pn card" style="min-height:0;overflow:hidden">
+      <span class="ti" style="font-size:16px">Objetivo comunitario</span>
+      ${cg.length ? cg.slice(0, 2).map((g) => `<div class="in" style="padding:10px 12px;display:flex;flex-direction:column;gap:4px">
+          <span class="va" style="font-size:16px">${esc(g.title)}</span>
+          <span class="eb" style="font-size:10px">${esc(siteName(g.station) || '')} · ${esc(g.system || '')}</span>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:4px">${stat('Nivel', esc(g.tier || '—'))}${stat('Tu aporte', nf(g.contribution))}${stat('Tu posición', g.band != null ? `top ${g.band} %` : '—', 'cyan')}</div>
+        </div>`).join('') : '<span class="soft" style="font-size:14px">No participas en ningún objetivo comunitario activo.</span>'}
+    </section>`;
+  const ranks = Object.entries(st.engineering.ranks || {});
+  const unlocked = ranks.filter(([, r]) => r.progress === 'Unlocked');
+  const g5 = unlocked.filter(([, r]) => r.rank === 5).length;
+  const last = st.engineering.last;
+  const engCard = `
+    <section class="pn card" style="min-height:0;overflow:hidden">
+      <span class="ti" style="font-size:16px">Ingenieros</span>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">${stat('Desbloqueados', `${unlocked.length} / ${ranks.length || '—'}`)}${stat('Rango 5', nf(g5), 'cyan')}</div>
+      ${last ? `<div class="in" style="padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span class="eb" style="font-size:10px">Último trabajo · ${hhmm(last.at)} UTC</span><span class="va" style="font-size:15px">${esc(last.blueprint)} G${esc(last.level)}</span><span class="soft" style="font-size:13px">${esc(last.engineer)}</span></div>` : '<span class="soft" style="font-size:14px">Sin trabajos de ingeniero en esta sesión.</span>'}
+      ${st.services.find((x) => x.key === 'engineer' && x.on) ? '<span class="eb cyan">Esta estación tiene ingeniero</span>' : ''}
+    </section>`;
+
+  return `
+  <div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+    ${hero}
+    <div style="flex:1;display:grid;grid-template-columns:440px minmax(0,1fr) 420px;gap:12px;min-height:0">
+      ${services}
+      ${marketCard}
+      <div style="display:flex;flex-direction:column;gap:12px;min-height:0">${cgCard}${engCard}</div>
+    </div>
+  </div>`;
+}
+
 /* ---------- destino final (estación) ---------- */
 function finalStrip(s) {
   const f = ui.finalDest;
@@ -959,7 +1056,7 @@ function renderNow() {
   renderHeader(s, v);
   renderRail(v);
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : screenPuente(s, v);
   if (sel) { const el = $('nav-search'); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 

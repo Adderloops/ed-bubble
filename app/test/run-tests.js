@@ -284,6 +284,25 @@ test('atraque concedido: aviso en la cabecera visible desde cualquier sección',
   assert.ok(!derive.alerts(s).some((a) => a.level === 'info'));
 });
 
+test('historial: recupera obras y última estación de Journals anteriores, sin ensuciar la sesión', () => {
+  const fs = require('fs'); const os = require('os'); const path = require('path');
+  const { Engine } = require('../../core/engine');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'edb-hist-'));
+  const L = (o) => JSON.stringify(o);
+  fs.writeFileSync(path.join(dir, 'Journal.2026-11-20T100000.01.log'), [
+    L({ timestamp: '2026-11-20T10:00:00Z', event: 'Docked', StationName: 'Obra X', StationType: 'SpaceConstructionDepot', StarSystem: 'S', MarketID: 9 }),
+    L({ timestamp: '2026-11-20T10:01:00Z', event: 'ColonisationConstructionDepot', MarketID: 9, ConstructionProgress: 0.5, ResourcesRequired: [{ Name: '$steel_name;', Name_Localised: 'Steel', RequiredAmount: 100, ProvidedAmount: 40, Payment: 1 }] }),
+    L({ timestamp: '2026-11-20T10:02:00Z', event: 'MarketSell', Type: 'gold', Count: 1, TotalSale: 1 }),
+  ].join('\n'));
+  fs.writeFileSync(path.join(dir, 'Journal.2026-11-23T100000.01.log'), L({ timestamp: '2026-11-23T10:00:00Z', event: 'Fileheader' }));
+  const e = new Engine({ folder: dir });
+  const n = e.loadHistory();
+  assert.strictEqual(n, 2);
+  assert.strictEqual(e.state.colonisation.depots['9'].remaining, 60);
+  assert.strictEqual(e.state.station.name, 'Obra X');
+  assert.strictEqual(e.state.log.length, 0); assert.strictEqual(e.state.location.docked, false);
+});
+
 test('plataformas: regla general (n-1) mod 12, con las comprobadas corrigiéndola', () => {
   const pads = require('../../core/pads');
   assert.strictEqual(pads.padHour('Dodec', 32), 8);

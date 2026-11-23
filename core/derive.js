@@ -111,6 +111,47 @@ function colonisationView(state) {
   return { depots, current: state.colonisation.current, cargo, cargoCount: (state.cargo && state.cargo.count) || 0, capacity: cap, contributions: state.colonisation.contributions || [] };
 }
 
+// Servicios de estación que se muestran (clave del Journal -> nombre), en este orden.
+const SERVICES = [
+  ['commodities', 'Mercado'], ['refuel', 'Repostar'], ['repair', 'Reparar'], ['rearm', 'Rearmar'],
+  ['outfitting', 'Equipamiento'], ['shipyard', 'Astillero'], ['blackmarket', 'Mercado negro'], ['materialtrader', 'Comerciante mat.'],
+  ['techbroker', 'Intermediario tec.'], ['engineer', 'Ingeniero'], ['exploration', 'Cartografía'], ['missions', 'Misiones'],
+  ['contacts', 'Contactos'], ['searchrescue', 'Búsqueda y rescate'], ['facilitator', 'Facilitador'], ['crewlounge', 'Sala de tripulación'],
+  ['powerplay', 'Powerplay'], ['registeringcolonisation', 'Colonización'], ['socialspace', 'Zona social'], ['shop', 'Pioneer Supplies'],
+  ['bartender', 'Bar'], ['vistagenomics', 'Vista Genomics'], ['apexinterstellar', 'Apex Interstellar'], ['frontlinesolutions', 'Frontline Solutions'],
+];
+
+/** Estación: datos del atraque, servicios y mercado cruzado con tu carga y tu obra. */
+function stationView(state) {
+  const st = state.station;
+  if (!st) return null;
+  const here = state.location.docked && state.location.station === st.name;
+  const has = new Set(st.services);
+  const services = SERVICES.map(([k, label]) => ({ key: k, label, on: has.has(k) }));
+  const m = state.market && st.marketId && state.market.marketId === st.marketId ? state.market : null;
+  let market = null;
+  if (m) {
+    const byKey = new Map(m.items.map((i) => [i.key, i]));
+    const sellCargo = ((state.cargo && state.cargo.inventory) || []).map((c) => {
+      const it = byKey.get(c.key);
+      return { name: c.name, count: c.count, stolen: !!c.stolen, sell: it ? it.sell : 0, demand: it ? it.demand : 0, mean: it ? it.mean : 0, total: it ? it.sell * c.count : 0 };
+    }).sort((a, b) => b.total - a.total);
+    // obra: la actual o la última con material pendiente
+    const depots = Object.values(state.colonisation.depots).filter((d) => (d.remaining || 0) > 0).sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
+    const depot = state.colonisation.depots[state.colonisation.current] && state.colonisation.depots[state.colonisation.current].remaining > 0 ? state.colonisation.depots[state.colonisation.current] : depots[0];
+    const forDepot = depot ? (depot.resources || []).map((r) => {
+      const rem = Math.max(0, (r.required || 0) - (r.provided || 0));
+      const it = byKey.get(r.key);
+      return rem > 0 && it && it.stock > 0 && it.buy > 0 ? { name: r.name, remaining: rem, stock: it.stock, buy: it.buy } : null;
+    }).filter(Boolean).sort((a, b) => b.remaining - a.remaining) : [];
+    const bestSells = m.items.filter((i) => i.demand > 0 && i.sell > 0).sort((a, b) => b.sell - a.sell).slice(0, 8)
+      .map((i) => ({ name: i.name, sell: i.sell, demand: i.demand, mean: i.mean }));
+    market = { at: m.at, sellCargo, sellTotal: sellCargo.reduce((a, c) => a + c.total, 0), depotName: depot ? depot.name : null, forDepot, bestSells, count: m.items.length };
+  }
+  const cg = (state.communityGoals || []).filter((g) => !g.complete);
+  return { ...st, here, services, market, communityGoals: cg, engineering: state.engineering };
+}
+
 function view(state) {
   const { padHour } = require('./pads');
   return {
@@ -122,7 +163,8 @@ function view(state) {
     scoopableHere: isScoopable(state.location.starClass),
     colonisation: state.colonisation.current ? state.colonisation.depots[state.colonisation.current] : null,
     col: colonisationView(state),
+    station: stationView(state),
   };
 }
 
-module.exports = { view, colonisationView, flightMode, alerts, fuel, routeView, isScoopable, FUEL_ALERT, HULL_ALERT };
+module.exports = { view, colonisationView, stationView, flightMode, alerts, fuel, routeView, isScoopable, FUEL_ALERT, HULL_ALERT };

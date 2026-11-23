@@ -120,3 +120,7 @@ button { font: inherit; }
 .mkrow { display: grid; grid-template-columns: 46px minmax(0,1fr) 112px; align-items: center; gap: 8px; height: 66px; min-width: 0; padding: 0 10px 0 4px; background: var(--inner); border: 1px solid var(--inline); border-radius: 2px; cursor: pointer; color: inherit; font: inherit; }
 .mkrow:hover { border-color: var(--cyan); }
 .mkrow.on { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber) inset; }
+
+/* Estación */
+.svc-row { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; font-family: Rajdhani, sans-serif; font-weight: 700; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); background: var(--inner); border: 1px solid var(--inline); border-radius: 2px; white-space: nowrap; overflow: hidden; }
+.svc-row.on { color: var(--soft, #cfe3f5); border-color: var(--line2); }

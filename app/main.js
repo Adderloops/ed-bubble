@@ -100,7 +100,7 @@ function createWindow() {
     win.webContents.once('did-finish-load', async () => {
       const out = process.env.ED_BUBBLE_SHOT;
       await new Promise((r) => setTimeout(r, 2500));
-      for (const sec of ['puente', 'vuelo', 'navegacion', 'colonizacion']) {
+      for (const sec of ['puente', 'vuelo', 'navegacion', 'colonizacion', 'estacion']) {
         await win.webContents.executeJavaScript(`ui.section='${sec}'; ui.autoJump=false; render();`);
         await new Promise((r) => setTimeout(r, 400));
         const img = await win.webContents.capturePage();
