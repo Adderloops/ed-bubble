@@ -186,7 +186,7 @@ function createWindow() {
           await new Promise((r) => setTimeout(r, 400));
           fs.writeFileSync(path.join(out, `sistema-${tab}.png`), (await win.webContents.capturePage()).toPNG());
         }
-        await win.webContents.executeJavaScript("ui.sysTab='stations'; ui.sysKinds=['Asentamiento','Obra en superficie']; ui.sysLarge=true; render();");
+        await win.webContents.executeJavaScript("ui.sysTab='stations'; ui.sysKinds=['Asentamiento','Construcción en superficie']; ui.sysLarge=true; render();");
         await new Promise((r) => setTimeout(r, 400));
         fs.writeFileSync(path.join(out, 'sistema-filtro.png'), (await win.webContents.capturePage()).toPNG());
       }

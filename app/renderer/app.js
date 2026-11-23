@@ -696,9 +696,9 @@ function systemDetail(s) {
   const kinds = [];
   for (const st of y.stations) {
     const k = kinds.find((x) => x.label === st.label);
-    if (k) k.n += 1; else kinds.push({ label: st.label, icon: st.icon, obra: /^Obra/.test(st.label), n: 1 });
+    if (k) k.n += 1; else kinds.push({ label: st.label, icon: st.icon, obra: /^Construcción/.test(st.label), n: 1 });
   }
-  const KIND_ORDER = ['Coriolis', 'Orbis', 'Ocellus', 'Dodec', 'Base en asteroide', 'Puesto orbital', 'Puerto planetario', 'Puesto planetario', 'Asentamiento', 'Obra orbital', 'Obra en superficie', 'Meganave', 'Fleet carrier'];
+  const KIND_ORDER = ['Coriolis', 'Orbis', 'Ocellus', 'Dodec', 'Base en asteroide', 'Puesto orbital', 'Puerto planetario', 'Puesto planetario', 'Asentamiento', 'Construcción orbital', 'Construcción en superficie', 'Meganave', 'Fleet carrier'];
   const ord = (l) => { const i = KIND_ORDER.indexOf(l); return i < 0 ? 99 : i; };
   kinds.sort((a, b) => ord(a.label) - ord(b.label));
   ui.sysKinds = ui.sysKinds.filter((k) => kinds.some((x) => x.label === k));
@@ -707,7 +707,7 @@ function systemDetail(s) {
   const filterBar = ui.sysTab === 'stations' && y.stations.length > 1 ? `
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:nowrap;overflow:hidden">
       <button type="button" class="kf all${filtering ? '' : ' on'}" data-kind="" title="Todas las estaciones">Todas</button>
-      ${kinds.map((k) => `<button type="button" class="kf${ui.sysKinds.includes(k.label) ? ' on' : ''}" data-kind="${esc(k.label)}" title="${esc(k.label)}">${k.icon ? `<img src="icons/${k.icon}.png" alt="">` : '<span class="soft">?</span>'}${k.obra ? '<span class="kf-obra">Obra</span>' : ''}<span class="num">${k.n}</span></button>`).join('')}
+      ${kinds.map((k) => `<button type="button" class="kf${ui.sysKinds.includes(k.label) ? ' on' : ''}" data-kind="${esc(k.label)}" title="${esc(k.label)}">${k.icon ? `<img src="icons/${k.icon}.png" alt="">` : '<span class="soft">?</span>'}${k.obra ? '<span class="kf-obra">Construcción</span>' : ''}<span class="num">${k.n}</span></button>`).join('')}
       <button type="button" class="kf${ui.sysLarge ? ' on' : ''}" data-kind="L" title="Solo con plataforma grande" style="margin-left:auto"><span class="pad pad-L" style="width:24px;height:24px;font-size:13px">L</span>Solo L</button>
     </div>` : '';
   const per = { stations: 7, factions: 9, bodies: 11 }[ui.sysTab];

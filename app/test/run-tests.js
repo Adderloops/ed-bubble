@@ -395,7 +395,7 @@ test('colonización: material a bordo cruzado con la obra, viajes con la bodega 
 test('Spansh: tipo de estación, icono y plataforma (las obras siempre L)', () => {
   const sp = require('../../core/spansh');
   assert.strictEqual(sp.stationKind('Coriolis Starport').icon, 'coriolis');
-  assert.strictEqual(sp.stationKind('Planetary Construction Depot').label, 'Obra en superficie');
+  assert.strictEqual(sp.stationKind('Planetary Construction Depot').label, 'Construcción en superficie');
   assert.strictEqual(sp.padSize({ type: 'Space Construction Depot', has_large_pad: false }), 'L');
   assert.strictEqual(sp.padSize({ type: 'Outpost', medium_pads: 2, has_large_pad: false }), 'M');
   const n = sp.normalise({ name: 'X', bodies: [{ is_main_star: true, subtype: 'K (Yellow-Orange) Star' }], stations: [{ name: 'A', distance_to_arrival: 5 }, { name: 'B', type: 'Orbis Starport', distance_to_arrival: 9, has_large_pad: true, has_market: true }] });
