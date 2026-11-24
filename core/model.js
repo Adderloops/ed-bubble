@@ -21,7 +21,9 @@ function createState() {
       system: null, body: null, bodyType: null, station: null, stationType: null, docked: false, landed: false,
       starClass: null, allegiance: null, economy: null, secondEconomy: null, government: null, security: null, population: null,
       faction: null, factionState: null, powerplayState: null, controllingPower: null, systemAddress: null, starPos: null,
+      approach: null, // cuerpo al que te acercas (ApproachBody): { body, bodyId, systemAddress }
     },
+    bodies: {}, // datos de cuerpos escaneados en este sistema: { nombre: { gravity (g), radius (m), landable } }
     destination: { name: null, body: null, system: null },
     status: {
       flags: {}, pips: null, fireGroup: null, guiFocus: null,
@@ -181,6 +183,7 @@ const HANDLERS = {
   },
   FSDJump(state, e) {
     setSystemInfo(state, e);
+    state.location.approach = null; state.bodies = {};
     state.location.docked = false; state.location.station = null; state.location.stationType = null;
     state.location.landed = false;
     state.lastJump = { distance: e.JumpDist ?? null, fuelUsed: e.FuelUsed ?? null, at: e.timestamp || null };
@@ -214,8 +217,15 @@ const HANDLERS = {
     if (e.Body) { state.location.body = e.Body; state.location.bodyType = e.BodyType || null; }
     pushLog(state, e, 'Supercrucero', `Salida · ${e.Body || ''}`);
   },
-  ApproachBody(state, e) { pushLog(state, e, 'Aproximación', e.Body); },
-  LeaveBody(state, e) { pushLog(state, e, 'Alejándose', e.Body); },
+  ApproachBody(state, e) {
+    state.location.approach = { body: e.Body || null, bodyId: e.BodyID ?? null, systemAddress: e.SystemAddress ?? state.location.systemAddress };
+    pushLog(state, e, 'Aproximación', e.Body);
+  },
+  LeaveBody(state, e) { state.location.approach = null; pushLog(state, e, 'Alejándose', e.Body); },
+  Scan(state, e) {
+    // SurfaceGravity viene en m/s²; se guarda en g
+    if (e.BodyName && e.SurfaceGravity != null) state.bodies[e.BodyName] = { gravity: e.SurfaceGravity / 9.80665, radius: e.Radius ?? null, landable: e.Landable ?? null };
+  },
   DockingRequested(state, e) { pushLog(state, e, 'Atraque solicitado', e.StationName); },
   DockingGranted(state, e) {
     state.docking = { active: true, pad: e.LandingPad ?? null, station: e.StationName || null, stationType: e.StationType || null, at: e.timestamp || null };

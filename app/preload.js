@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('edbubble', {
   plotCancel: () => ipcRenderer.invoke('ed:plot-cancel'),
   onPlotStatus: (cb) => ipcRenderer.on('ed:plot-status', (_e, st) => cb(st)),
   log: (msg) => ipcRenderer.send('ed:log', String(msg).slice(0, 4000)),
+  bodies: () => ipcRenderer.invoke('ed:bodies'),
+  onBody: (cb) => ipcRenderer.on('ed:body', (_e, b) => cb(b)),
   onFuelStops: (cb) => ipcRenderer.on('ed:fuelstops', (_e, x) => cb(x)),
   ppTrack: (name) => ipcRenderer.invoke('ed:pp-track', name),
   clipboardRead: () => ipcRenderer.invoke('ed:clipboard-read'),

@@ -146,4 +146,22 @@ function markets({ commodity, reference, minSupply = 1, largePad = false }) {
   });
 }
 
-module.exports = { markets, setFetch, suggest, system, normalise, stationKind, padSize };
+/**
+ * Datos de un cuerpo por su id64 (gravedad en g, radio en km, si se puede aterrizar).
+ * El id64 de un cuerpo es SystemAddress + (BodyID << 55).
+ */
+function bodyId64(systemAddress, bodyId) {
+  if (systemAddress == null || bodyId == null) return null;
+  return (BigInt(systemAddress) + (BigInt(bodyId) << 55n)).toString();
+}
+function body(id64) {
+  if (!id64) return Promise.resolve(null);
+  return cached(`b:${id64}`, async () => {
+    const d = await getJson(`https://spansh.co.uk/api/body/${encodeURIComponent(id64)}`);
+    const r = d.record || d;
+    if (!r || !r.name) return null;
+    return { name: r.name, gravity: r.gravity ?? null, radius: r.radius ?? null, landable: r.is_landable ?? null };
+  });
+}
+
+module.exports = { body, bodyId64, markets, setFetch, suggest, system, normalise, stationKind, padSize };

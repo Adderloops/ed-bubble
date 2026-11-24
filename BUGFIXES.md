@@ -11,6 +11,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 |---|-------|---------------|---------------|--------------|--------|
 | 1 | Estación › Ingenieros mezcla los de naves y los de a pie, y parece que no están todos en grado 5 | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
 | 2 | Vuelo › Aproximación a planeta: el botón «Pegar» no pega las coordenadas | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
+| 3 | Vuelo › Aproximación a planeta: la gravedad sale «—» en la nave | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
 
 ## Detalle
 
@@ -38,3 +39,17 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
   - Se quitan los espacios sobrantes del texto pegado.
 - **Comprobado:** con coordenadas en el portapapeles, el botón «Pegar» las pone en el campo, tenga o no el foco.
 - **Archivos:** `app/main.js`, `core/plot.js`, `app/renderer/app.js`.
+
+### 3 · Gravedad del cuerpo vacía al acercarse a un planeta
+
+- **Informado por:** Specter A.G. (23-11-2026). Iba en la nave, a 137 m del destino, sobre un cuerpo de 0,07 g, y la casilla «Gravedad» mostraba «—».
+- **Encontrado en:** 0.7.0-beta.1 · **Corregido en:** 0.7.0-beta.2
+- **Causa:** la app solo leía la gravedad de `Status.json`, y el juego únicamente escribe ese dato cuando vas **a pie**. En la nave o en el SRV nunca aparecía.
+- **Corrección:** la gravedad se busca en este orden:
+  1. `Status.json`, cuando vas a pie.
+  2. El evento `Scan` del Journal, si has escaneado el cuerpo (`SurfaceGravity` viene en m/s² y se pasa a g).
+  3. Spansh: al llegar el evento `ApproachBody`, la app calcula el id64 del cuerpo (`SystemAddress + BodyID << 55`) y consulta `/api/body/<id64>`. El resultado se guarda para que se vea aunque la ventana se abra después.
+
+  Se muestra con dos decimales por debajo de 1 g (0,07 g) y con uno por encima (2,3 g). Los cuerpos escaneados se olvidan al saltar de sistema.
+- **Comprobado:** prueba unitaria (escaneo, aproximación, id64 contra uno real de Spansh y limpieza al saltar) y prueba de la app completa: al acercarse a un cuerpo, la casilla muestra «0,07 g».
+- **Archivos:** `core/model.js`, `core/spansh.js`, `app/main.js`, `app/preload.js`, `app/renderer/app.js`, `app/test/run-tests.js`.

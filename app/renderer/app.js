@@ -22,6 +22,7 @@ const ui = {
   mk: { key: null, loading: false, list: [], error: null, page: 0, pick: null }, // dónde comprar
   mkFilter: { large: null, surface: true, carriers: false },
   fuelStops: {}, // sistema -> estación con repostaje (Spansh) o null
+  bodyInfo: {}, // datos de cuerpos desde Spansh (gravedad…), por nombre
   coordText: '', coordMsg: null, // coordenadas en planeta: texto escrito y aviso
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
   plot: null, // { running, target, text, ok, error }
@@ -371,7 +372,7 @@ function screenVuelo(s, v) {
   const approach = nearBody
     ? `<div class="in" style="padding:12px;display:flex;justify-content:space-between;align-items:center"><span class="eb">Cuerpo</span><span class="va nowrap" style="font-size:18px">${esc(clean(s.status.bodyName) || clean(s.location.body) || '—')}</span></div>
        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
-         ${stat('Altitud', s.status.altitude != null ? `${nf(s.status.altitude)} m` : '—')}${stat('Gravedad', s.status.gravity != null ? `${nf(s.status.gravity, 2)} g` : '—')}
+         ${stat('Altitud', s.status.altitude != null ? `${nf(s.status.altitude)} m` : '—')}${stat('Gravedad', fmtGravity(s))}
          ${stat('Rumbo', s.status.heading != null ? `${s.status.heading}°` : '—')}${stat('Lat · Long', `${nf(s.status.latitude, 2)} · ${nf(s.status.longitude, 2)}`)}
        </div>`
     : `<div class="in empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:20px;color:var(--dim)">No disponible ahora</span><span class="soft" style="font-size:14px">Aparece al acercarte a un planeta (altitud, rumbo y coordenadas de Status.json).</span></div>`;
@@ -954,6 +955,18 @@ function fuelBlock(s, v) {
 /* ---------- coordenadas en planeta y brújula ---------- */
 const fmtDist = (m) => (m == null ? '—' : m < 1000 ? `${nf(m, 0)} m` : m < 100000 ? `${nf(m / 1000, 1)} km` : `${nf(m / 1000, 0)} km`);
 
+/** Gravedad (g) del cuerpo: a pie la da Status.json; si no, el escaneo del Journal o Spansh. */
+function bodyGravity(s) {
+  if (s.status.gravity != null) return Number(s.status.gravity);
+  const n = s.status.bodyName || (s.location.approach && s.location.approach.body);
+  if (!n) return null;
+  const sc = s.bodies && s.bodies[n];
+  if (sc && sc.gravity != null) return sc.gravity;
+  const sp = ui.bodyInfo[n];
+  return sp && sp.gravity != null ? sp.gravity : null;
+}
+const fmtGravity = (s) => { const g = bodyGravity(s); return g == null ? '—' : `${nf(g, g < 1 ? 2 : 1)} g`; };
+
 function coordControls(s) {
   const t = s.surfaceTarget;
   const msg = ui.coordMsg && Date.now() - ui.coordMsg.at < 5000 ? `<span class="eb ${ui.coordMsg.ok ? 'cyan' : 'red'}">${esc(ui.coordMsg.text)}</span>` : '';
@@ -1031,7 +1044,7 @@ function compassBlock(s, nav) {
         </div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
           ${box('Rumbo obj.', `${nf(nav.bearing, 0)}°`, 'amber')}${box('Tu rumbo', nav.heading != null ? `${nav.heading}°` : '—')}
-          ${box('Altitud', s.status.altitude != null ? fmtDist(s.status.altitude) : '—')}${box('Gravedad', s.status.gravity != null ? `${nf(s.status.gravity, 2)} g` : '—')}
+          ${box('Altitud', s.status.altitude != null ? fmtDist(s.status.altitude) : '—')}${box('Gravedad', fmtGravity(s))}
         </div>
       </div>
     </div>`;
@@ -1704,6 +1717,8 @@ if (window.edbubble) {
   window.edbubble.onUpdate((snap) => { ui.snap = snap; render(); });
   window.edbubble.onControls((c) => { ui.controls = c; render(); });
   window.edbubble.onFuelStops((x) => { ui.fuelStops = x || {}; render(); });
+  if (window.edbubble.bodies) window.edbubble.bodies().then((b) => { ui.bodyInfo = { ...(b || {}), ...ui.bodyInfo }; render(); });
+  if (window.edbubble.onBody) window.edbubble.onBody((b) => { if (b && b.body) { ui.bodyInfo[b.body] = b; render(); } });
   window.edbubble.onPlotStatus((p) => {
     ui.plot = { ...p, at: Date.now() };
     if (!p.running && p.ok) ui.navTab = 'route'; // ver la ruta recién trazada

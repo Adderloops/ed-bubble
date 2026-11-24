@@ -376,6 +376,19 @@ test('combustible: sin recolector avisa dónde te quedas corto; con recolector n
   assert.strictEqual(fuel.fuelPlan(s), null);
 });
 
+test('gravedad del cuerpo: escaneo del Journal (m/s² -> g), cuerpo en aproximación e id64 para Spansh', () => {
+  const s = model.createState();
+  model.applyEvent(s, ev('ApproachBody', { StarSystem: 'X', SystemAddress: 2106387827043, Body: 'X 1 a', BodyID: 2 }));
+  assert.deepStrictEqual(s.location.approach, { body: 'X 1 a', bodyId: 2, systemAddress: 2106387827043 });
+  model.applyEvent(s, ev('Scan', { BodyName: 'X 1 a', BodyID: 2, SurfaceGravity: 0.686466, Radius: 1200000, Landable: true }));
+  assert.ok(Math.abs(s.bodies['X 1 a'].gravity - 0.07) < 0.001);
+  assert.strictEqual(require('../../core/spansh').bodyId64(2106387827043, 2), '72059700425754979');
+  model.applyEvent(s, ev('LeaveBody', { Body: 'X 1 a' }));
+  assert.strictEqual(s.location.approach, null);
+  model.applyEvent(s, ev('FSDJump', { StarSystem: 'Y', SystemAddress: 5, StarPos: [0, 0, 0] }));
+  assert.deepStrictEqual(s.bodies, {});
+});
+
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
   const pads = require('../../core/pads');
   // comprobadas en el juego (Coriolis): 9 a las 8, 25 a las 12, 27 a la 1

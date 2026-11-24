@@ -84,6 +84,22 @@ let last = null;
 let plotting = null; // { cancelled } mientras se traza una ruta
 // Repostaje en ruta: estaciones con "Refuel" en los sistemas a los que llegas (Spansh)
 const fuelStops = { key: null, busy: false, systems: {} };
+/** Gravedad del cuerpo al que te acercas, desde Spansh (Status.json solo la da a pie). */
+let bodyLooked = null;
+const bodyInfo = {}; // por nombre, para la ventana aunque se abra después de la consulta
+async function lookBody(snap) {
+  const a = snap.state.location.approach;
+  const id = a ? spansh.bodyId64(a.systemAddress, a.bodyId) : null;
+  if (!id || id === bodyLooked) return;
+  bodyLooked = id;
+  try {
+    const b = await spansh.body(id);
+    if (!b) return;
+    bodyInfo[a.body] = { ...b, body: a.body };
+    if (win && !win.isDestroyed()) win.webContents.send('ed:body', bodyInfo[a.body]);
+  } catch (e) { bodyLooked = null; logLine(`[spansh] cuerpo ${a.body}: ${e.message}`); }
+}
+
 async function lookFuelStops(snap) {
   const p = snap.view.fuelPlan;
   if (!p || p.ok || process.env.ED_BUBBLE_OFFLINE === '1') return;
@@ -213,13 +229,14 @@ app.whenReady().then(() => {
   // Solo desarrollo: ED_BUBBLE_SPANSH_FIXTURE=carpeta con search.json y suggest.json (sin red)
   if (process.env.ED_BUBBLE_SPANSH_FIXTURE) {
     const dir = process.env.ED_BUBBLE_SPANSH_FIXTURE;
-    spansh.setFetch(async (url) => new Response(fs.readFileSync(path.join(dir, /field_values/.test(url) ? 'suggest.json' : /stations\/search/.test(url) ? 'markets.json' : 'search.json'))));
+    spansh.setFetch(async (url) => new Response(fs.readFileSync(path.join(dir, /field_values/.test(url) ? 'suggest.json' : /stations\/search/.test(url) ? 'markets.json' : /api\/body\//.test(url) ? 'body.json' : 'search.json'))));
   }
   engine = new Engine({ folder: process.env.ED_JOURNAL_FOLDER || undefined });
   engine.on('update', (snap) => {
     last = snap;
     if (win && !win.isDestroyed()) win.webContents.send('ed:update', snap);
     lookFuelStops(snap);
+    lookBody(snap);
   });
   engine.on('warning', (msg) => { console.warn('[engine]', msg); logLine(`[motor] ${msg}`); });
   engine.start();
@@ -345,6 +362,7 @@ app.whenReady().then(() => {
     const f = controls.folder || binds.defaultBindingsFolder();
     return fs.existsSync(f) ? shell.openPath(f) : 'No existe la carpeta';
   });
+  ipcMain.handle('ed:bodies', () => bodyInfo);
   ipcMain.handle('ed:open-data', () => shell.openPath(app.getPath('userData')));
   // Coordenadas de destino en un planeta (se guardan entre sesiones)
   const TARGET_FILE = path.join(app.getPath('userData'), 'surface-target.json');
