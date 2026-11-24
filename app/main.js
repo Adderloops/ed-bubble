@@ -237,6 +237,13 @@ app.whenReady().then(() => {
     if (win && !win.isDestroyed()) win.webContents.send('ed:update', snap);
     lookFuelStops(snap);
     lookBody(snap);
+    // destino fijado sin cuerpo: se completa al llegar a uno
+    const nt = geo.adoptBody(snap.state.surfaceTarget, snap.state);
+    if (nt) {
+      engine.setSurfaceTarget(nt);
+      try { fs.writeFileSync(path.join(app.getPath('userData'), 'surface-target.json'), JSON.stringify(nt)); } catch (e) { /* no se guarda */ }
+      logLine(`[destino] cuerpo completado: ${nt.body}`);
+    }
   });
   engine.on('warning', (msg) => { console.warn('[engine]', msg); logLine(`[motor] ${msg}`); });
   engine.start();

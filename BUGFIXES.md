@@ -12,6 +12,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 1 | Estación › Ingenieros mezcla los de naves y los de a pie, y parece que no están todos en grado 5 | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
 | 2 | Vuelo › Aproximación a planeta: el botón «Pegar» no pega las coordenadas | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
 | 3 | Vuelo › Aproximación a planeta: la gravedad sale «—» en la nave | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
+| 4 | Vuelo › Aproximación a planeta: el destino fijado se queda en «Cuerpo sin indicar» | Adder (captura de Specter A.G.) | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
 
 ## Detalle
 
@@ -53,3 +54,12 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
   Se muestra con dos decimales por debajo de 1 g (0,07 g) y con uno por encima (2,3 g). Los cuerpos escaneados se olvidan al saltar de sistema.
 - **Comprobado:** prueba unitaria (escaneo, aproximación, id64 contra uno real de Spansh y limpieza al saltar) y prueba de la app completa: al acercarse a un cuerpo, la casilla muestra «0,07 g».
 - **Archivos:** `core/model.js`, `core/spansh.js`, `app/main.js`, `app/preload.js`, `app/renderer/app.js`, `app/test/run-tests.js`.
+
+### 4 · El destino fijado se queda en «Cuerpo sin indicar»
+
+- **Informado por:** Adder, visto en la captura de Specter A.G. del error 3.
+- **Encontrado en:** 0.7.0-beta.1 · **Corregido en:** 0.7.0-beta.2
+- **Qué pasaba:** al fijar unas coordenadas antes de entrar en la órbita del planeta, la app aún no sabía en qué cuerpo estabas. El destino se guardaba sin cuerpo y ya no se completaba, así que no se podía avisar de «estás en otro cuerpo».
+- **Corrección:** si el destino no tiene cuerpo, se completa solo con el primero al que llegas: el `BodyName` de `Status.json` o el cuerpo de `ApproachBody`. Se guarda en `surface-target.json` y se anota en `ed-bubble.log`. Un destino que ya tiene cuerpo no se cambia.
+- **Comprobado:** prueba unitaria y prueba de la app completa: un destino guardado sin cuerpo pasa a tener el cuerpo de la aproximación, también en el archivo.
+- **Archivos:** `core/geo.js`, `app/main.js`, `app/test/run-tests.js`.

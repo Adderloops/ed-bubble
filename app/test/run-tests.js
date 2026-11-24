@@ -389,6 +389,15 @@ test('gravedad del cuerpo: escaneo del Journal (m/s² -> g), cuerpo en aproximac
   assert.deepStrictEqual(s.bodies, {});
 });
 
+test('destino en superficie: completa el cuerpo al llegar si se fijó sin él', () => {
+  const geo = require('../../core/geo');
+  const t = { lat: -45.7, lon: 94.6, body: null };
+  assert.strictEqual(geo.adoptBody(t, { status: { bodyName: null }, location: { approach: null } }), null);
+  assert.strictEqual(geo.adoptBody(t, { status: { bodyName: 'X 1 a' }, location: {} }).body, 'X 1 a');
+  assert.strictEqual(geo.adoptBody(t, { status: {}, location: { approach: { body: 'X 2' } } }).body, 'X 2');
+  assert.strictEqual(geo.adoptBody({ ...t, body: 'Y' }, { status: { bodyName: 'X 1 a' }, location: {} }), null); // no cambia uno ya puesto
+});
+
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
   const pads = require('../../core/pads');
   // comprobadas en el juego (Coriolis): 9 a las 8, 25 a las 12, 27 a la 1

@@ -59,4 +59,14 @@ function surfaceNav(status, target) {
   return { bearing: b, distance: d, relative: rel, sameBody, heading: status.heading, altitude: status.altitude };
 }
 
-module.exports = { parseCoords, bearing, distance, relative, surfaceNav };
+/**
+ * Si el destino se fijó sin saber el cuerpo (fuera de su órbita), lo completa con el
+ * cuerpo en el que estás al llegar. Devuelve el destino nuevo o null si no cambia.
+ */
+function adoptBody(target, state) {
+  if (!target || target.body) return null;
+  const body = (state.status && state.status.bodyName) || (state.location && state.location.approach && state.location.approach.body) || null;
+  return body ? { ...target, body } : null;
+}
+
+module.exports = { adoptBody, parseCoords, bearing, distance, relative, surfaceNav };
