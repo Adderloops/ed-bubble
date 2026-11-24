@@ -1787,7 +1787,7 @@ function slotLayout(sh) {
   return `<div style="display:flex;flex-direction:column;gap:6px">
     <span class="eb dim">Núcleo</span><span style="font-size:13px;line-height:1.4">${std.map((c, i) => `${names[i] || '?'} ${c}`).join(' · ')}</span>
     <span class="eb dim">Armas y utilidades</span><span style="font-size:13px">${hpTxt || 'Ninguna'} · ${ut} de utilidad</span>
-    <span class="eb dim">Internos opcionales</span><span style="font-size:13px;line-height:1.4">${sh.slots.internal.map((x) => (typeof x === 'number' ? x : `${x.cl} (${{ Military: 'militar', PlanetaryApproachSuite: 'aprox. planetaria', Passenger: 'pasajeros' }[x.name] || x.name})`)).join(' · ')}</span>
+    <span class="eb dim">Internos opcionales</span><span style="font-size:13px;line-height:1.4">${sh.slots.internal.map((x) => (typeof x === 'number' ? x : `${x.cl} (${{ Military: 'militar', PlanetaryApproachSuite: 'aprox. planetaria', Passenger: 'pasajeros', Storage: 'almacén' }[x.name] || x.name})`)).join(' · ')}</span>
   </div>`;
 }
 function screenEquipo(s, v) {
