@@ -105,6 +105,6 @@ No está firmado: la primera vez Windows SmartScreen avisa («Windows protegió 
 
 ## Pendiente
 
-- Interfaz en inglés.
+- Traducción de la interfaz a inglés, francés, italiano y alemán (ahora solo español; en Ajustes › Idioma sale «English · pronto»).
 
 - Brújula de coordenadas (y quizá el esquema de atraque) en **overlay** sobre la pantalla del juego: ventana transparente, siempre encima y que no capture el ratón, con el juego en ventana sin bordes.
