@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('edbubble', {
   bodies: () => ipcRenderer.invoke('ed:bodies'),
   recipes: () => ipcRenderer.invoke('ed:recipes'),
   colCosts: () => ipcRenderer.invoke('ed:colcosts'),
+  shipData: () => ipcRenderer.invoke('ed:shipdata'),
   skull: () => ipcRenderer.invoke('ed:skull'),
   onSkull: (cb) => ipcRenderer.on('ed:skull', (_e, x) => cb(x)),
   skullConnect: () => ipcRenderer.invoke('ed:skull-connect'),

@@ -180,6 +180,13 @@ const HANDLERS = {
       const mm = fsd && String(fsd.Item).match(/size(\d)_class(\d)/i);
       S.fsdSize = mm ? Number(mm[1]) : null;
       S.hasFuelScoop = e.Modules.some((m) => /fuelscoop/i.test(m.Item || ''));
+      // módulos montados, con su ingeniería (pantalla Equipo)
+      S.modules = e.Modules.filter((m) => !COSMETIC.test(m.Slot || '')).map((m) => ({
+        slot: m.Slot, item: String(m.Item || '').toLowerCase(), on: m.On !== false, priority: m.Priority ?? null,
+        health: m.Health ?? null, value: m.Value ?? null,
+        eng: m.Engineering ? { bp: m.Engineering.BlueprintName || null, level: m.Engineering.Level ?? null, quality: m.Engineering.Quality ?? null, engineer: m.Engineering.Engineer || null, exp: m.Engineering.ExperimentalEffect || null, expName: m.Engineering.ExperimentalEffect_Localised || null } : null,
+      }));
+      S.shipValue = e.HullValue != null ? { hull: e.HullValue, modules: e.ModulesValue ?? null } : (S.shipValue || null);
     }
   },
   Location(state, e) {
@@ -444,6 +451,8 @@ function addMat(state, name, n) {
   const k = String(name).toLowerCase();
   state.materials[k] = Math.max(0, (state.materials[k] || 0) + (Number(n) || 0));
 }
+// ranuras de aspecto (pintura, cabina, voz…) que no son módulos
+const COSMETIC = /^(PaintJob|ShipCockpit|CargoHatch|VesselVoice|Decal\d*|ShipName\d*|ShipID\d*|Bobble\d*|WeaponColour|EngineColour|StringLights|ShipKitSpoiler|ShipKitWings|ShipKitTail|ShipKitBumper)$/i;
 function suitFrom(raw, id, mods) { return { id, key: String(raw || '').toLowerCase(), name: suitName(raw), grade: gradeOf(raw), mods: mods || [] }; }
 function weaponFrom(m) {
   return { id: m.SuitModuleID, key: m.ModuleName || '', name: m.ModuleName_Localised || m.ModuleName || '', grade: m.Class ?? null, mods: m.WeaponMods || [], slot: m.SlotName || null };

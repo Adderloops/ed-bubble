@@ -189,3 +189,7 @@ button.eng-mod.click:hover { color: #fff; }
 .plan-row.head { cursor: default; padding-top: 0; padding-bottom: 0; }
 .plan-row.sel { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber) inset; }
 .plan-cargo { display: grid; grid-template-columns: 230px minmax(0,1fr) 90px; gap: 10px; align-items: center; font-size: 14px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+/* Equipo */
+.eq-mod { display: flex; flex-direction: column; gap: 1px; padding: 4px 12px; min-width: 0; }
+.eq-mod.off { opacity: .55; }
+.eq-table { display: grid; gap: 4px 12px; align-items: baseline; font-size: 14px; }

@@ -591,6 +591,25 @@ test('colonización: costes de referencia por tipo de construcción (SrvSurvey)'
   assert.strictEqual(cc.tripsFor(53723, 1148), 47);
 });
 
+test('equipo: naves y módulos (coriolis + EDCD) y módulos montados del Loadout', () => {
+  const d = require('../../core/data/shipdata.json');
+  assert.ok(Object.keys(d.ships).length >= 49);
+  assert.strictEqual(d.ships.anaconda.spec.class, 3);
+  assert.deepStrictEqual(d.ships.anaconda.slots.standard, [8, 7, 6, 5, 8, 8, 5]);
+  const fsd = d.modules.int_hyperdrive_size5_class5;
+  assert.deepStrictEqual([fsd.n, fsd.cl, fsd.r, fsd.c], ['Frame Shift Drive', 5, 'A', 'standard']);
+  assert.ok(fsd.s.optmass > 0);
+  const model = require('../../core/model');
+  const s = model.createState();
+  model.applyEvent(s, { event: 'Loadout', Ship: 'anaconda', ShipName: 'Prueba', HullValue: 100, ModulesValue: 50, Modules: [
+    { Slot: 'FrameShiftDrive', Item: 'Int_Hyperdrive_Size5_Class5', On: true, Engineering: { BlueprintName: 'FSD_LongRange', Level: 5, ExperimentalEffect: 'special_fsd_heavy' } },
+    { Slot: 'PaintJob', Item: 'paintjob_anaconda_default' },
+  ] });
+  assert.strictEqual(s.ship.modules.length, 1);
+  assert.deepStrictEqual([s.ship.modules[0].item, s.ship.modules[0].eng.bp, s.ship.modules[0].eng.level, s.ship.modules[0].eng.exp], ['int_hyperdrive_size5_class5', 'FSD_LongRange', 5, 'special_fsd_heavy']);
+  assert.deepStrictEqual(s.ship.shipValue, { hull: 100, modules: 50 });
+});
+
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
   const pads = require('../../core/pads');
   // comprobadas en el juego (Coriolis): 9 a las 8, 25 a las 12, 27 a la 1

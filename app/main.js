@@ -68,7 +68,7 @@ function prefs() {
   delete p.ppTracked; delete p.skull; delete p.bindsFile; // datos internos, no son ajustes de la ventana
   return p;
 }
-const SECTION_IDS = ['puente', 'vuelo', 'orbita', 'mineria', 'apie', 'ingenieros', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
+const SECTION_IDS = ['puente', 'vuelo', 'orbita', 'equipo', 'mineria', 'apie', 'ingenieros', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
 /** Valida un ajuste que llega de la ventana; devuelve el valor limpio o undefined. */
 function cleanPref(key, value) {
   const bool = (x) => (typeof x === 'boolean' ? x : undefined);
@@ -295,7 +295,7 @@ function createWindow() {
     win.webContents.once('did-finish-load', async () => {
       const out = process.env.ED_BUBBLE_SHOT;
       await new Promise((r) => setTimeout(r, 2500));
-      for (const sec of ['puente', 'vuelo', 'orbita', 'mineria', 'apie', 'ingenieros', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles']) {
+      for (const sec of ['puente', 'vuelo', 'orbita', 'equipo', 'mineria', 'apie', 'ingenieros', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles']) {
         await win.webContents.executeJavaScript(`ui.section='${sec}'; ui.autoJump=false; if ('${sec}' === 'ajustes') loadSettingsInfo(); render();`);
         await new Promise((r) => setTimeout(r, 400));
         const img = await win.webContents.capturePage();
@@ -492,6 +492,14 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('ed:bodies', () => bodyInfo);
   // recetas de ingeniería de nave (datos fijos; el renderer las pide una vez)
+  // naves y módulos (datos fijos: coriolis-data + EDCD FDevIDs), con nombres en español de los módulos conocidos
+  ipcMain.handle('ed:shipdata', () => {
+    const d = require('../core/data/shipdata.json');
+    const norm = (x) => String(x).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const es = {};
+    for (const [en, v] of Object.entries(require('../core/shipengineers').MODULES)) es[norm(en)] = v.es;
+    return { ships: d.ships, modules: d.modules, es };
+  });
   // mercancías por tipo de construcción de colonización (datos fijos de SrvSurvey / Raven Colonial)
   ipcMain.handle('ed:colcosts', () => require('../core/colcosts').costList());
   ipcMain.handle('ed:recipes', () => { const b = require('../core/shipblueprints'); return { mats: b.MATS, blueprints: b.BLUEPRINTS, specials: b.SPECIALS, modules: b.MODULE_RECIPES }; });

@@ -76,6 +76,16 @@ Sección del grupo Viaje (Odyssey):
 - Ranuras: cada traje y arma muestra cuántas ranuras de mejora ocupa de las que da su grado (una por grado a partir de G2).
 - Mejoras de ingeniero: pestaña «Mejoras» junto a Taquilla y Mochila (o tocando el traje o un arma del equipo). Lista las mejoras que aún no lleva esa pieza, con lo que te falta, y al tocar una muestra sus materiales y los ingenieros que la montan. Las mejoras de arma por tipo (alcance, daño en la cabeza, precisión sin apuntar) usan la variante del arma: cinética (Kinematic), láser (Takada) o plasma (Manticore). El acceso a cada ingeniero sale del evento `EngineerProgress` del diario: en Odyssey «Invited» ya da acceso. Si no tienes acceso, dice qué pide para desbloquearlo. Datos en `core/odymods.js`.
 
+## Equipo
+
+Sección del grupo Nave, con tres pestañas:
+
+- Tu nave: la nave actual (del evento `Loadout`) con salto máximo, carga, casco, reembolso y cuántos módulos llevan ingeniería, y sus módulos por grupo (núcleo, armas y utilidades, internos opcionales) con clase, nombre y la receta de ingeniería con grado y experimental.
+- Naves: las naves del juego con fabricante, plataforma, precio, velocidad, escudo y blindaje base, masa, masslock y su reparto de ranuras.
+- Módulos: por categoría (núcleo, opcionales, armas, utilidades), cada módulo con sus variantes por clase y grado: masa, energía, precio y sus valores clave (masa óptima, combustible por salto, generación, carga, daño, alcance…).
+
+Datos en `core/data/shipdata.json`: lista de naves y módulos de EDCD FDevIDs (shipyard.csv, outfitting.csv) con las características de coriolis-data. Faltan las fichas de la Lynx Highliner y la Anaconda Mk II y las características de unos 300 módulos recientes (salen con «—»).
+
 ## Colonización · planificar
 
 Botón «Planificar» en Colonización (y pantalla por defecto si aún no tienes construcciones): los 55 tipos de construcción (orbitales y de superficie) con su nivel, el total de toneladas y los viajes con tu bodega, y al elegir uno, la lista de mercancías con sus toneladas. Son cantidades de referencia: el juego puede pedir algo más o algo menos, y el puerto primario cuesta más; en cuanto la construcción existe, la app usa lo que dice el juego. Datos: `core/data/colonization-costs.json`, de SrvSurvey (autor de Raven Colonial), GPLv3.

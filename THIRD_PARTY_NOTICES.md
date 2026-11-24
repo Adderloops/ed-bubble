@@ -58,3 +58,7 @@ Las recetas que coriolis-data no trae (anti-guardián de Ram Tah para los módul
 ## Costes de construcción de colonización (SrvSurvey / Raven Colonial)
 
 `core/data/colonization-costs.json` es una copia sin cambios de `SrvSurvey/colonization-costs2.json` del proyecto SrvSurvey (https://github.com/njthomson/SrvSurvey), del autor de Raven Colonial (https://ravencolonial.com), publicado bajo la GNU General Public License v3.0. Se usa en `core/colcosts.js` para planificar construcciones. Las cantidades son datos del juego, de Frontier Developments.
+
+## Naves y módulos
+
+`core/data/shipdata.json` combina la lista de naves y módulos de EDCD FDevIDs (shipyard.csv y outfitting.csv, https://github.com/EDCD/FDevIDs) con las características de naves y módulos de coriolis-data (https://github.com/EDCD/coriolis-data). Según la licencia de coriolis-data, sus datos son propiedad de Frontier Developments plc y están sujetos a sus términos; no se usa código de Coriolis.

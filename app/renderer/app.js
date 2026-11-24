@@ -4,7 +4,7 @@
 
 const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
-  { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo' }, { id: 'srv', label: 'SRV' },
+  { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo', built: true }, { id: 'srv', label: 'SRV' },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie', built: true },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
   { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
@@ -30,6 +30,7 @@ const ui = {
   engKind: 'ship', engCat: null, engModule: null, engPage: 0, engOpen: null, // pantalla Ingenieros
   recipes: null, engRecipe: null, engBp: null, engExp: false, // recetas de ingeniería de nave
   colMode: null, colCosts: null, planLoc: 'all', planPage: 0, planSel: null, // Colonización: planificar por tipo
+  shipData: null, eqTab: 'mine', eqShipPage: 0, eqShip: null, eqCat: 'standard', eqGrpPage: 0, eqGrp: null, eqPages: {}, // Equipo: tu nave, naves y módulos
   skull: null, mineTab: null, sitesPage: 0, prospPage: 0, skullMsg: null, // minería
   coordText: '', coordMsg: null, // coordenadas en planeta: texto escrito y aviso
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
@@ -1727,6 +1728,151 @@ function screenEstacion(s, v) {
   </div>`;
 }
 
+/* ---------- Equipo: tu nave, naves y módulos ---------- */
+const PAD = { 1: 'S', 2: 'M', 3: 'L' };
+const CORE_SLOTS = [['PowerPlant', 'Planta de energía'], ['MainEngines', 'Propulsores'], ['FrameShiftDrive', 'Motor FSD'], ['LifeSupport', 'Soporte vital'], ['PowerDistributor', 'Distribuidor'], ['Radar', 'Sensores'], ['FuelTank', 'Tanque de combustible'], ['Armour', 'Blindaje']];
+const HP_SIZE = { Huge: 'enorme', Large: 'grande', Medium: 'mediana', Small: 'pequeña' };
+const CAT_ES = { standard: 'Núcleo', internal: 'Opcionales', hardpoint: 'Armas', utility: 'Utilidades' };
+const STAT_ES = { mass: 'Masa t', power: 'Energía MW', cost: 'Precio', integrity: 'Integridad', optmass: 'Masa óptima', maxfuel: 'Comb./salto', pgen: 'Genera MW', cargo: 'Carga t', damage: 'Daño', range: 'Alcance m', rate: 'Ritmo', regen: 'Regen.', proberadius: 'Radio sonda', fuel: 'Combustible t', ammo: 'Munición', clip: 'Cargador', shieldboost: 'Escudo +', hullboost: 'Casco +', hullreinforcement: 'Refuerzo', passengers: 'Pasajeros', bins: 'Celdas', boot: 'Arranque s' };
+const KEY_STATS = ['optmass', 'maxfuel', 'pgen', 'cargo', 'fuel', 'damage', 'range', 'rate', 'regen', 'shieldboost', 'hullreinforcement', 'passengers', 'ammo', 'proberadius'];
+function loadShipData() {
+  if (ui.shipData || !window.edbubble || !window.edbubble.shipData) return;
+  ui.shipData = 'loading';
+  window.edbubble.shipData().then((r) => { ui.shipData = r; render(); }).catch(() => { ui.shipData = null; });
+  loadRecipes();
+}
+const modNameEs = (D, n) => D.es[String(n).toLowerCase().replace(/[^a-z0-9]/g, '')] || n;
+function modLabel(D, item) {
+  const m = D.modules[item];
+  if (!m) return { text: item, sub: '' };
+  const mount = m.m ? ` · ${{ Fixed: 'fija', Gimballed: 'cardán', Turreted: 'torreta' }[m.m] || m.m}` : '';
+  return { text: `${m.cl}${m.r} ${modNameEs(D, m.n)}`, sub: `${m.n}${mount}` };
+}
+function engLine(e) {
+  if (!e || !e.bp) return '';
+  const R = ui.recipes && ui.recipes !== 'loading' ? ui.recipes : null;
+  const bp = R && R.blueprints[e.bp] ? R.blueprints[e.bp].name : e.bp.replace(/_/g, ' ');
+  const ex = e.exp ? (R && R.specials[e.exp] ? R.specials[e.exp].name : (e.expName || e.exp)) : '';
+  return `<span class="eb cyan" style="font-size:10px">${esc(bp)} G${esc(e.level ?? '?')}${ex ? ` · ${esc(ex)}` : ''}</span>`;
+}
+function slotName(slot) {
+  const core = CORE_SLOTS.find(([k]) => k === slot);
+  if (core) return core[1];
+  let m = /^(Huge|Large|Medium|Small)Hardpoint(\d+)$/.exec(slot);
+  if (m) return `Arma ${HP_SIZE[m[1]]} ${m[2]}`;
+  m = /^TinyHardpoint(\d+)$/.exec(slot);
+  if (m) return `Utilidad ${m[1]}`;
+  m = /^Slot(\d+)_Size(\d+)$/.exec(slot);
+  if (m) return `Interno ${Number(m[1])} · clase ${m[2]}`;
+  if (/^Military/.test(slot)) return 'Militar';
+  if (slot === 'PlanetaryApproachSuite') return 'Aproximación planetaria';
+  m = /^Cargo(\d+)$/.exec(slot);
+  if (m) return `Bodega fija ${Number(m[1])}`;
+  return slot;
+}
+function shipStats(sh) {
+  const p = sh.spec || {};
+  if (!sh.spec) return '<span class="eb amber">Sin ficha todavía: es una nave reciente que no está en los datos abiertos</span>';
+  return `<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+    ${stat('Plataforma', PAD[p.class] || '—')}${stat('Precio', p.retailCost ? `${nf(p.retailCost / 1e6, 2)} M cr` : '—')}${stat('Velocidad', p.speed ? `${nf(p.speed)} / ${nf(p.boost)}` : '—')}${stat('Tripulación', p.crew ?? '—')}
+    ${stat('Escudo base', p.baseShieldStrength != null ? nf(p.baseShieldStrength) : '—')}${stat('Blindaje base', p.baseArmour != null ? nf(p.baseArmour) : '—')}${stat('Masa casco', p.hullMass != null ? `${nf(p.hullMass)} t` : '—')}${stat('Masslock', p.masslock ?? '—')}
+  </div>`;
+}
+function slotLayout(sh) {
+  if (!sh.slots) return '';
+  const sz = (x) => (typeof x === 'number' ? x : x.cl);
+  const hp = sh.slots.hardpoints.filter((x) => sz(x) > 0); const ut = sh.slots.hardpoints.filter((x) => sz(x) === 0).length;
+  const hpTxt = [4, 3, 2, 1].map((k) => { const n = hp.filter((x) => sz(x) === k).length; return n ? `${n} ${{ 4: 'enorme', 3: 'grande', 2: 'mediana', 1: 'pequeña' }[k]}${n > 1 ? (k === 4 ? 's' : 's') : ''}` : ''; }).filter(Boolean).join(' · ');
+  const std = sh.slots.standard; const names = ['Planta', 'Propulsores', 'FSD', 'Soporte vital', 'Distribuidor', 'Sensores', 'Tanque'];
+  return `<div style="display:flex;flex-direction:column;gap:6px">
+    <span class="eb dim">Núcleo</span><span style="font-size:13px;line-height:1.4">${std.map((c, i) => `${names[i] || '?'} ${c}`).join(' · ')}</span>
+    <span class="eb dim">Armas y utilidades</span><span style="font-size:13px">${hpTxt || 'Ninguna'} · ${ut} de utilidad</span>
+    <span class="eb dim">Internos opcionales</span><span style="font-size:13px;line-height:1.4">${sh.slots.internal.map((x) => (typeof x === 'number' ? x : `${x.cl} (${{ Military: 'militar', PlanetaryApproachSuite: 'aprox. planetaria' }[x.name] || x.name})`)).join(' · ')}</span>
+  </div>`;
+}
+function screenEquipo(s, v) {
+  loadShipData();
+  const D = ui.shipData && ui.shipData !== 'loading' ? ui.shipData : null;
+  const tabs = `<section class="pn card" style="gap:10px"><div style="display:flex;gap:8px;align-items:center">${[['mine', 'Tu nave'], ['ships', 'Naves'], ['mods', 'Módulos']].map(([k, t]) => `<button type="button" class="tab ${ui.eqTab === k ? 'on' : ''}" data-eqtab="${k}">${t}</button>`).join('')}
+    <span class="eb dim" style="margin-left:auto">Datos: coriolis-data y EDCD FDevIDs</span></div></section>`;
+  if (!D) return `<div style="display:flex;flex-direction:column;gap:12px;height:100%">${tabs}<section class="pn card"><div class="empty">Cargando datos de naves…</div></section></div>`;
+  let body;
+  if (ui.eqTab === 'ships') body = eqShips(D);
+  else if (ui.eqTab === 'mods') body = eqMods(D);
+  else body = eqMine(s, D);
+  return `<div style="display:flex;flex-direction:column;gap:12px;min-height:0;height:100%">${tabs}${body}</div>`;
+}
+function eqMine(s, D) {
+  const S = s.ship || {};
+  const sh = D.ships[String(S.type || '').toLowerCase()] || null;
+  const mods = S.modules || [];
+  if (!S.type || !mods.length) return '<section class="pn card"><div class="empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">Sin datos de tu nave</span><span style="font-size:14px">El juego los escribe al empezar la partida y al cambiar de nave o de módulos.</span></div></section>';
+  const row = (m) => { const l = modLabel(D, m.item); return `<div class="in eq-mod ${m.on ? '' : 'off'}"><span class="eb dim" style="font-size:10px">${esc(slotName(m.slot))}${m.on ? '' : ' · apagado'}</span><span class="va nowrap" style="font-size:15px" title="${esc(l.sub)}">${esc(l.text)}</span>${engLine(m.eng)}</div>`; };
+  const core = CORE_SLOTS.map(([k]) => mods.find((m) => m.slot === k)).filter(Boolean);
+  const hard = mods.filter((m) => /Hardpoint/.test(m.slot));
+  const opt = mods.filter((m) => !CORE_SLOTS.some(([k]) => k === m.slot) && !/Hardpoint/.test(m.slot));
+  const engN = mods.filter((m) => m.eng && m.eng.bp).length;
+  const hero = `<section class="pn card" style="gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px">
+        <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span class="eb">${esc(sh ? sh.n : S.typeLocalised || S.type)}${S.ident ? ` · ${esc(S.ident)}` : ''}${sh && sh.spec ? ` · ${esc(sh.spec.manufacturer)}` : ''}</span><span class="ti nowrap" style="font-size:30px">${esc(S.name || sh?.n || '—')}</span></span>
+        <div style="display:grid;grid-template-columns:repeat(5,auto);gap:8px">${stat('Salto máx.', S.maxJumpRange ? `${nf(S.maxJumpRange, 2)} ly` : '—', 'cyan')}${stat('Carga', S.cargoCapacity != null ? `${nf(S.cargoCapacity)} t` : '—')}${stat('Casco', S.hull != null ? `${nf(S.hull * 100, 0)} %` : '—')}${stat('Reembolso', S.rebuy ? `${nf(S.rebuy)} cr` : '—')}${stat('Ingeniería', `${engN} / ${mods.length}`)}</div>
+      </div></section>`;
+  const PER = 13;
+  const col = (title, list, key) => {
+    const pages = Math.max(1, Math.ceil(list.length / PER));
+    const pg = Math.min(ui.eqPages[key] || 0, pages - 1); ui.eqPages[key] = pg;
+    return `<section class="pn card" style="min-height:0;overflow:hidden"><span class="ti" style="font-size:16px">${title}</span><div style="display:flex;flex-direction:column;gap:4px">${list.slice(pg * PER, (pg + 1) * PER).map(row).join('') || '<div class="empty">—</div>'}</div>${pages > 1 ? `<span style="display:flex;justify-content:flex-end;margin-top:auto">${pager2('eq' + key, pg, pages)}</span>` : ''}</section>`;
+  };
+  return `${hero}<div style="flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-height:0">${col('Núcleo', core, 'core')}${col('Armas y utilidades', hard, 'hard')}${col('Internos opcionales', opt, 'opt')}</div>`;
+}
+const SHIP_PAGE = 20;
+function eqShips(D) {
+  const list = Object.entries(D.ships).map(([k, v]) => ({ k, ...v })).sort((a, b) => a.n.localeCompare(b.n));
+  const pages = Math.max(1, Math.ceil(list.length / SHIP_PAGE));
+  ui.eqShipPage = Math.min(ui.eqShipPage, pages - 1);
+  const sel = list.find((x) => x.k === ui.eqShip) || list[0];
+  const rows = list.slice(ui.eqShipPage * SHIP_PAGE, (ui.eqShipPage + 1) * SHIP_PAGE).map((x) => `<button type="button" class="in plan-row ${x.k === sel.k ? 'sel' : ''}" data-eqship="${esc(x.k)}">
+      <span style="display:flex;flex-direction:column;min-width:0;text-align:left"><span class="va nowrap" style="font-size:16px">${esc(x.n)}</span><span class="eb dim" style="font-size:10px">${esc(x.spec ? x.spec.manufacturer : 'Sin ficha')}</span></span>
+      <span class="num soft" style="text-align:right">${x.spec ? PAD[x.spec.class] || '—' : '—'}</span>
+      <span class="num soft" style="text-align:right">${x.spec && x.spec.retailCost ? `${nf(x.spec.retailCost / 1e6, 1)} M` : '—'}</span></button>`).join('');
+  return `<div style="flex:1;display:grid;grid-template-columns:minmax(0,1fr) 640px;gap:12px;min-height:0">
+    <section class="pn card" style="min-height:0;overflow:hidden"><div class="plan-row head"><span class="eb">Nave</span><span class="eb" style="text-align:right">Plataforma</span><span class="eb" style="text-align:right">Precio</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px">${rows}</div><span style="display:flex;justify-content:flex-end;margin-top:auto">${pager2('eqship', ui.eqShipPage, pages)}</span></section>
+    <section class="pn card" style="min-height:0;overflow:hidden"><span class="ti" style="font-size:24px">${esc(sel.n)}</span><span class="eb dim">${esc(sel.spec ? sel.spec.manufacturer : '')}</span>${shipStats(sel)}${slotLayout(sel)}</section></div>`;
+}
+const GRP_PAGE = 14;
+function eqMods(D) {
+  const cats = ['standard', 'internal', 'hardpoint', 'utility'];
+  const groups = {};
+  for (const [k, m] of Object.entries(D.modules)) {
+    if (m.c !== ui.eqCat || m.sh || /_free$|_default$/.test(k)) continue;
+    (groups[m.n] = groups[m.n] || []).push({ k, ...m });
+  }
+  const names = Object.keys(groups).sort((a, b) => modNameEs(D, a).localeCompare(modNameEs(D, b), 'es'));
+  const pages = Math.max(1, Math.ceil(names.length / GRP_PAGE));
+  ui.eqGrpPage = Math.min(ui.eqGrpPage, pages - 1);
+  const sel = groups[ui.eqGrp] ? ui.eqGrp : names[0];
+  const catTabs = `<div style="display:flex;gap:6px">${cats.map((c) => `<button type="button" class="tab small ${ui.eqCat === c ? 'on' : ''}" data-eqcat="${c}">${CAT_ES[c]}</button>`).join('')}</div>`;
+  const rows = names.slice(ui.eqGrpPage * GRP_PAGE, (ui.eqGrpPage + 1) * GRP_PAGE).map((n) => `<button type="button" class="in plan-row ${n === sel ? 'sel' : ''}" data-eqgrp="${esc(n)}" style="grid-template-columns:minmax(0,1fr) 70px">
+      <span style="display:flex;flex-direction:column;min-width:0;text-align:left"><span class="va nowrap">${esc(modNameEs(D, n))}</span>${modNameEs(D, n) !== n ? `<span class="eb dim" style="font-size:10px">${esc(n)}</span>` : ''}</span><span class="num soft" style="text-align:right">${groups[n].length}</span></button>`).join('');
+  let table = '<div class="empty">Elige un módulo.</div>';
+  if (sel) {
+    const vars = groups[sel].slice().sort((a, b) => (Number(b.cl) || 0) - (Number(a.cl) || 0) || String(a.r).localeCompare(String(b.r)) || String(a.m || '').localeCompare(String(b.m || '')));
+    const extra = KEY_STATS.filter((f) => vars.some((x) => x.s && x.s[f] != null)).slice(0, 3);
+    const cols = ['mass', 'power', 'cost', ...extra];
+    const fmtV = (f, val) => (val == null ? '—' : f === 'cost' ? `${nf(val)}` : nf(val, Math.abs(val) < 10 && val % 1 ? 2 : 0));
+    const MAX = 30;
+    table = `<span class="ti" style="font-size:20px">${esc(modNameEs(D, sel))}</span>
+      <div class="eq-table" style="grid-template-columns:90px repeat(${cols.length},minmax(0,1fr))"><span class="eb">Clase</span>${cols.map((f) => `<span class="eb" style="text-align:right">${STAT_ES[f] || f}</span>`).join('')}
+      ${vars.slice(0, MAX).map((x) => `<span class="num">${esc(`${x.cl}${x.r}`)}${x.m ? ` <span class="soft" style="font-size:11px">${esc({ Fixed: 'F', Gimballed: 'C', Turreted: 'T' }[x.m] || '')}</span>` : ''}</span>${cols.map((f) => `<span class="num soft" style="text-align:right">${x.s ? fmtV(f, x.s[f]) : '—'}</span>`).join('')}`).join('')}</div>
+      ${vars.length > MAX ? `<span class="eb dim">Y ${vars.length - MAX} variantes más</span>` : ''}
+      ${vars.some((x) => !x.s) ? '<span class="eb dim" style="font-size:10px">— = sin datos todavía (módulo reciente)</span>' : ''}`;
+  }
+  return `<div style="flex:1;display:grid;grid-template-columns:420px minmax(0,1fr);gap:12px;min-height:0">
+    <section class="pn card" style="min-height:0;overflow:hidden">${catTabs}<div style="display:flex;flex-direction:column;gap:4px">${rows}</div><span style="display:flex;justify-content:flex-end;margin-top:auto">${pager2('eqgrp', ui.eqGrpPage, pages)}</span></section>
+    <section class="pn card" style="min-height:0;overflow:hidden">${table}</section></div>`;
+}
+
 /* ---------- Ingenieros (naves y a pie) ---------- */
 // Retratos recortados de la ficha de ingenieros (los que el usuario tiene a la vista); el resto, iniciales.
 const PORTRAITS = new Set(['baltanos', 'bill-turner', 'broo-tarquin', 'colonel-bris-dekker', 'didi-vatermann', 'domino-green', 'elvira-martuuk', 'felicity-farseer', 'hera-tani', 'hero-ferrari', 'jude-navarro', 'juri-ishmaak', 'kit-fowler', 'lei-cheung', 'liz-ryder', 'lori-jameson', 'marco-qwent', 'petra-olmanova', 'professor-palin', 'ram-tah', 'rosa-dayette', 'selene-jean', 'the-dweller', 'the-sarge', 'tiana-fortune', 'tod-the-blaster-mcquinn', 'uma-laszlo', 'wellington-beck', 'yarden-bond', 'zacariah-nemo']);
@@ -2130,7 +2276,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -2256,7 +2402,8 @@ document.addEventListener('pointerdown', (ev) => {
   const minTabBtn = ev.target.closest('button[data-minetab]');
   if (minTabBtn) { ev.preventDefault(); ui.mineTab = minTabBtn.dataset.minetab; render(); return; }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage' }[minPgBtn.dataset.mpager]; ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage' }[minPgBtn.dataset.mpager];
+    if (!k && /^eq(core|hard|opt)$/.test(minPgBtn.dataset.mpager)) { const kk = minPgBtn.dataset.mpager.slice(2); ui.eqPages[kk] = Math.max(0, (ui.eqPages[kk] || 0) + Number(minPgBtn.dataset.d)); render(); return; } ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {
     ev.preventDefault();
@@ -2274,6 +2421,15 @@ document.addEventListener('pointerdown', (ev) => {
   if (go) { ev.preventDefault(); goSection(go.dataset.goto); render(); return; }
   const mt = ev.target.closest('[data-mat]');
   if (mt) { ev.preventDefault(); ui.colSel = mt.dataset.mat; ui.colAside = 'buy'; ui.mk.page = 0; ui.mk.pick = null; render(); return; }
+  const eqBtn = ev.target.closest('[data-eqtab], [data-eqship], [data-eqcat], [data-eqgrp]');
+  if (eqBtn) {
+    ev.preventDefault(); const d = eqBtn.dataset;
+    if (d.eqtab) ui.eqTab = d.eqtab;
+    else if (d.eqship) ui.eqShip = d.eqship;
+    else if (d.eqcat) { ui.eqCat = d.eqcat; ui.eqGrpPage = 0; ui.eqGrp = null; }
+    else ui.eqGrp = d.eqgrp;
+    render(); return;
+  }
   const planBtn = ev.target.closest('[data-colmode], [data-planloc], [data-plansel]');
   if (planBtn) {
     ev.preventDefault(); const d = planBtn.dataset;
