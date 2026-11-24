@@ -2,8 +2,8 @@
 
 Errores encontrados en las versiones publicadas y versión en la que se corrigen.
 
-- **Versión actual publicada:** 0.7.0-beta.2 (24-11-2026)
-- **Versión anterior:** 0.7.0-beta.1 (23-11-2026)
+- **Versión actual publicada:** 0.7.0-beta.3 (24-11-2026)
+- **Versión anterior:** 0.7.0-beta.2 (24-11-2026)
 
 Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo, pendiente de publicar) · **Publicado** (incluido en una versión publicada).
 
@@ -15,6 +15,8 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 4 | Vuelo › Aproximación a planeta: el destino fijado se queda en «Cuerpo sin indicar» | Adder (captura de Specter A.G.) | 0.7.0-beta.1 | 0.7.0-beta.2 | Publicado |
 | 5 | Colonización › Dónde comprar no encuentra ninguna estación (juego en otro idioma) | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Publicado |
 | 6 | Nombre de las construcciones: el prefijo «Orbital Construction Site:» solo se quitaba en inglés | Revisión de idiomas | 0.7.0-beta.1 | 0.7.0-beta.2 | Publicado |
+| 7 | A pie › Mejoras: el material propio del traje Maverick era Titanium Plating (es Carbon Fibre Plating) | Adder (Odyssey Materials Helper) | 0.7.0-beta.2 | 0.7.0-beta.3 | Publicado |
+| 8 | Estación › Ingenieros: los de a pie con estado «Invited» no contaban como desbloqueados (en Odyssey ya dan acceso) | Adder (captura del juego) | 0.7.0-beta.2 | 0.7.0-beta.3 | Publicado |
 
 ## Detalle
 
@@ -82,6 +84,20 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 - **Qué pasaba:** la app muestra «Sisters' Pride» en vez de «Orbital Construction Site: Sisters' Pride», pero solo reconocía el prefijo en inglés. Si el juego escribe el prefijo en otro idioma, se habría visto entero, y la comparación con el destino final (para saber que ya has llegado) podría fallar.
 - **Corrección:** se quita cualquier prefijo de construcción seguido de «:» en inglés, español, francés, alemán, italiano, polaco y ruso. Los nombres normales, incluidos los que llevan «:», no cambian.
 - **Archivo:** `app/renderer/app.js`.
+
+### 7 · Mejora del traje Maverick con el material equivocado
+
+- **Informado por:** Adder (24-11-2026), comparando con Odyssey Materials Helper.
+- **Encontrado en:** 0.7.0-beta.2 · **Corregido en:** 0.7.0-beta.3
+- **Qué pasaba:** para subir de grado el Maverick, la app pedía Titanium Plating.
+- **Causa:** la wiki no lo confirmaba y se tomó el material del Dominator. El Maverick pide Carbon Fibre Plating y Graphene (12 de cada material común y 28 de cada propio de G1 a G5). Se comprobaron también los otros dos trajes y las 11 armas: coincidían.
+
+### 8 · Ingenieros de a pie «invitados» contados como bloqueados
+
+- **Informado por:** Adder (24-11-2026), con la ficha de Yarden Bond en el juego («You gained access…»).
+- **Encontrado en:** 0.7.0-beta.2 · **Corregido en:** 0.7.0-beta.3
+- **Qué pasaba:** la tarjeta de Estación contaba como desbloqueados solo los de estado «Unlocked».
+- **Causa:** en los ingenieros de Odyssey, «Invited» en el diario ya significa que tienes acceso; «Unlocked» solo añade que ya los has visitado. Ahora cuentan los dos (en naves, «Invited» sigue pidiendo el contrato inicial).
 
 ## Revisión: el juego en otros idiomas (24-11-2026)
 

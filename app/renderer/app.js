@@ -1706,7 +1706,7 @@ function screenEstacion(s, v) {
   const suitEng = ranks.filter(isSuit);
   const shipG5 = shipEng.filter((r) => r.progress === 'Unlocked' && r.rank === 5).length;
   const shipUnl = shipEng.filter((r) => r.progress === 'Unlocked').length;
-  const suitUnl = suitEng.filter((r) => r.progress === 'Unlocked').length;
+  const suitUnl = suitEng.filter((r) => r.progress === 'Unlocked' || r.progress === 'Invited').length; // en Odyssey «Invited» ya da acceso
   const last = st.engineering.last;
   const engCard = `
     <section class="pn card" style="min-height:0;overflow:hidden">
