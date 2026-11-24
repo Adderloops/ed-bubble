@@ -5,7 +5,7 @@
 const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo' }, { id: 'srv', label: 'SRV' },
-  { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie' },
+  { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie', built: true },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
   { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
 ];
@@ -25,6 +25,7 @@ const ui = {
   bodyInfo: {}, // datos de cuerpos desde Spansh (gravedad…), por nombre
   here: null, herePage: 0, hereKinds: [], hereLarge: false, // estaciones y portanaves del sistema actual (Spansh)
   bioPage: 0,
+  lockTab: 'items', lockPage: 0, lockSrc: 'locker', // a pie: taquilla
   skull: null, mineTab: null, sitesPage: 0, prospPage: 0, skullMsg: null, // minería
   coordText: '', coordMsg: null, // coordenadas en planeta: texto escrito y aviso
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
@@ -1199,6 +1200,87 @@ function screenOrbita(s, v) {
   </div>`;
 }
 
+/* ---------- A pie ---------- */
+const SUIT_MODS = {
+  suit_improvedjumpassist: 'Asistencia de salto mejorada', suit_increasedammoreserves: 'Más reserva de munición', suit_adsmovementspeed: 'Movilidad al apuntar',
+  suit_improvedarmourrating: 'Resistencia al daño', suit_nightvision: 'Visión nocturna', suit_increasedbatterycapacity: 'Batería ampliada',
+  suit_increasedshieldregen: 'Regeneración de escudo', suit_reducedtoolbatteryconsumption: 'Herramientas con menos consumo', suit_increasedo2capacity: 'Oxígeno ampliado',
+  suit_increasedsprintduration: 'Sprint más largo', suit_quieterfootsteps: 'Pasos silenciosos', suit_increasedmeleedamage: 'Más daño cuerpo a cuerpo',
+  suit_backpackcapacity: 'Mochila ampliada', suit_enhancedtracking: 'Seguimiento mejorado', suit_improvedradar: 'Radar mejorado',
+};
+const WEAPON_MODS = {
+  weapon_handling: 'Manejo rápido', weapon_reloadspeed: 'Recarga rápida', weapon_clipsize: 'Cargador ampliado', weapon_stability: 'Estabilidad',
+  weapon_range: 'Más alcance', weapon_headshotdamage: 'Daño en la cabeza', weapon_accuracy: 'Precisión', weapon_scope: 'Mira',
+  weapon_suppression_pressurised: 'Silenciador', weapon_suppression_unpressurised: 'Silenciador', weapon_backpackreloading: 'Recarga guardada',
+  weapon_stowedreloading: 'Recarga guardada', weapon_noisereduction: 'Sonido amortiguado', weapon_audiomasking: 'Sonido amortiguado',
+};
+const modName = (m) => SUIT_MODS[m] || WEAPON_MODS[m] || String(m).replace(/^(suit|weapon)_/, '').replace(/_/g, ' ');
+const SLOT_NAME = { PrimaryWeapon1: 'Principal 1', PrimaryWeapon2: 'Principal 2', SecondaryWeapon: 'Secundaria' };
+const gradePill = (g) => (g ? `<span class="grade g${g}">G${g}</span>` : '');
+const LOCK_TABS = [['items', 'Bienes'], ['components', 'Componentes'], ['data', 'Datos'], ['consumables', 'Consumibles']];
+
+function screenApie(s, v) {
+  const st = s.status; const fl = st.flags || {};
+  const onFoot = fl.isOnFoot;
+  const pct = (x) => (x == null || x === '' ? '—' : `${nf(Number(x) * 100, 0)} %`);
+  const tempC = st.temperature != null && st.temperature !== '' ? `${nf(Number(st.temperature) - 273.15, 0)} °C` : '—';
+  const low = (x) => x != null && x !== '' && Number(x) < 0.25;
+  const left = `
+    <section class="pn card" style="min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;gap:10px"><span class="ti" style="font-size:16px">Estado</span><span class="eb ${onFoot ? 'cyan' : 'dim'}">${onFoot ? 'A pie' : 'En la nave'}</span></div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+        ${stat('Oxígeno', pct(st.oxygen), low(st.oxygen) ? 'red' : '')}${stat('Salud', pct(st.health), low(st.health) ? 'red' : '')}
+        ${stat('Temperatura', tempC)}${stat('Gravedad', fmtGravity(s))}
+      </div>
+      ${onFoot ? `<span class="eb dim nowrap">${esc(clean(st.bodyName) || '')}${st.latitude != null ? ` · ${nf(st.latitude, 4)}, ${nf(st.longitude, 4)}` : ''}</span>` : ''}
+      ${s.surfaceTarget && v.surfaceNav ? compassBlock(s, v.surfaceNav) : `<div class="in empty" style="flex:1;flex-direction:column;gap:6px"><span class="va" style="font-size:17px;color:var(--soft)">Sin destino</span><span style="font-size:14px">Fija unas coordenadas en Órbita planetaria y aquí verás la brújula.</span></div>`}
+    </section>`;
+
+  const of = s.onfoot || {};
+  const l = of.loadout != null ? of.loadouts[of.loadout] : null;
+  let eq;
+  if (!l) eq = '<div class="empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">Sin equipo conocido</span><span style="font-size:14px">Aparece al elegir un equipo en el casillero o al bajar de la nave.</span></div>';
+  else {
+    eq = `
+      <span class="eb dim">Equipo · ${esc(l.name || '—')}</span>
+      <div class="in" style="display:flex;flex-direction:column;gap:6px;padding:10px 12px">
+        <span style="display:flex;justify-content:space-between;align-items:center"><span class="va" style="font-size:20px">${esc(l.suit.name)}</span>${gradePill(l.suit.grade)}</span>
+        <span style="display:flex;flex-wrap:wrap;gap:5px">${l.suit.mods.map((m) => `<span class="chip">${esc(modName(m))}</span>`).join('') || '<span class="soft" style="font-size:13px">Sin mejoras</span>'}</span>
+      </div>
+      ${l.weapons.map((w) => `<div class="in" style="display:flex;flex-direction:column;gap:6px;padding:10px 12px">
+        <span style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:17px">${esc(w.name)}</span><span class="eb dim" style="font-size:10px">${esc(SLOT_NAME[w.slot] || w.slot || '')}</span></span>${gradePill(w.grade)}</span>
+        <span style="display:flex;flex-wrap:wrap;gap:5px">${w.mods.map((m) => `<span class="chip">${esc(modName(m))}</span>`).join('') || '<span class="soft" style="font-size:13px">Sin mejoras</span>'}</span>
+      </div>`).join('')}`;
+  }
+  const others = Object.values(of.loadouts || {}).filter((x) => x !== l);
+  const eqCard = `<section class="pn card" style="min-height:0;overflow:hidden">
+      <span class="ti" style="font-size:16px">Equipo actual</span>${eq}
+      ${others.length ? `<span class="eb dim" style="margin-top:auto">Otros equipos: ${others.slice(0, 4).map((x) => `${esc(x.name)} (${esc(x.suit.name)} G${x.suit.grade || '?'})`).join(' · ')}</span>` : ''}
+    </section>`;
+
+  // Taquilla o mochila
+  const src = ui.lockSrc === 'backpack' && of.backpack ? of.backpack : of.locker;
+  let lock;
+  if (!src) lock = '<div class="empty">El juego aún no ha guardado tu taquilla (ShipLocker.json).</div>';
+  else {
+    const list = src[ui.lockTab] || [];
+    const per = 10; const pages = Math.max(1, Math.ceil(list.length / per));
+    ui.lockPage = Math.min(ui.lockPage, pages - 1);
+    lock = `
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px">${LOCK_TABS.map(([k, t]) => `<button type="button" class="tab small ${ui.lockTab === k ? 'on' : ''}" data-locktab="${k}" title="${(src[k] || []).reduce((a, x) => a + x.count, 0)} en total">${t}</button>`).join('')}</div>
+      <span class="eb dim">${nf(list.reduce((a, x) => a + x.count, 0))} en total · ${list.length} tipos</span>
+      <div style="display:flex;flex-direction:column;gap:4px">${list.slice(ui.lockPage * per, (ui.lockPage + 1) * per).map((x) => `<div class="in" style="display:flex;justify-content:space-between;gap:10px;padding:7px 12px"><span class="va nowrap">${esc(x.name)}${x.mission ? ' <span class="eb amber" style="font-size:10px">misión</span>' : ''}</span><span class="num">${nf(x.count)}</span></div>`).join('') || '<div class="empty">Vacío</div>'}</div>
+      <span style="display:flex;justify-content:flex-end;margin-top:auto">${pager2('lock', ui.lockPage, pages)}</span>`;
+  }
+  const hasPack = of.backpack && ['items', 'components', 'data', 'consumables'].some((k) => (of.backpack[k] || []).length);
+  const lockCard = `<section class="pn card" style="min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">${ui.lockSrc === 'backpack' && hasPack ? 'Mochila' : 'Taquilla de la nave'}</span>
+        ${hasPack ? `<span style="display:flex;gap:6px"><button type="button" class="tab small ${ui.lockSrc !== 'backpack' ? 'on' : ''}" data-locksrc="locker">Taquilla</button><button type="button" class="tab small ${ui.lockSrc === 'backpack' ? 'on' : ''}" data-locksrc="backpack">Mochila</button></span>` : ''}</div>
+      ${lock}
+    </section>`;
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:12px;min-height:0;height:100%">${left}${eqCard}${lockCard}</div>`;
+}
+
 /* ---------- Minería ---------- */
 const SKULL_PAGE = 5;
 const fmtDur = (sec) => { if (sec == null) return '—'; const m = Math.round(sec / 60); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`; };
@@ -1818,7 +1900,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -1918,10 +2000,12 @@ document.addEventListener('pointerdown', (ev) => {
   if (pt) { ev.preventDefault(); window.edbubble.ppTrack(pt.dataset.pptrack || null); return; }
   const hp = ev.target.closest('button[data-pager="here"], button[data-pager="bio"]');
   if (hp && !hp.disabled) { ev.preventDefault(); const k = hp.dataset.pager === 'here' ? 'herePage' : 'bioPage'; ui[k] = Math.max(0, ui[k] + Number(hp.dataset.d)); render(); return; }
+  const lockTabBtn = ev.target.closest('button[data-locktab], button[data-locksrc]');
+  if (lockTabBtn) { ev.preventDefault(); if (lockTabBtn.dataset.locktab) ui.lockTab = lockTabBtn.dataset.locktab; else ui.lockSrc = lockTabBtn.dataset.locksrc; ui.lockPage = 0; render(); return; }
   const minTabBtn = ev.target.closest('button[data-minetab]');
   if (minTabBtn) { ev.preventDefault(); ui.mineTab = minTabBtn.dataset.minetab; render(); return; }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = minPgBtn.dataset.mpager === 'sites' ? 'sitesPage' : 'prospPage'; ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage' }[minPgBtn.dataset.mpager]; ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {
     ev.preventDefault();

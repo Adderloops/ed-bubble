@@ -49,6 +49,8 @@ function createState() {
     cargo: { count: 0, vessel: 'Ship', inventory: [] },
     // minería con la nave (asteroides): desde el último despegue
     mining: { since: null, lastAt: null, refined: {}, prospects: [], drones: { prospector: 0, collection: 0 }, cracked: 0, motherlodes: 0 },
+    // a pie (Odyssey): equipo actual, equipos y trajes/armas vistos, taquilla y mochila
+    onfoot: { loadout: null, loadouts: {}, suits: {}, weapons: {}, locker: null, backpack: null },
     srv: { type: null }, // SRV desplegado (LaunchSRV): 'mev_rhino' es el Rhino de minería
     session: { startedAt: null, jumps: 0, distance: 0, merits: 0, bounties: 0, mined: 0, deliveredToConstruction: 0 },
     log: [],
@@ -334,6 +336,36 @@ const HANDLERS = {
     else if (e.Type === 'Collection') m.drones.collection += 1;
   },
   AsteroidCracked(state, e) { miningTouch(state, e).cracked += 1; },
+  SuitLoadout(state, e) { setSuitLoadout(state, e, true); },
+  SwitchSuitLoadout(state, e) { setSuitLoadout(state, e, true); pushLog(state, e, 'Equipo', e.LoadoutName || ''); },
+  CreateSuitLoadout(state, e) { setSuitLoadout(state, e, false); },
+  RenameSuitLoadout(state, e) { const l = state.onfoot.loadouts[e.LoadoutID]; if (l) l.name = e.LoadoutName || l.name; },
+  DeleteSuitLoadout(state, e) { delete state.onfoot.loadouts[e.LoadoutID]; },
+  LoadoutEquipModule(state, e) {
+    const l = state.onfoot.loadouts[e.LoadoutID]; if (!l) return;
+    const w = weaponFrom(e);
+    state.onfoot.weapons[w.id] = w;
+    l.weapons = [...l.weapons.filter((x) => x.slot !== e.SlotName), { ...w, slot: e.SlotName }].sort((a, b) => a.slot.localeCompare(b.slot));
+  },
+  LoadoutRemoveModule(state, e) { const l = state.onfoot.loadouts[e.LoadoutID]; if (l) l.weapons = l.weapons.filter((x) => x.slot !== e.SlotName); },
+  BuySuit(state, e) { state.onfoot.suits[e.SuitID] = suitFrom(e.Name, e.SuitID, e.SuitMods); pushLog(state, e, 'Traje comprado', suitName(e.Name)); },
+  SellSuit(state, e) { delete state.onfoot.suits[e.SuitID]; },
+  UpgradeSuit(state, e) {
+    const x = state.onfoot.suits[e.SuitID] || (state.onfoot.suits[e.SuitID] = suitFrom(e.Name, e.SuitID, []));
+    x.grade = e.Class ?? x.grade;
+    for (const l of Object.values(state.onfoot.loadouts)) if (l.suit && l.suit.id === e.SuitID) l.suit.grade = x.grade;
+    pushLog(state, e, 'Traje mejorado', `${x.name} · grado ${x.grade}`);
+  },
+  BuyWeapon(state, e) { const w = weaponFrom({ SuitModuleID: e.SuitModuleID, ModuleName: e.Name, ModuleName_Localised: e.Name_Localised, Class: e.Class, WeaponMods: e.WeaponMods }); state.onfoot.weapons[w.id] = w; pushLog(state, e, 'Arma comprada', w.name); },
+  SellWeapon(state, e) { delete state.onfoot.weapons[e.SuitModuleID]; },
+  UpgradeWeapon(state, e) {
+    const w = state.onfoot.weapons[e.SuitModuleID] || (state.onfoot.weapons[e.SuitModuleID] = weaponFrom({ SuitModuleID: e.SuitModuleID, ModuleName: e.Name, ModuleName_Localised: e.Name_Localised }));
+    w.grade = e.Class ?? w.grade;
+    for (const l of Object.values(state.onfoot.loadouts)) for (const x of l.weapons) if (x.id === e.SuitModuleID) x.grade = w.grade;
+    pushLog(state, e, 'Arma mejorada', `${w.name} · grado ${w.grade}`);
+  },
+  ShipLocker(state, e) { if (Array.isArray(e.Items)) state.onfoot.locker = lockerFrom(e); },
+  Backpack(state, e) { if (Array.isArray(e.Items)) state.onfoot.backpack = lockerFrom(e); },
   LaunchSRV(state, e) { state.srv.type = e.SRVType || null; },
   DockSRV(state, e) { state.srv.type = null; },
   SRVDestroyed(state, e) { state.srv.type = null; },
@@ -382,6 +414,46 @@ function bodySignals(state, name, id, signals) {
     return { key: m ? m[1].toLowerCase() : String(x.Type || '').toLowerCase(), name: x.Type_Localised || (m ? m[1] : x.Type), count: x.Count || 0 };
   });
   return b;
+}
+
+// ---- A pie (Odyssey)
+const SUITS = { tacticalsuit: 'Dominator', utilitysuit: 'Maverick', explorationsuit: 'Artemis', flightsuit: 'Traje de vuelo' };
+function suitName(raw) {
+  const k = String(raw || '').toLowerCase().replace(/_class\d+$/, '');
+  return SUITS[k] || String(raw || '');
+}
+const gradeOf = (raw, cls) => (cls != null ? cls : Number((/_class(\d)/.exec(String(raw || '')) || [])[1]) || null);
+function suitFrom(raw, id, mods) { return { id, key: String(raw || '').toLowerCase(), name: suitName(raw), grade: gradeOf(raw), mods: mods || [] }; }
+function weaponFrom(m) {
+  return { id: m.SuitModuleID, key: m.ModuleName || '', name: m.ModuleName_Localised || m.ModuleName || '', grade: m.Class ?? null, mods: m.WeaponMods || [], slot: m.SlotName || null };
+}
+function setSuitLoadout(state, e, current) {
+  const suit = suitFrom(e.SuitName, e.SuitID, e.SuitMods);
+  const weapons = (e.Modules || []).map(weaponFrom).sort((a, b) => String(a.slot).localeCompare(String(b.slot)));
+  const l = { id: e.LoadoutID, name: e.LoadoutName || '', suit, weapons };
+  state.onfoot.loadouts[e.LoadoutID] = l;
+  state.onfoot.suits[e.SuitID] = { ...(state.onfoot.suits[e.SuitID] || {}), ...suit };
+  for (const w of weapons) state.onfoot.weapons[w.id] = { ...w, slot: null };
+  if (current) state.onfoot.loadout = e.LoadoutID;
+}
+const prettyName = (n) => String(n || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+function lockerFrom(raw) {
+  const list = (arr) => {
+    const out = {};
+    for (const i of arr || []) {
+      const k = String(i.Name || '').toLowerCase();
+      const x = out[k] || (out[k] = { key: k, name: i.Name_Localised || prettyName(i.Name), count: 0, mission: 0 });
+      x.count += i.Count || 0;
+      if (i.MissionID) x.mission += i.Count || 0;
+    }
+    return Object.values(out).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  };
+  return { at: raw.timestamp || null, items: list(raw.Items), components: list(raw.Components), consumables: list(raw.Consumables), data: list(raw.Data) };
+}
+/** ShipLocker.json / Backpack.json (el juego los reescribe con el contenido completo). */
+function applyLocker(state, raw, which) {
+  if (!raw || !Array.isArray(raw.Items)) return;
+  state.onfoot[which === 'backpack' ? 'backpack' : 'locker'] = lockerFrom(raw);
 }
 
 function resetMining(state) {
@@ -452,6 +524,8 @@ function applyStatus(state, raw, decoded) {
   S.bodyName = raw.BodyName || null;
   S.planetRadius = raw.PlanetRadius ?? null;
   S.gravity = raw.Gravity ?? null;
+  // a pie: oxígeno y salud (0-1) y temperatura (K)
+  S.oxygen = raw.Oxygen ?? null; S.health = raw.Health ?? null; S.temperature = raw.Temperature ?? null;
   if (raw.Balance !== undefined) state.cmdr.credits = raw.Balance;
   state.cmdr.legalState = raw.LegalState || 'Clean';
   state.destination = raw.Destination
@@ -484,4 +558,4 @@ function applyNavRoute(state, raw) {
   state.route = i >= 0 ? route.slice(i) : route;
 }
 
-module.exports = { recordJumpFuel, recordControl, createState, applyEvent, applyStatus, applyCargo, applyNavRoute, applyMarket, HANDLERS, fmtNum, commodityKey };
+module.exports = { applyLocker, suitName, recordJumpFuel, recordControl, createState, applyEvent, applyStatus, applyCargo, applyNavRoute, applyMarket, HANDLERS, fmtNum, commodityKey };

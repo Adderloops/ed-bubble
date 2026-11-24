@@ -464,6 +464,24 @@ test('minería: sesión del plugin, zona, guía de taladros, sitios y minería c
   assert.strictEqual(derive.flightMode(s).section, 'mineria');
 });
 
+test('a pie: equipo actual, mejoras de grado, taquilla y estado en Status.json', () => {
+  const s = model.createState();
+  model.applyEvent(s, ev('SuitLoadout', { SuitID: 1, SuitName: 'tacticalsuit_class3', SuitName_Localised: '$TacticalSuit_Class1_Name;', SuitMods: ['suit_nightvision'], LoadoutID: 9, LoadoutName: 'Combate',
+    Modules: [{ SlotName: 'SecondaryWeapon', SuitModuleID: 22, ModuleName: 'wpn_s_pistol_plasma_charged', ModuleName_Localised: 'Manticore Tormentor', Class: 3, WeaponMods: [] },
+      { SlotName: 'PrimaryWeapon1', SuitModuleID: 21, ModuleName: 'wpn_m_shotgun_plasma_doublebarrel', ModuleName_Localised: 'Manticore Intimidator', Class: 4, WeaponMods: ['weapon_range'] }] }));
+  const l = s.onfoot.loadouts[s.onfoot.loadout];
+  assert.strictEqual(l.suit.name, 'Dominator'); assert.strictEqual(l.suit.grade, 3);
+  assert.deepStrictEqual(l.weapons.map((w) => w.slot), ['PrimaryWeapon1', 'SecondaryWeapon']);
+  model.applyEvent(s, ev('UpgradeSuit', { Name: 'tacticalsuit_class3', SuitID: 1, Class: 4 }));
+  model.applyEvent(s, ev('UpgradeWeapon', { Name: 'wpn_s_pistol_plasma_charged', SuitModuleID: 22, Class: 4 }));
+  assert.strictEqual(s.onfoot.loadouts[9].suit.grade, 4); assert.strictEqual(s.onfoot.loadouts[9].weapons[1].grade, 4);
+  model.applyLocker(s, { timestamp: 't', Items: [{ Name: 'gmeds', Name_Localised: 'G-Meds', Count: 3 }, { Name: 'gmeds', Name_Localised: 'G-Meds', Count: 2, MissionID: 7 }], Components: [{ Name: 'graphene', Count: 5 }], Consumables: [], Data: [] }, 'locker');
+  assert.deepStrictEqual(s.onfoot.locker.items[0], { key: 'gmeds', name: 'G-Meds', count: 5, mission: 2 });
+  assert.strictEqual(s.onfoot.locker.components[0].name, 'Graphene');
+  model.applyStatus(s, { Flags: 0, Flags2: 1, Oxygen: 0.8, Health: 1, Temperature: 250 }, { flags: {} });
+  assert.strictEqual(s.status.oxygen, 0.8); assert.strictEqual(s.status.temperature, 250);
+});
+
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
   const pads = require('../../core/pads');
   // comprobadas en el juego (Coriolis): 9 a las 8, 25 a las 12, 27 a la 1

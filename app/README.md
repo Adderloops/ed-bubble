@@ -64,6 +64,16 @@ Para desarrollo: `ED_JOURNAL_FOLDER` apunta el motor a otra carpeta de Journals,
 
 **Filtro de estaciones** (ficha de un sistema en Navegación): un botón con el icono y el número de cada tipo de estación (las construcciones llevan la etiqueta «Construcción»). Se pueden marcar varios a la vez; «Solo L» deja las que tienen plataforma grande y «Todas» quita el filtro.
 
+## A pie
+
+Sección del grupo Viaje (Odyssey):
+
+- Estado: oxígeno, salud, temperatura y gravedad cuando vas a pie (`Status.json`), y la brújula al destino fijado en Órbita planetaria.
+- Equipo actual: traje y armas con su grado (G1 a G5) y sus mejoras en español. Se toma de `SuitLoadout` y se actualiza con los cambios de equipo, compras y mejoras (también del historial de los últimos 45 días). Debajo, los otros equipos conocidos.
+- Taquilla de la nave (`ShipLocker.json`) y mochila (`Backpack.json`, si llevas algo): bienes, componentes, datos y consumibles, con los objetos de misión marcados.
+
+Pendiente: los materiales que faltan para subir de grado un traje o un arma (no hay una tabla fiable con licencia abierta).
+
 ## Minería
 
 Sección del grupo Actividades, con dos pestañas. La app salta sola a ella en el Rhino o al minar con la nave (se desactiva en Ajustes).

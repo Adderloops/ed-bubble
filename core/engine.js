@@ -46,6 +46,8 @@ class Engine extends EventEmitter {
     this.tailer = new JournalTailer(this.folder, opts.journalPollMs || 400);
     this.status = new StatusReader(this.folder, opts.statusPollMs || 400);
     this.cargo = new JsonFileWatcher(path.join(this.folder, 'Cargo.json'), 1000, (j) => { model.applyCargo(this.state, j); this.changed(); });
+    this.locker = new JsonFileWatcher(path.join(this.folder, 'ShipLocker.json'), 1500, (j) => { model.applyLocker(this.state, j, 'locker'); this.changed(); });
+    this.backpack = new JsonFileWatcher(path.join(this.folder, 'Backpack.json'), 1500, (j) => { model.applyLocker(this.state, j, 'backpack'); this.changed(); });
     this.market = new JsonFileWatcher(path.join(this.folder, 'Market.json'), 1500, (j) => { model.applyMarket(this.state, j); this.changed(); });
     this.navroute = new JsonFileWatcher(path.join(this.folder, 'NavRoute.json'), 1000, (j) => { model.applyNavRoute(this.state, j); this.changed(); });
 
@@ -64,7 +66,9 @@ class Engine extends EventEmitter {
    * última estación atracada e ingenieros. Lo demás sale del Journal en curso.
    */
   loadHistory({ maxFiles = 25, maxDays = 45, maxBytes = 60 * 1024 * 1024 } = {}) {
-    const KEEP = ['Location', 'Docked', 'Undocked', 'ColonisationConstructionDepot', 'EngineerProgress', 'EngineerCraft', 'FSDJump', 'Powerplay', 'Loadout'];
+    const KEEP = ['Location', 'Docked', 'Undocked', 'ColonisationConstructionDepot', 'EngineerProgress', 'EngineerCraft', 'FSDJump', 'Powerplay', 'Loadout',
+      // a pie: equipos, trajes y armas (no hay evento con todo lo que tienes)
+      'SuitLoadout', 'SwitchSuitLoadout', 'CreateSuitLoadout', 'RenameSuitLoadout', 'DeleteSuitLoadout', 'LoadoutEquipModule', 'LoadoutRemoveModule', 'BuySuit', 'SellSuit', 'UpgradeSuit', 'BuyWeapon', 'SellWeapon', 'UpgradeWeapon'];
     let files;
     try { files = fs.readdirSync(this.folder).filter((f) => /^Journal\..*\.log$/.test(f)).sort(); } catch (e) { return 0; }
     files = files.slice(0, -1); // el último lo lee el tailer en vivo
@@ -103,10 +107,10 @@ class Engine extends EventEmitter {
     this.status.start((decoded) => { model.applyStatus(this.state, decoded.raw, decoded); this.changed(); });
     this.cargo.start();
     this.navroute.start();
-    this.market.start();
+    this.market.start(); this.locker.start(); this.backpack.start();
   }
 
-  stop() { this.tailer.stop(); this.status.stop(); this.cargo.stop(); this.navroute.stop(); this.market.stop(); }
+  stop() { this.tailer.stop(); this.status.stop(); this.cargo.stop(); this.navroute.stop(); this.market.stop(); this.locker.stop(); this.backpack.stop(); }
 
   /** Sistema de Powerplay que se sigue (se mantiene aunque saltes a otro). */
   setTrackedSystem(name) { this.state.powerplay.tracked = name || null; this.changed(); }

@@ -162,3 +162,8 @@ button { font: inherit; }
 .kf-bar.sm .kf img { width: 22px; height: 22px; }
 .kf-bar.sm .kf .num { font-size: 12px; }
 .kf-bar.sm .kf-obra { font-size: 9px; }
+
+/* A pie: grado de trajes y armas */
+.grade { display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 26px; padding: 0 6px; border: 1px solid var(--line2); border-radius: 2px; font-family: 'Share Tech Mono', monospace; font-size: 14px; color: var(--soft); }
+.grade.g4 { color: var(--cyan); border-color: var(--cyan); }
+.grade.g5 { color: var(--amber); border-color: var(--amber); background: #221a0e; }
