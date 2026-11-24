@@ -14,6 +14,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 3 | Vuelo › Aproximación a planeta: la gravedad sale «—» en la nave | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
 | 4 | Vuelo › Aproximación a planeta: el destino fijado se queda en «Cuerpo sin indicar» | Adder (captura de Specter A.G.) | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
 | 5 | Colonización › Dónde comprar no encuentra ninguna estación (juego en otro idioma) | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
+| 6 | Nombre de las construcciones: el prefijo «Orbital Construction Site:» solo se quitaba en inglés | Revisión de idiomas | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
 
 ## Detalle
 
@@ -73,3 +74,24 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 - **Corrección:** la búsqueda usa el símbolo interno de la mercancía (`$steel_name;`), que no depende del idioma, y lo traduce a su nombre en inglés con la tabla de EDCD/FDevIDs (270 mercancías, en `core/commodities.js`). En pantalla se sigue viendo el nombre en el idioma del juego. Si una mercancía no está en la tabla, se usa el nombre de antes.
 - **Comprobado:** prueba unitaria (símbolos → «Steel», «CMM Composite», «Liquid oxygen») y nombres comprobados contra Spansh con resultados.
 - **Archivos:** `core/commodities.js` (nuevo), `app/main.js`, `app/renderer/app.js`, `app/test/run-tests.js`, `THIRD_PARTY_NOTICES.md`.
+
+### 6 · Prefijo de las construcciones en otros idiomas
+
+- **Origen:** revisión de la app con el juego en otros idiomas (a raíz del error 5).
+- **Encontrado en:** 0.7.0-beta.1 · **Corregido en:** 0.7.0-beta.2
+- **Qué pasaba:** la app muestra «Sisters' Pride» en vez de «Orbital Construction Site: Sisters' Pride», pero solo reconocía el prefijo en inglés. Si el juego escribe el prefijo en otro idioma, se habría visto entero, y la comparación con el destino final (para saber que ya has llegado) podría fallar.
+- **Corrección:** se quita cualquier prefijo de construcción seguido de «:» en inglés, español, francés, alemán, italiano, polaco y ruso. Los nombres normales, incluidos los que llevan «:», no cambian.
+- **Archivo:** `app/renderer/app.js`.
+
+## Revisión: el juego en otros idiomas (24-11-2026)
+
+Revisado todo lo que la app toma del Journal y de los archivos del juego:
+
+| Dato | Depende del idioma | Situación |
+|------|--------------------|-----------|
+| Mercancías (Colonización, mercado, bodega) | Sí, el nombre visible | Las comparaciones usan el símbolo interno; la búsqueda en Spansh usa el nombre en inglés (error 5) |
+| Prefijo de las construcciones | Posible | Corregido (error 6) |
+| Economía, gobierno, seguridad, tipo de nave, destino | Sí | Solo se muestran; se ven en el idioma del juego, que es lo correcto |
+| Tipo de estación, servicios, estados de facción y de Powerplay, ingenieros | No (códigos) | Sin cambios |
+| Sistemas, estaciones, potencias, cuerpos | No (nombres propios) | Sin cambios |
+| Teclas de los controles | No | El juego guarda las teclas por su posición en un teclado estadounidense, sea cual sea la distribución (un jugador francés lo confirma en el foro de Frontier: pulsa Z y el archivo guarda W). La app envía la tecla por esa posición, así que vale para AZERTY, QWERTZ o español. Comprobado en español; sin probar en AZERTY ni QWERTZ |

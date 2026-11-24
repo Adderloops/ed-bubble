@@ -62,8 +62,9 @@ function loadSettingsInfo() {
 const $ = (id) => document.getElementById(id);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clean = (s) => (s == null ? s : String(s).replace(/\s+/g, ' ').trim());
-// "Orbital Construction Site: Sisters' Pride" -> "Sisters' Pride"
-const siteName = (s) => clean(s) && clean(s).replace(/^(Orbital|Planetary) Construction Site:\s*/i, '');
+// "Orbital Construction Site: Sisters' Pride" -> "Sisters' Pride" (también si el prefijo viene en otro idioma)
+const SITE_PREFIX = /^[^:]{4,48}?(?:construct|constru[cç]|sitio|obra|chantier|baustelle|cantiere|budow|строит)[^:]{0,30}:\s*/i;
+const siteName = (s) => clean(s) && clean(s).replace(SITE_PREFIX, '');
 const nf = (n, d = 0) => (n == null || Number.isNaN(Number(n)) ? '—' : Number(n).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d }));
 const hhmm = (iso) => (iso ? String(iso).slice(11, 16) : '--:--');
 const pct = (r, d = 1) => (r == null ? '—' : `${nf(r * 100, d)} %`);
