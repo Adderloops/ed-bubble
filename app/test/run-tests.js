@@ -482,6 +482,20 @@ test('a pie: equipo actual, mejoras de grado, taquilla y estado en Status.json',
   assert.strictEqual(s.status.oxygen, 0.8); assert.strictEqual(s.status.temperature, 250);
 });
 
+test('a pie: materiales para subir de grado (trajes por modelo, armas por fabricante)', () => {
+  const o = require('../../core/odyssey');
+  const locker = { items: [{ key: 'suitschematic', count: 3, mission: 0 }, { key: 'weaponschematic', count: 9, mission: 4 }], components: [{ key: 'aerogel', count: 20, mission: 0 }], data: [] };
+  const u = o.nextUpgrade('suit', 'explorationsuit_class2', 2, locker);
+  assert.strictEqual(u.to, 3); assert.strictEqual(u.credits, 2250000);
+  assert.deepStrictEqual(u.materials.map((m) => [m.key, m.need, m.have]), [['suitschematic', 2, 3], ['healthmonitor', 2, 0], ['manufacturinginstructions', 2, 0], ['aerogel', 5, 20], ['graphene', 5, 0]]);
+  assert.strictEqual(u.missing, 9); assert.strictEqual(u.ready, false);
+  // los objetos de misión no cuentan
+  const w = o.nextUpgrade('weapon', 'wpn_m_sniper_plasma_charged', 4, locker);
+  assert.strictEqual(w.materials[0].have, 5); assert.deepStrictEqual(w.materials.map((m) => m.key), ['weaponschematic', 'ionisedgas', 'manufacturinginstructions', 'chemicalsuperbase', 'microelectrode']);
+  assert.strictEqual(o.weaponMaker('wpn_m_assaultrifle_laser_fauto'), 'takada');
+  assert.strictEqual(o.nextUpgrade('suit', 'tacticalsuit_class5', 5, locker), null);
+});
+
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
   const pads = require('../../core/pads');
   // comprobadas en el juego (Coriolis): 9 a las 8, 25 a las 12, 27 a la 1

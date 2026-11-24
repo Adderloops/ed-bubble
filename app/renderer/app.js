@@ -1217,6 +1217,16 @@ const WEAPON_MODS = {
 const modName = (m) => SUIT_MODS[m] || WEAPON_MODS[m] || String(m).replace(/^(suit|weapon)_/, '').replace(/_/g, ' ');
 const SLOT_NAME = { PrimaryWeapon1: 'Principal 1', PrimaryWeapon2: 'Principal 2', SecondaryWeapon: 'Secundaria' };
 const gradePill = (g) => (g ? `<span class="grade g${g}">G${g}</span>` : '');
+const fmtCrShort = (n) => (n == null ? '' : n >= 1e6 ? `${(n / 1e6).toLocaleString('es-ES', { maximumFractionDigits: 3 })} M CR` : `${nf(n / 1e3, 0)} k CR`);
+/** Línea de mejora al siguiente grado de un traje o arma. */
+function upgradeLine(u, grade) {
+  if (!grade) return '';
+  if (!u) return grade >= 5 ? '<span class="eb dim" style="font-size:10px">Grado máximo</span>' : '';
+  return `<span style="display:flex;flex-direction:column;gap:4px">
+    <span class="eb ${u.ready ? 'cyan' : 'amber'}" style="font-size:10px">${u.ready ? `Listo para G${u.to}` : `Para G${u.to} faltan ${u.missing}`}${u.credits ? ` · ${fmtCrShort(u.credits)}` : ''}</span>
+    <span style="display:flex;flex-wrap:wrap;gap:4px">${u.materials.map((m) => `<span class="upm ${m.ok ? 'ok' : ''}" title="${esc(m.name)}: tienes ${m.have}, hacen falta ${m.need}">${esc(m.name)} <b>${m.have}/${m.need}</b></span>`).join('')}</span>
+  </span>`;
+}
 const LOCK_TABS = [['items', 'Bienes'], ['components', 'Componentes'], ['data', 'Datos'], ['consumables', 'Consumibles']];
 
 function screenApie(s, v) {
@@ -1246,10 +1256,12 @@ function screenApie(s, v) {
       <div class="in" style="display:flex;flex-direction:column;gap:6px;padding:10px 12px">
         <span style="display:flex;justify-content:space-between;align-items:center"><span class="va" style="font-size:20px">${esc(l.suit.name)}</span>${gradePill(l.suit.grade)}</span>
         <span style="display:flex;flex-wrap:wrap;gap:5px">${l.suit.mods.map((m) => `<span class="chip">${esc(modName(m))}</span>`).join('') || '<span class="soft" style="font-size:13px">Sin mejoras</span>'}</span>
+        ${upgradeLine(v.upgrades && v.upgrades.suit, l.suit.grade)}
       </div>
       ${l.weapons.map((w) => `<div class="in" style="display:flex;flex-direction:column;gap:6px;padding:10px 12px">
         <span style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:17px">${esc(w.name)}</span><span class="eb dim" style="font-size:10px">${esc(SLOT_NAME[w.slot] || w.slot || '')}</span></span>${gradePill(w.grade)}</span>
         <span style="display:flex;flex-wrap:wrap;gap:5px">${w.mods.map((m) => `<span class="chip">${esc(modName(m))}</span>`).join('') || '<span class="soft" style="font-size:13px">Sin mejoras</span>'}</span>
+        ${upgradeLine(v.upgrades && v.upgrades.weapons[w.id], w.grade)}
       </div>`).join('')}`;
   }
   const others = Object.values(of.loadouts || {}).filter((x) => x !== l);

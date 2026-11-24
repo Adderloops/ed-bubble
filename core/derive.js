@@ -204,8 +204,17 @@ function powerplayView(state, now = Date.now()) {
 function view(state) {
   const { padInfo } = require('./pads');
   const dockPad = state.docking && state.docking.active ? padInfo(state.docking.stationType, state.docking.pad) : null;
+  // a pie: lo que falta para subir de grado el traje y las armas del equipo actual
+  const { nextUpgrade } = require('./odyssey');
+  const of = state.onfoot || {};
+  const lo = of.loadout != null && of.loadouts ? of.loadouts[of.loadout] : null;
+  const upgrades = lo ? {
+    suit: nextUpgrade('suit', lo.suit.key, lo.suit.grade, of.locker),
+    weapons: Object.fromEntries(lo.weapons.map((w) => [w.id, nextUpgrade('weapon', w.key, w.grade, of.locker)])),
+  } : null;
   return {
     dockPadHour: dockPad ? dockPad.hour : null,
+    upgrades,
     dockPad,
     mode: flightMode(state),
     alerts: alerts(state),

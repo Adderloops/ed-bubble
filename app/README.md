@@ -72,7 +72,7 @@ Sección del grupo Viaje (Odyssey):
 - Equipo actual: traje y armas con su grado (G1 a G5) y sus mejoras en español. Se toma de `SuitLoadout` y se actualiza con los cambios de equipo, compras y mejoras (también del historial de los últimos 45 días). Debajo, los otros equipos conocidos.
 - Taquilla de la nave (`ShipLocker.json`) y mochila (`Backpack.json`, si llevas algo): bienes, componentes, datos y consumibles, con los objetos de misión marcados.
 
-Pendiente: los materiales que faltan para subir de grado un traje o un arma (no hay una tabla fiable con licencia abierta).
+- Subir de grado: bajo cada traje y arma, los materiales del siguiente grado con lo que tienes en la taquilla (sin contar los de misión) y los créditos. Tabla en `core/odyssey.js`, tomada de Elite Dangerous Wiki (fandom) y del foro de Frontier; los materiales propios del Maverick y de Manticore están sin confirmar en la wiki.
 
 ## Minería
 

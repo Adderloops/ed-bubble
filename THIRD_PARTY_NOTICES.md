@@ -36,3 +36,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ## EDCD FDevIDs (nombres de mercancías)
 
 `core/commodities.js` contiene la tabla de símbolos internos y nombres en inglés de las mercancías del juego, tomada de `commodity.csv` de **EDCD/FDevIDs**: https://github.com/EDCD/FDevIDs. Es la referencia común de la comunidad de herramientas de Elite Dangerous; el repositorio no indica licencia. Los nombres son de Frontier Developments.
+
+## Costes de mejora de trajes y armas (Odyssey)
+
+`core/odyssey.js` recoge los materiales y créditos para subir de grado los trajes y las armas de Odyssey, consultados en Elite Dangerous Wiki (https://elite-dangerous.fandom.com: Dominator Suit, Artemis Suit, TK Aphelion, Karma AR-50; contenido bajo CC BY-SA) y en una tabla publicada por un jugador en el foro de Frontier (https://forums.frontier.co.uk). Son datos del juego, de Frontier Developments.
