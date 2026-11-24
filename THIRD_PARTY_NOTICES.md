@@ -48,3 +48,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 `core/shipengineers.js` recoge los ingenieros de nave, su sitio, los módulos que mejoran con su grado máximo y, de los que estaban bloqueados, cómo se desbloquean. Se transcribió a mano de la ficha de ingenieros de Odyssey Materials Helper del usuario. Son datos del juego, de Frontier Developments.
 
 Los retratos de `app/renderer/engineers/` son imágenes del juego Elite Dangerous (© Frontier Developments plc), recortadas de capturas de pantalla del usuario para identificar a cada ingeniero. ED BUBBLE es un proyecto de aficionado sin ánimo de lucro y no está afiliado a Frontier.
+
+## Recetas de ingeniería de nave (coriolis-data)
+
+`core/shipblueprints.js` recoge las recetas de ingeniería de nave (materiales de cada grado) y los efectos experimentales de cada módulo, tomados de coriolis-data (EDCD, https://github.com/EDCD/coriolis-data). Según su licencia, los datos y sus archivos JSON son propiedad intelectual de Frontier Developments plc y están sujetos a sus términos (https://www.frontierstore.net/terms-and-conditions/); el código de Coriolis está bajo licencia MIT y no se usa aquí. Los nombres internos de los materiales vienen de EDCD FDevIDs (material.csv).

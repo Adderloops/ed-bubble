@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('edbubble', {
   onPlotStatus: (cb) => ipcRenderer.on('ed:plot-status', (_e, st) => cb(st)),
   log: (msg) => ipcRenderer.send('ed:log', String(msg).slice(0, 4000)),
   bodies: () => ipcRenderer.invoke('ed:bodies'),
+  recipes: () => ipcRenderer.invoke('ed:recipes'),
   skull: () => ipcRenderer.invoke('ed:skull'),
   onSkull: (cb) => ipcRenderer.on('ed:skull', (_e, x) => cb(x)),
   skullConnect: () => ipcRenderer.invoke('ed:skull-connect'),

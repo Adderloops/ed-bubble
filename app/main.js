@@ -491,6 +491,8 @@ app.whenReady().then(() => {
     return fs.existsSync(f) ? shell.openPath(f) : 'No existe la carpeta';
   });
   ipcMain.handle('ed:bodies', () => bodyInfo);
+  // recetas de ingeniería de nave (datos fijos; el renderer las pide una vez)
+  ipcMain.handle('ed:recipes', () => { const b = require('../core/shipblueprints'); return { mats: b.MATS, blueprints: b.BLUEPRINTS, specials: b.SPECIALS, modules: b.MODULE_RECIPES }; });
   ipcMain.handle('ed:here', () => hereInfo);
   // Minería (Skull Mining)
   ipcMain.handle('ed:skull', () => { skullRead(); return skullInfo(); });

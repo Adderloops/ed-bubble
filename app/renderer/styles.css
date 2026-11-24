@@ -182,3 +182,5 @@ button.modrow { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .eng-ini { display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,.05); color: var(--soft); font-family: inherit; letter-spacing: .05em; }
 .eng-mod { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
 .eng-mod.on { color: var(--cyan); }
+button.eng-mod.click { width: 100%; background: none; border: 0; border-bottom: 1px solid rgba(255,255,255,.05); color: inherit; font: inherit; font-size: 13px; text-align: left; cursor: pointer; padding: 3px 0; }
+button.eng-mod.click:hover { color: #fff; }

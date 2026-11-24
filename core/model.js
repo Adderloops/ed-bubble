@@ -46,6 +46,7 @@ function createState() {
     market: null, // Market.json: { marketId, station, at, items[] }
     communityGoals: [], // objetivos comunitarios activos (evento CommunityGoal)
     engineering: { last: null, ranks: {} }, // último trabajo de ingeniero y rangos
+    materials: null, // materiales de ingeniería de nave: { símbolo: cantidad } (evento Materials y cambios)
     cargo: { count: 0, vessel: 'Ship', inventory: [] },
     // minería con la nave (asteroides): desde el último despegue
     mining: { since: null, lastAt: null, refined: {}, prospects: [], drones: { prospector: 0, collection: 0 }, cracked: 0, motherlodes: 0 },
@@ -284,7 +285,21 @@ const HANDLERS = {
   EngineerProgress(state, e) {
     for (const x of e.Engineers || (e.Engineer ? [e] : [])) state.engineering.ranks[x.Engineer] = { id: x.EngineerID ?? null, rank: x.Rank ?? null, progress: x.Progress || null };
   },
+  Materials(state, e) {
+    const m = {};
+    for (const c of ['Raw', 'Manufactured', 'Encoded']) for (const x of e[c] || []) m[String(x.Name).toLowerCase()] = x.Count || 0;
+    state.materials = m;
+  },
+  MaterialCollected(state, e) { addMat(state, e.Name, e.Count); },
+  MaterialDiscarded(state, e) { addMat(state, e.Name, -(e.Count || 0)); },
+  MaterialTrade(state, e) { if (e.Paid) addMat(state, e.Paid.Material, -(e.Paid.Quantity || 0)); if (e.Received) addMat(state, e.Received.Material, e.Received.Quantity); },
+  Synthesis(state, e) { for (const x of e.Materials || []) addMat(state, x.Name, -(x.Count || 0)); },
+  TechnologyBroker(state, e) { for (const x of e.Materials || []) addMat(state, x.Name, -(x.Count || 0)); },
+  ScientificResearch(state, e) { addMat(state, e.Name, -(e.Count || 0)); },
+  EngineerContribution(state, e) { if (e.Type === 'Materials') addMat(state, e.Material, -(e.Quantity || 0)); },
+  MissionCompleted(state, e) { for (const x of e.MaterialsReward || []) addMat(state, x.Name, x.Count); },
   EngineerCraft(state, e) {
+    for (const x of e.Ingredients || []) addMat(state, x.Name, -(x.Count || 0));
     state.engineering.last = { engineer: e.Engineer, blueprint: e.BlueprintName, level: e.Level ?? null, module: e.Slot || e.Module || null, at: e.timestamp || null };
     pushLog(state, e, 'Ingeniería', `${e.Engineer} · ${e.BlueprintName} G${e.Level}`);
   },
@@ -423,6 +438,12 @@ function suitName(raw) {
   return SUITS[k] || String(raw || '');
 }
 const gradeOf = (raw, cls) => (cls != null ? cls : Number((/_class(\d)/.exec(String(raw || '')) || [])[1]) || null);
+/** Suma (o resta) unidades de un material de ingeniería; sin el evento Materials aún no se sabe el total. */
+function addMat(state, name, n) {
+  if (!state.materials || !name) return;
+  const k = String(name).toLowerCase();
+  state.materials[k] = Math.max(0, (state.materials[k] || 0) + (Number(n) || 0));
+}
 function suitFrom(raw, id, mods) { return { id, key: String(raw || '').toLowerCase(), name: suitName(raw), grade: gradeOf(raw), mods: mods || [] }; }
 function weaponFrom(m) {
   return { id: m.SuitModuleID, key: m.ModuleName || '', name: m.ModuleName_Localised || m.ModuleName || '', grade: m.Class ?? null, mods: m.WeaponMods || [], slot: m.SlotName || null };

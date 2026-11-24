@@ -549,6 +549,30 @@ test('ingenieros de nave: 25, módulos conocidos, filtro por módulo y estado de
   assert.deepStrictEqual(Object.keys(se.moduleIndex()).sort(), ['C', 'H', 'O', 'U']);
 });
 
+test('recetas de nave: materiales por grado, tope del ingeniero y materiales del diario', () => {
+  const b = require('../../core/shipblueprints');
+  const se = require('../../core/shipengineers');
+  // todo material de una receta tiene nombre; los módulos de los ingenieros con recetas existen
+  for (const bp of Object.values(b.BLUEPRINTS)) for (const g of Object.values(bp.g)) for (const [k] of g) assert.ok(b.MATS[k], k);
+  for (const sp of Object.values(b.SPECIALS)) for (const [k] of sp.m) assert.ok(b.MATS[k], k);
+  for (const m of Object.keys(b.MODULE_RECIPES)) assert.ok(se.MODULES[m], m);
+  // FSD de mayor alcance, G1 a G3 (tope de Professor Palin)
+  const r = b.recipesFor('Frame Shift Drive', 3, { disruptedwakeechoes: 2, chemicalprocessors: 1 });
+  const lr = r.blueprints.find((x) => x.id === 'FSD_LongRange');
+  assert.deepStrictEqual(lr.grades.map((g) => g.grade), [1, 2, 3]);
+  assert.deepStrictEqual(lr.grades[0].materials.map((m) => [m.key, m.need, m.ok]), [['disruptedwakeechoes', 1, true]]);
+  assert.strictEqual(lr.grades[1].ready, true);
+  assert.ok(r.specials.some((x) => x.name === 'Mass Manager'));
+  // materiales del diario: total al arrancar y cambios
+  const model = require('../../core/model');
+  const s = model.createState();
+  model.applyEvent(s, { event: 'Materials', Raw: [{ Name: 'iron', Count: 10 }], Manufactured: [{ Name: 'ChemicalProcessors', Count: 3 }], Encoded: [] });
+  model.applyEvent(s, { event: 'MaterialCollected', Category: 'Raw', Name: 'iron', Count: 3 });
+  model.applyEvent(s, { event: 'EngineerCraft', Engineer: 'Felicity Farseer', BlueprintName: 'FSD_LongRange', Level: 2, Ingredients: [{ Name: 'chemicalprocessors', Count: 1 }] });
+  model.applyEvent(s, { event: 'MaterialTrade', Paid: { Material: 'iron', Quantity: 6 }, Received: { Material: 'nickel', Quantity: 2 } });
+  assert.deepStrictEqual(s.materials, { iron: 7, chemicalprocessors: 2, nickel: 2 });
+});
+
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
   const pads = require('../../core/pads');
   // comprobadas en el juego (Coriolis): 9 a las 8, 25 a las 12, 27 a la 1

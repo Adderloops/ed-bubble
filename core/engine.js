@@ -68,7 +68,9 @@ class Engine extends EventEmitter {
   loadHistory({ maxFiles = 25, maxDays = 45, maxBytes = 60 * 1024 * 1024 } = {}) {
     const KEEP = ['Location', 'Docked', 'Undocked', 'ColonisationConstructionDepot', 'EngineerProgress', 'EngineerCraft', 'FSDJump', 'Powerplay', 'Loadout',
       // a pie: equipos, trajes y armas (no hay evento con todo lo que tienes)
-      'SuitLoadout', 'SwitchSuitLoadout', 'CreateSuitLoadout', 'RenameSuitLoadout', 'DeleteSuitLoadout', 'LoadoutEquipModule', 'LoadoutRemoveModule', 'BuySuit', 'SellSuit', 'UpgradeSuit', 'BuyWeapon', 'SellWeapon', 'UpgradeWeapon'];
+      'SuitLoadout', 'SwitchSuitLoadout', 'CreateSuitLoadout', 'RenameSuitLoadout', 'DeleteSuitLoadout', 'LoadoutEquipModule', 'LoadoutRemoveModule', 'BuySuit', 'SellSuit', 'UpgradeSuit', 'BuyWeapon', 'SellWeapon', 'UpgradeWeapon',
+      // materiales de ingeniería de nave: el total al arrancar el juego y lo que cambia después
+      'Materials', 'MaterialCollected', 'MaterialDiscarded', 'MaterialTrade', 'Synthesis', 'TechnologyBroker', 'ScientificResearch', 'EngineerContribution', 'MissionCompleted'];
     let files;
     try { files = fs.readdirSync(this.folder).filter((f) => /^Journal\..*\.log$/.test(f)).sort(); } catch (e) { return 0; }
     files = files.slice(0, -1); // el último lo lee el tailer en vivo

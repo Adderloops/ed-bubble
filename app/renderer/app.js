@@ -28,6 +28,7 @@ const ui = {
   lockTab: 'items', lockPage: 0, lockSrc: 'locker', // a pie: taquilla
   modTarget: 'suit', modPage: 0, modOpen: null, // a pie: mejoras de ingeniero
   engKind: 'ship', engCat: null, engModule: null, engPage: 0, engOpen: null, // pantalla Ingenieros
+  recipes: null, engRecipe: null, engBp: null, engExp: false, // recetas de ingeniería de nave
   skull: null, mineTab: null, sitesPage: 0, prospPage: 0, skullMsg: null, // minería
   coordText: '', coordMsg: null, // coordenadas en planeta: texto escrito y aviso
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
@@ -1695,9 +1696,43 @@ function engStatus(e, kind) {
   if (e.status === 'known') return ['amber', 'Conocido'];
   return ['dim', 'Sin datos'];
 }
+function loadRecipes() {
+  if (ui.recipes || !window.edbubble || !window.edbubble.recipes) return;
+  ui.recipes = 'loading';
+  window.edbubble.recipes().then((r) => { ui.recipes = r; render(); }).catch(() => { ui.recipes = null; });
+}
+const matChip = (k, need, have, R) => { const h = (have && have[k]) || 0; const m = R.mats[k] || {}; return `<span class="upm ${h >= need ? 'ok' : ''}" title="${esc(m.name || k)} · ${esc({ Raw: 'bruto', Manufactured: 'fabricado', Encoded: 'codificado' }[m.type] || '')} G${m.grade || '?'}">${esc(m.name || k)} <b>${h}/${need}</b></span>`; };
+/** Recetas de un módulo con el tope de grado del ingeniero y lo que tienes. */
+function recipePanel(s, e, module) {
+  const R = ui.recipes;
+  const back = '<button type="button" class="tab small" data-engrecipe="">‹ Volver</button>';
+  if (!R || R === 'loading') return `<div style="display:flex;justify-content:flex-end">${back}</div><div class="empty">Cargando recetas…</div>`;
+  const mr = R.modules[module];
+  const mod = e.mods.find((m) => m.key === module);
+  if (!mr || !mod) return `<div style="display:flex;justify-content:flex-end">${back}</div><div class="empty">Sin recetas para este módulo.</div>`;
+  const have = s.materials;
+  const bpId = mr.bp.includes(ui.engBp) ? ui.engBp : mr.bp[0];
+  const tabs = `<div style="display:flex;gap:6px;flex-wrap:wrap">${mr.bp.map((id) => `<button type="button" class="tab small ${!ui.engExp && id === bpId ? 'on' : ''}" data-engbp="${esc(id)}">${esc(R.blueprints[id].name)}</button>`).join('')}${mr.sp.length ? `<button type="button" class="tab small ${ui.engExp ? 'on' : ''}" data-engexp="1">Experimentales</button>` : ''}</div>`;
+  let body;
+  if (ui.engExp) {
+    body = mr.sp.map((id) => { const sp = R.specials[id]; const ok = sp.m.every(([k, n]) => ((have && have[k]) || 0) >= n);
+      return `<div class="in" style="padding:7px 10px;display:flex;flex-direction:column;gap:4px"><span style="display:flex;justify-content:space-between;gap:8px"><span class="va nowrap">${esc(sp.name)}</span>${have ? `<span class="eb ${ok ? 'cyan' : 'dim'}" style="font-size:10px">${ok ? 'Listo' : ''}</span>` : ''}</span><span style="display:flex;flex-wrap:wrap;gap:4px">${sp.m.map(([k, n]) => matChip(k, n, have, R)).join('')}</span></div>`; }).join('');
+  } else {
+    const bp = R.blueprints[bpId];
+    const rank = e.status === 'unlocked' ? (e.rank || 0) : 0;
+    body = Object.keys(bp.g).map(Number).filter((g) => g <= mod.grade).sort((a, b) => a - b).map((g) => { const ok = bp.g[g].every(([k, n]) => ((have && have[k]) || 0) >= n);
+      return `<div class="in" style="padding:7px 10px;display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px;align-items:center;${g > rank ? 'opacity:.6' : ''}"><span class="num ${have && ok ? 'cyan' : ''}" style="font-size:18px">G${g}</span><span style="display:flex;flex-wrap:wrap;gap:4px">${bp.g[g].map(([k, n]) => matChip(k, n, have, R)).join('')}${g > rank ? `<span class="eb amber" style="font-size:9px;align-self:center">${rank ? `Necesitas grado ${g} con ${esc(e.name)}` : 'Aún no lo tienes desbloqueado'}</span>` : ''}</span></div>`; }).join('');
+  }
+  return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:17px">${esc(mod.name)}</span><span class="eb dim" style="font-size:10px">${esc(e.name)} lo hace hasta G${mod.grade}</span></span>${back}</div>
+    ${tabs}
+    ${have ? '' : '<span class="eb amber">Aún no sé tus materiales: el juego los guarda al empezar la partida</span>'}
+    <div style="display:flex;flex-direction:column;gap:4px">${body}</div>
+    <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">Cada tirada gasta la receta de su grado. Los materiales son los mismos con cualquier ingeniero; él solo pone el grado máximo.</span>`;
+}
 function screenIngenieros(s, v) {
   const E = v.engineers || { ship: [], suit: [], modules: {} };
   const kind = ui.engKind === 'suit' ? 'suit' : 'ship';
+  if (kind === 'ship') loadRecipes();
   const tabs = `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
     <button type="button" class="tab ${kind === 'ship' ? 'on' : ''}" data-engkind="ship">Naves · ${E.ship.length}</button>
     <button type="button" class="tab ${kind === 'suit' ? 'on' : ''}" data-engkind="suit">A pie · ${E.suit.length}</button>
@@ -1738,7 +1773,7 @@ function screenIngenieros(s, v) {
       ? (open.status === 'unlocked' ? `Desbloqueado${open.rank ? ` · tu grado con él: G${open.rank}` : ''}` : open.status === 'invited' ? 'Invitado: te falta el contrato inicial' : open.status === 'known' ? 'Lo conoces, pero aún no tienes acceso' : 'Aún no sabes de él')
       : (open.status === 'unlocked' ? 'Tienes acceso' : open.status === 'known' ? 'Lo conoces, pero aún no tienes acceso' : 'Aún no sabes de él');
     const groups = kind === 'ship'
-      ? ENG_CATS.map(([k, t]) => { const ms = open.mods.filter((m) => m.cat === k); return ms.length ? `<span class="eb dim" style="margin-top:6px">${t}</span>${ms.map((m) => `<span class="eng-mod ${m.key === mod ? 'on' : ''}"><span>${esc(m.name)}</span><span class="num ${m.grade >= 5 ? 'cyan' : ''}">G${m.grade}</span></span>`).join('')}` : ''; }).join('')
+      ? ENG_CATS.map(([k, t]) => { const ms = open.mods.filter((m) => m.cat === k); return ms.length ? `<span class="eb dim" style="margin-top:6px">${t}</span>${ms.map((m) => { const has = ui.recipes && ui.recipes !== 'loading' && ui.recipes.modules[m.key]; return `<${has ? 'button type="button"' : 'span'} class="eng-mod ${has ? 'click' : ''} ${m.key === mod ? 'on' : ''}" ${has ? `data-engrecipe="${esc(m.key)}"` : ''}><span>${esc(m.name)}${has ? ' <span class="soft">›</span>' : ''}</span><span class="num ${m.grade >= 5 ? 'cyan' : ''}">G${m.grade}</span></${has ? 'button' : 'span'}>`; }).join('')}` : ''; }).join('')
       : `<span class="eb dim" style="margin-top:6px">Traje</span>${open.suitMods.map((m) => `<span class="eng-mod"><span>${esc(m)}</span></span>`).join('')}<span class="eb dim" style="margin-top:6px">Armas</span>${open.weaponMods.map((m) => `<span class="eng-mod"><span>${esc(m)}</span></span>`).join('')}`;
     detail = `
       <div style="display:flex;gap:14px;align-items:center">${portrait(open, 112)}
@@ -1749,7 +1784,9 @@ function screenIngenieros(s, v) {
       <span class="eb ${cls}">${status}</span>
       ${open.permit ? '<span class="eb red">Su sistema pide permiso</span>' : ''}${open.colonia ? '<span class="eb dim">Está en Colonia, a unos 22.000 ly de la Burbuja</span>' : ''}
       ${open.unlock && open.status !== 'unlocked' ? `<div class="in" style="padding:8px 12px;display:flex;flex-direction:column;gap:4px"><span class="eb amber" style="font-size:10px">Cómo desbloquearlo</span><span style="font-size:13px;line-height:1.35">${esc(open.unlock).replace(/\. (?=(Conocer|Acceso|Desbloqueo):)/g, '.<br>')}</span></div>` : ''}
-      <div style="display:flex;flex-direction:column;gap:2px">${groups}</div>`;
+      <div style="display:flex;flex-direction:column;gap:2px">${groups}</div>
+      ${kind === 'ship' ? '<span class="eb dim" style="font-size:10px;margin-top:auto">Toca un módulo para ver sus recetas y lo que te falta</span>' : ''}`;
+    if (kind === 'ship' && ui.engRecipe && open.mods.some((m) => m.key === ui.engRecipe)) detail = recipePanel(s, open, ui.engRecipe);
   }
   const feedback = ui.navFeedback && Date.now() - ui.navFeedback.at < 3000 ? `<span class="eb cyan">${esc(ui.navFeedback.text)}</span>` : '';
   return `<div style="display:flex;flex-direction:column;gap:12px;min-height:0;height:100%">
@@ -2144,13 +2181,21 @@ document.addEventListener('pointerdown', (ev) => {
   if (pt) { ev.preventDefault(); window.edbubble.ppTrack(pt.dataset.pptrack || null); return; }
   const hp = ev.target.closest('button[data-pager="here"], button[data-pager="bio"]');
   if (hp && !hp.disabled) { ev.preventDefault(); const k = hp.dataset.pager === 'here' ? 'herePage' : 'bioPage'; ui[k] = Math.max(0, ui[k] + Number(hp.dataset.d)); render(); return; }
+  const recBtn = ev.target.closest('[data-engrecipe], [data-engbp], [data-engexp]');
+  if (recBtn) {
+    ev.preventDefault(); const d = recBtn.dataset;
+    if (d.engrecipe != null) { ui.engRecipe = d.engrecipe || null; ui.engBp = null; ui.engExp = false; }
+    else if (d.engbp != null) { ui.engBp = d.engbp; ui.engExp = false; }
+    else ui.engExp = true;
+    render(); return;
+  }
   const engBtn = ev.target.closest('[data-engkind], [data-engcat], [data-engmodule], [data-engopen]');
   if (engBtn) {
     ev.preventDefault(); const d = engBtn.dataset;
-    if (d.engkind != null) { ui.engKind = d.engkind; ui.engPage = 0; ui.engOpen = null; ui.engModule = null; }
+    if (d.engkind != null) { ui.engKind = d.engkind; ui.engPage = 0; ui.engOpen = null; ui.engModule = null; ui.engRecipe = null; }
     else if (d.engcat != null) { ui.engCat = d.engcat || null; ui.engModule = null; ui.engPage = 0; }
-    else if (d.engmodule != null) { ui.engModule = ui.engModule === d.engmodule ? null : d.engmodule; ui.engPage = 0; ui.engOpen = null; }
-    else ui.engOpen = d.engopen;
+    else if (d.engmodule != null) { ui.engModule = ui.engModule === d.engmodule ? null : d.engmodule; ui.engPage = 0; ui.engOpen = null; ui.engRecipe = ui.engModule; ui.engBp = null; ui.engExp = false; }
+    else { ui.engOpen = d.engopen; ui.engRecipe = ui.engModule || null; ui.engBp = null; ui.engExp = false; }
     render(); return;
   }
   const modOpenBtn = ev.target.closest('[data-modopen]');
