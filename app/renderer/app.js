@@ -1845,7 +1845,7 @@ function eqMods(D) {
   const cats = ['standard', 'internal', 'hardpoint', 'utility'];
   const groups = {};
   for (const [k, m] of Object.entries(D.modules)) {
-    if (m.c !== ui.eqCat || m.sh || /_free$|_default$/.test(k)) continue;
+    if (m.c !== ui.eqCat || m.sh || m.x || /_free$|_default$/.test(k)) continue; // m.x: retirado o no disponible en el juego
     (groups[m.n] = groups[m.n] || []).push({ k, ...m });
   }
   const names = Object.keys(groups).sort((a, b) => modNameEs(D, a).localeCompare(modNameEs(D, b), 'es'));
@@ -1866,7 +1866,7 @@ function eqMods(D) {
       <div class="eq-table" style="grid-template-columns:90px repeat(${cols.length},minmax(0,1fr))"><span class="eb">Clase</span>${cols.map((f) => `<span class="eb" style="text-align:right">${STAT_ES[f] || f}</span>`).join('')}
       ${vars.slice(0, MAX).map((x) => `<span class="num">${esc(`${x.cl}${x.r}`)}${x.m ? ` <span class="soft" style="font-size:11px">${esc({ Fixed: 'F', Gimballed: 'C', Turreted: 'T' }[x.m] || '')}</span>` : ''}</span>${cols.map((f) => `<span class="num soft" style="text-align:right">${x.s ? fmtV(f, x.s[f]) : '—'}</span>`).join('')}`).join('')}</div>
       ${vars.length > MAX ? `<span class="eb dim">Y ${vars.length - MAX} variantes más</span>` : ''}
-      ${vars.some((x) => !x.s) ? '<span class="eb dim" style="font-size:10px">— = sin datos todavía (módulo reciente)</span>' : ''}`;
+      ${vars.some((x) => !x.s || x.src) ? '<span class="eb dim" style="font-size:10px">— = sin datos todavía (módulo reciente; de algunos solo se sabe el precio, de Inara)</span>' : ''}`;
   }
   return `<div style="flex:1;display:grid;grid-template-columns:420px minmax(0,1fr);gap:12px;min-height:0">
     <section class="pn card" style="min-height:0;overflow:hidden">${catTabs}<div style="display:flex;flex-direction:column;gap:4px">${rows}</div><span style="display:flex;justify-content:flex-end;margin-top:auto">${pager2('eqgrp', ui.eqGrpPage, pages)}</span></section>
