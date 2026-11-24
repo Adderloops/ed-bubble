@@ -151,6 +151,8 @@ No está firmado: la primera vez Windows SmartScreen avisa («Windows protegió 
 
 ## Pendiente
 
+- Recetas de ingeniería que faltan en coriolis-data (en la ficha del ingeniero salen sin flecha): módulos guardianes (cañón Gauss, cargador de plasma, cañón de esquirlas, planta y distribuidor de energía, potenciador FSD y refuerzos de casco, módulos y escudo), refuerzo de módulos, láser de minería, lanzamisiles de enzimas y desintegrador abrasivo. Idea: pedir a otro comandante capturas de esas recetas (materiales de cada grado, por ejemplo desde Odyssey Materials Helper) y añadirlas a `core/shipblueprints.js`.
+
 - Traducción de la interfaz a inglés, francés, italiano y alemán (ahora solo español; en Ajustes › Idioma sale «English · pronto»).
 
 - Brújula de coordenadas (y quizá el esquema de atraque) en **overlay** sobre la pantalla del juego: ventana transparente, siempre encima y que no capture el ratón, con el juego en ventana sin bordes.
