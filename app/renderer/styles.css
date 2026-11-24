@@ -170,3 +170,7 @@ button { font: inherit; }
 .upm { font-size: 12px; padding: 2px 6px; border: 1px solid #5a4524; color: var(--amber); border-radius: 2px; white-space: nowrap; }
 .upm b { font-family: 'Share Tech Mono', monospace; font-weight: 400; }
 .upm.ok { border-color: var(--line2); color: var(--soft); }
+/* A pie: elegir pieza del equipo para ver sus mejoras */
+.modpick { cursor: pointer; }
+.modpick.sel { border-color: var(--cyan); }
+button.modrow { width: 100%; font: inherit; color: inherit; cursor: pointer; }

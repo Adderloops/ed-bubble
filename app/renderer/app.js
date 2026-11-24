@@ -26,6 +26,7 @@ const ui = {
   here: null, herePage: 0, hereKinds: [], hereLarge: false, // estaciones y portanaves del sistema actual (Spansh)
   bioPage: 0,
   lockTab: 'items', lockPage: 0, lockSrc: 'locker', // a pie: taquilla
+  modTarget: 'suit', modPage: 0, modOpen: null, // a pie: mejoras de ingeniero
   skull: null, mineTab: null, sitesPage: 0, prospPage: 0, skullMsg: null, // minería
   coordText: '', coordMsg: null, // coordenadas en planeta: texto escrito y aviso
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
@@ -1202,17 +1203,17 @@ function screenOrbita(s, v) {
 
 /* ---------- A pie ---------- */
 const SUIT_MODS = {
-  suit_improvedjumpassist: 'Asistencia de salto mejorada', suit_increasedammoreserves: 'Más reserva de munición', suit_adsmovementspeed: 'Movilidad al apuntar',
-  suit_improvedarmourrating: 'Resistencia al daño', suit_nightvision: 'Visión nocturna', suit_increasedbatterycapacity: 'Batería ampliada',
-  suit_increasedshieldregen: 'Regeneración de escudo', suit_reducedtoolbatteryconsumption: 'Herramientas con menos consumo', suit_increasedo2capacity: 'Oxígeno ampliado',
-  suit_increasedsprintduration: 'Sprint más largo', suit_quieterfootsteps: 'Pasos silenciosos', suit_increasedmeleedamage: 'Más daño cuerpo a cuerpo',
-  suit_backpackcapacity: 'Mochila ampliada', suit_enhancedtracking: 'Seguimiento mejorado', suit_improvedradar: 'Radar mejorado',
+  suit_increasedmeleedamage: 'Más daño cuerpo a cuerpo', suit_improvedmeleedamage: 'Más daño cuerpo a cuerpo', suit_adsmovementspeed: 'Movilidad en combate',
+  suit_improvedarmourrating: 'Resistencia al daño', suit_improvedradar: 'Seguimiento mejorado', suit_enhancedtracking: 'Seguimiento mejorado',
+  suit_quieterfootsteps: 'Pasos silenciosos', suit_increasedammoreserves: 'Más munición', suit_backpackcapacity: 'Mochila ampliada',
+  suit_improvedbatterycapacity: 'Batería ampliada', suit_increasedbatterycapacity: 'Batería ampliada', suit_increasedshieldregen: 'Escudo más rápido',
+  suit_reducedtoolbatteryconsumption: 'Herramientas con menos consumo', suit_improvedjumpassist: 'Salto asistido mejorado', suit_increasedo2capacity: 'Más reserva de aire',
+  suit_increasedsprintduration: 'Sprint más largo', suit_nightvision: 'Visión nocturna',
 };
 const WEAPON_MODS = {
-  weapon_handling: 'Manejo rápido', weapon_reloadspeed: 'Recarga rápida', weapon_clipsize: 'Cargador ampliado', weapon_stability: 'Estabilidad',
-  weapon_range: 'Más alcance', weapon_headshotdamage: 'Daño en la cabeza', weapon_accuracy: 'Precisión', weapon_scope: 'Mira',
-  weapon_suppression_pressurised: 'Silenciador', weapon_suppression_unpressurised: 'Silenciador', weapon_backpackreloading: 'Recarga guardada',
-  weapon_stowedreloading: 'Recarga guardada', weapon_noisereduction: 'Sonido amortiguado', weapon_audiomasking: 'Sonido amortiguado',
+  weapon_headshotdamage: 'Daño en la cabeza', weapon_clipsize: 'Cargador ampliado', weapon_backpackreloading: 'Recarga guardada', weapon_stowedreloading: 'Recarga guardada',
+  weapon_scope: 'Mira', weapon_suppression_pressurised: 'Silenciador', weapon_suppression_unpressurised: 'Sonido amortiguado', weapon_audiomasking: 'Sonido amortiguado',
+  weapon_handling: 'Manejo rápido', weapon_range: 'Más alcance', weapon_reloadspeed: 'Recarga rápida', weapon_stability: 'Estabilidad', weapon_accuracy: 'Precisión sin apuntar',
 };
 const modName = (m) => SUIT_MODS[m] || WEAPON_MODS[m] || String(m).replace(/^(suit|weapon)_/, '').replace(/_/g, ' ');
 const SLOT_NAME = { PrimaryWeapon1: 'Principal 1', PrimaryWeapon2: 'Principal 2', SecondaryWeapon: 'Secundaria' };
@@ -1228,6 +1229,48 @@ function upgradeLine(u, grade) {
   </span>`;
 }
 const LOCK_TABS = [['items', 'Bienes'], ['components', 'Componentes'], ['data', 'Datos'], ['consumables', 'Consumibles']];
+
+const slotPill = (m) => (m ? `<span class="eb ${m.free ? 'cyan' : 'dim'}" style="font-size:10px" title="Ranuras para mejoras de ingeniero: una por grado a partir de G2">${m.used}/${m.slots} ranuras</span>` : '');
+const ACCESS = { yes: ['cyan', 'Con acceso'], known: ['amber', 'Conocido, sin acceso'], no: ['dim', 'Sin desbloquear'] };
+const MOD_PAGE = 7;
+/** Mejoras de ingeniero para la pieza elegida del equipo (traje o arma). */
+function modsPanel(l, mods) {
+  const target = ui.modTarget === 'suit' ? 'suit' : l.weapons.find((w) => String(w.id) === String(ui.modTarget)) ? ui.modTarget : 'suit';
+  const piece = target === 'suit' ? l.suit : l.weapons.find((w) => String(w.id) === String(target));
+  const m = mods ? (target === 'suit' ? mods.suit : mods.weapons[piece.id]) : null;
+  const picks = `<div style="display:flex;gap:6px;flex-wrap:wrap">${[['suit', 'Traje'], ...l.weapons.map((w) => [w.id, SLOT_NAME[w.slot] || w.name])].map(([k, t]) => `<button type="button" class="tab small ${String(k) === String(target) ? 'on' : ''}" data-modtarget="${esc(k)}">${esc(t)}</button>`).join('')}</div>`;
+  if (!m) return `${picks}<div class="empty">Sin datos de este equipo.</div>`;
+  const TYPE = { kinetic: 'cinética', laser: 'láser', plasma: 'plasma' };
+  const slotsLine = !m.slots ? `<span class="eb amber">En G1 no tiene ranuras: súbelo a G2 para montar la primera mejora</span>`
+    : !m.free ? `<span class="eb amber">Las ${m.slots} ranuras están ocupadas${m.slots < 4 ? `: sube a G${m.slots + 2} para otra mejora` : ''}</span>`
+    : `<span class="eb cyan">${m.free} ranura${m.free > 1 ? 's' : ''} libre${m.free > 1 ? 's' : ''} de ${m.slots}${m.type ? ` · arma ${TYPE[m.type]}` : ''}</span>`;
+  const open = ui.modOpen && m.list.find((x) => x.id === ui.modOpen);
+  if (open) {
+    return `${picks}
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:18px">${esc(open.name)}</span><span class="eb dim" style="font-size:10px">${esc(open.en)}</span></span><button type="button" class="tab small" data-modopen="">‹ Volver</button></div>
+      <span class="eb ${open.installed ? 'dim' : open.ready ? 'cyan' : 'amber'}">${open.installed ? 'Ya la lleva' : open.ready ? 'Tienes todos los materiales' : `Faltan ${open.missing}`}</span>
+      <span style="display:flex;flex-wrap:wrap;gap:4px">${open.materials.map((x) => `<span class="upm ${x.ok ? 'ok' : ''}">${esc(x.name)} <b>${x.have}/${x.need}</b></span>`).join('')}</span>
+      <span class="eb dim" style="margin-top:4px">Ingenieros que la montan</span>
+      <div style="display:flex;flex-direction:column;gap:4px">${open.engineers.map((e) => `<div class="in" style="display:flex;flex-direction:column;gap:2px;padding:7px 12px">
+        <span style="display:flex;justify-content:space-between;gap:8px"><span class="va nowrap">${esc(e.name)}</span><span class="eb ${ACCESS[e.access][0]}" style="font-size:10px">${ACCESS[e.access][1]}</span></span>
+        <span class="soft nowrap" style="font-size:12px">${esc(e.site)} · ${esc(e.system)}${e.colonia ? ' · Colonia' : ''}</span>
+        ${e.access !== 'yes' && e.unlock ? `<span class="soft" style="font-size:12px">${esc(e.unlock)}</span>` : ''}
+      </div>`).join('')}</div>`;
+  }
+  const avail = m.list.filter((x) => !x.installed);
+  const pages = Math.max(1, Math.ceil(avail.length / MOD_PAGE));
+  ui.modPage = Math.min(ui.modPage, pages - 1);
+  const rows = avail.slice(ui.modPage * MOD_PAGE, (ui.modPage + 1) * MOD_PAGE).map((x) => {
+    const eng = x.engineers.find((e) => e.access === 'yes');
+    const state = x.installed ? ['dim', 'Montada'] : x.ready ? ['cyan', 'Listo'] : ['amber', `Faltan ${x.missing}`];
+    return `<button type="button" class="in modrow" data-modopen="${esc(x.id)}" style="display:flex;flex-direction:column;gap:2px;padding:7px 12px;text-align:left">
+      <span style="display:flex;justify-content:space-between;gap:8px;width:100%"><span class="va nowrap">${esc(x.name)}</span><span class="eb ${state[0]}" style="font-size:10px">${state[1]}</span></span>
+      <span class="soft nowrap" style="font-size:12px">${eng ? `${esc(eng.name)} · ${esc(eng.system)}` : 'Ningún ingeniero con acceso'}</span>
+    </button>`;
+  }).join('') || '<div class="empty">Ya lleva todas las mejoras posibles</div>';
+  return `${picks}${slotsLine}<div style="display:flex;flex-direction:column;gap:4px">${rows}</div>
+    <span style="display:flex;justify-content:space-between;align-items:center;margin-top:auto"><span class="eb dim" style="font-size:10px">Toca una mejora para ver materiales e ingenieros</span>${pager2('mod', ui.modPage, pages)}</span>`;
+}
 
 function screenApie(s, v) {
   const st = s.status; const fl = st.flags || {};
@@ -1253,13 +1296,13 @@ function screenApie(s, v) {
   else {
     eq = `
       <span class="eb dim">Equipo · ${esc(l.name || '—')}</span>
-      <div class="in" style="display:flex;flex-direction:column;gap:6px;padding:10px 12px">
-        <span style="display:flex;justify-content:space-between;align-items:center"><span class="va" style="font-size:20px">${esc(l.suit.name)}</span>${gradePill(l.suit.grade)}</span>
+      <div class="in modpick ${ui.lockSrc === 'mods' && ui.modTarget === 'suit' ? 'sel' : ''}" data-modtarget="suit" style="display:flex;flex-direction:column;gap:6px;padding:10px 12px">
+        <span style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="va" style="font-size:20px">${esc(l.suit.name)}</span><span style="display:flex;gap:6px;align-items:center">${slotPill(v.mods && v.mods.suit)}${gradePill(l.suit.grade)}</span></span>
         <span style="display:flex;flex-wrap:wrap;gap:5px">${l.suit.mods.map((m) => `<span class="chip">${esc(modName(m))}</span>`).join('') || '<span class="soft" style="font-size:13px">Sin mejoras</span>'}</span>
         ${upgradeLine(v.upgrades && v.upgrades.suit, l.suit.grade)}
       </div>
-      ${l.weapons.map((w) => `<div class="in" style="display:flex;flex-direction:column;gap:6px;padding:10px 12px">
-        <span style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:17px">${esc(w.name)}</span><span class="eb dim" style="font-size:10px">${esc(SLOT_NAME[w.slot] || w.slot || '')}</span></span>${gradePill(w.grade)}</span>
+      ${l.weapons.map((w) => `<div class="in modpick ${ui.lockSrc === 'mods' && String(ui.modTarget) === String(w.id) ? 'sel' : ''}" data-modtarget="${esc(w.id)}" style="display:flex;flex-direction:column;gap:6px;padding:10px 12px">
+        <span style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:17px">${esc(w.name)}</span><span class="eb dim" style="font-size:10px">${esc(SLOT_NAME[w.slot] || w.slot || '')}</span></span><span style="display:flex;gap:6px;align-items:center">${slotPill(v.mods && v.mods.weapons[w.id])}${gradePill(w.grade)}</span></span>
         <span style="display:flex;flex-wrap:wrap;gap:5px">${w.mods.map((m) => `<span class="chip">${esc(modName(m))}</span>`).join('') || '<span class="soft" style="font-size:13px">Sin mejoras</span>'}</span>
         ${upgradeLine(v.upgrades && v.upgrades.weapons[w.id], w.grade)}
       </div>`).join('')}`;
@@ -1285,10 +1328,12 @@ function screenApie(s, v) {
       <span style="display:flex;justify-content:flex-end;margin-top:auto">${pager2('lock', ui.lockPage, pages)}</span>`;
   }
   const hasPack = of.backpack && ['items', 'components', 'data', 'consumables'].some((k) => (of.backpack[k] || []).length);
+  const showMods = ui.lockSrc === 'mods' && l;
+  const title = showMods ? 'Mejoras de ingeniero' : ui.lockSrc === 'backpack' && hasPack ? 'Mochila' : 'Taquilla de la nave';
   const lockCard = `<section class="pn card" style="min-height:0;overflow:hidden">
-      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">${ui.lockSrc === 'backpack' && hasPack ? 'Mochila' : 'Taquilla de la nave'}</span>
-        ${hasPack ? `<span style="display:flex;gap:6px"><button type="button" class="tab small ${ui.lockSrc !== 'backpack' ? 'on' : ''}" data-locksrc="locker">Taquilla</button><button type="button" class="tab small ${ui.lockSrc === 'backpack' ? 'on' : ''}" data-locksrc="backpack">Mochila</button></span>` : ''}</div>
-      ${lock}
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="ti nowrap" style="font-size:16px">${title}</span>
+        <span style="display:flex;gap:6px"><button type="button" class="tab small ${!showMods && ui.lockSrc !== 'backpack' ? 'on' : ''}" data-locksrc="locker">Taquilla</button>${hasPack ? `<button type="button" class="tab small ${!showMods && ui.lockSrc === 'backpack' ? 'on' : ''}" data-locksrc="backpack">Mochila</button>` : ''}${l ? `<button type="button" class="tab small ${showMods ? 'on' : ''}" data-locksrc="mods">Mejoras</button>` : ''}</span></div>
+      ${showMods ? modsPanel(l, v.mods) : lock}
     </section>`;
   return `<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:12px;min-height:0;height:100%">${left}${eqCard}${lockCard}</div>`;
 }
@@ -2012,12 +2057,16 @@ document.addEventListener('pointerdown', (ev) => {
   if (pt) { ev.preventDefault(); window.edbubble.ppTrack(pt.dataset.pptrack || null); return; }
   const hp = ev.target.closest('button[data-pager="here"], button[data-pager="bio"]');
   if (hp && !hp.disabled) { ev.preventDefault(); const k = hp.dataset.pager === 'here' ? 'herePage' : 'bioPage'; ui[k] = Math.max(0, ui[k] + Number(hp.dataset.d)); render(); return; }
+  const modOpenBtn = ev.target.closest('[data-modopen]');
+  if (modOpenBtn) { ev.preventDefault(); ui.modOpen = modOpenBtn.dataset.modopen || null; render(); return; }
+  const modTgt = ev.target.closest('[data-modtarget]');
+  if (modTgt) { ev.preventDefault(); ui.modTarget = modTgt.dataset.modtarget; ui.lockSrc = 'mods'; ui.modPage = 0; ui.modOpen = null; render(); return; }
   const lockTabBtn = ev.target.closest('button[data-locktab], button[data-locksrc]');
   if (lockTabBtn) { ev.preventDefault(); if (lockTabBtn.dataset.locktab) ui.lockTab = lockTabBtn.dataset.locktab; else ui.lockSrc = lockTabBtn.dataset.locksrc; ui.lockPage = 0; render(); return; }
   const minTabBtn = ev.target.closest('button[data-minetab]');
   if (minTabBtn) { ev.preventDefault(); ui.mineTab = minTabBtn.dataset.minetab; render(); return; }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage' }[minPgBtn.dataset.mpager]; ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage' }[minPgBtn.dataset.mpager]; ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {
     ev.preventDefault();

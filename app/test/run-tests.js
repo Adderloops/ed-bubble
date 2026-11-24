@@ -508,6 +508,35 @@ test('a pie: materiales para subir de grado (trajes por modelo, armas por fabric
     assert.deepStrictEqual(sum(k), { weaponschematic: 12, ionisedgas: 12, manufacturinginstructions: 12, microelectrode: 28, opticalfibre: 28 }, k);
 });
 
+test('a pie: mejoras de ingeniero (materiales por tipo de arma, ranuras, acceso a ingenieros)', () => {
+  const m = require('../../core/odymods');
+  assert.strictEqual(m.MODS.filter((x) => x.kind === 'suit').length, 14);
+  assert.strictEqual(m.MODS.filter((x) => x.kind === 'weapon').length, 11);
+  assert.strictEqual(m.ENGINEERS.length, 13);
+  // cada mejora la monta al menos un ingeniero, y cada variante tiene materiales
+  for (const x of m.MODS) {
+    assert.ok(m.ENGINEERS.some((e) => e[x.kind].includes(x.id)), x.id);
+    if (x.variants) assert.deepStrictEqual(Object.keys(x.variants).sort(), ['kinetic', 'laser', 'plasma'], x.id);
+  }
+  const locker = { items: [], components: [{ key: 'weaponcomponent', count: 5, mission: 0 }, { key: 'metalcoil', count: 25, mission: 0 }, { key: 'rdx', count: 40, mission: 0 }], data: [{ key: 'ballisticsdata', count: 16, mission: 0 }, { key: 'topographicalsurveys', count: 14, mission: 0 }] };
+  const ranks = { 'Domino Green': { progress: 'Unlocked' }, 'Wellington Beck': { progress: 'Invited' }, 'Rosa Dayette': { progress: 'Known' } };
+  // Karma AR-50 en G3 con una mejora: 2 ranuras, 1 libre; Greater Range usa la variante cinética
+  const r = m.modsFor('weapon', { key: 'wpn_m_assaultrifle_kinetic_fauto', grade: 3, mods: ['weapon_stability'] }, locker, ranks);
+  assert.deepStrictEqual([r.type, r.slots, r.used, r.free], ['kinetic', 2, 1, 1]);
+  const range = r.list.find((x) => x.id === 'weapon_range');
+  assert.strictEqual(range.en, 'Greater Range (Kinetic)');
+  assert.deepStrictEqual(range.materials.map((x) => [x.key, x.need]), [['weaponcomponent', 5], ['metalcoil', 10], ['rdx', 10], ['ballisticsdata', 10], ['topographicalsurveys', 10]]);
+  assert.strictEqual(range.ready, true);
+  // «Invited» ya da acceso en Odyssey; los de Colonia van detrás
+  assert.deepStrictEqual(range.engineers.map((e) => [e.name, e.access]), [['Domino Green', 'yes'], ['Wellington Beck', 'yes'], ['Rosa Dayette', 'known']]);
+  assert.strictEqual(r.list.find((x) => x.id === 'weapon_stability').installed, true);
+  // Takada (láser) y Manticore (plasma) cogen su variante
+  assert.strictEqual(m.modsFor('weapon', { key: 'wpn_s_pistol_laser_sauto', grade: 1, mods: [] }, null, {}).list.find((x) => x.id === 'weapon_range').materials[0].key, 'circuitboard');
+  assert.strictEqual(m.modsFor('weapon', { key: 'wpn_m_shotgun_plasma_doublebarrel', grade: 5, mods: [] }, null, {}).list.find((x) => x.id === 'weapon_range').materials[0].key, 'electricalfuse');
+  // traje en G1: sin ranuras
+  assert.strictEqual(m.modsFor('suit', { key: 'utilitysuit_class1', grade: 1, mods: [] }, null, {}).slots, 0);
+});
+
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
   const pads = require('../../core/pads');
   // comprobadas en el juego (Coriolis): 9 a las 8, 25 a las 12, 27 a la 1

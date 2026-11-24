@@ -72,7 +72,9 @@ Sección del grupo Viaje (Odyssey):
 - Equipo actual: traje y armas con su grado (G1 a G5) y sus mejoras en español. Se toma de `SuitLoadout` y se actualiza con los cambios de equipo, compras y mejoras (también del historial de los últimos 45 días). Debajo, los otros equipos conocidos.
 - Taquilla de la nave (`ShipLocker.json`) y mochila (`Backpack.json`, si llevas algo): bienes, componentes, datos y consumibles, con los objetos de misión marcados.
 
-- Subir de grado: bajo cada traje y arma, los materiales del siguiente grado con lo que tienes en la taquilla (sin contar los de misión) y los créditos. Tabla en `core/odyssey.js`, tomada de Elite Dangerous Wiki (fandom) y del foro de Frontier; los materiales propios del Maverick y de Manticore están sin confirmar en la wiki.
+- Subir de grado: bajo cada traje y arma, los materiales del siguiente grado con lo que tienes en la taquilla (sin contar los de misión) y los créditos. Tabla en `core/odyssey.js`; materiales y cantidades de los 3 trajes y las 11 armas comprobados en Odyssey Materials Helper. Los créditos vienen de la wiki (los de G5 de armas no se conocen).
+- Ranuras: cada traje y arma muestra cuántas ranuras de mejora ocupa de las que da su grado (una por grado a partir de G2).
+- Mejoras de ingeniero: pestaña «Mejoras» junto a Taquilla y Mochila (o tocando el traje o un arma del equipo). Lista las mejoras que aún no lleva esa pieza, con lo que te falta, y al tocar una muestra sus materiales y los ingenieros que la montan. Las mejoras de arma por tipo (alcance, daño en la cabeza, precisión sin apuntar) usan la variante del arma: cinética (Kinematic), láser (Takada) o plasma (Manticore). El acceso a cada ingeniero sale del evento `EngineerProgress` del diario: en Odyssey «Invited» ya da acceso. Si no tienes acceso, dice qué pide para desbloquearlo. Datos en `core/odymods.js`.
 
 ## Minería
 

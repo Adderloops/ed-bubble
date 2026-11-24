@@ -212,9 +212,17 @@ function view(state) {
     suit: nextUpgrade('suit', lo.suit.key, lo.suit.grade, of.locker),
     weapons: Object.fromEntries(lo.weapons.map((w) => [w.id, nextUpgrade('weapon', w.key, w.grade, of.locker)])),
   } : null;
+  // mejoras de ingeniero posibles para el traje y cada arma, con ranuras libres e ingenieros con acceso
+  const { modsFor } = require('./odymods');
+  const ranks = (state.engineering && state.engineering.ranks) || {};
+  const mods = lo ? {
+    suit: modsFor('suit', lo.suit, of.locker, ranks),
+    weapons: Object.fromEntries(lo.weapons.map((w) => [w.id, modsFor('weapon', w, of.locker, ranks)])),
+  } : null;
   return {
     dockPadHour: dockPad ? dockPad.hour : null,
     upgrades,
+    mods,
     dockPad,
     mode: flightMode(state),
     alerts: alerts(state),
