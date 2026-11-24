@@ -18,6 +18,7 @@ const spansh = require('../core/spansh');
 const { plotRoute } = require('../core/plot');
 const geo = require('../core/geo');
 const commodities = require('../core/commodities');
+const mining = require('../core/mining');
 
 // Registro de incidencias: %APPDATA%\\ed-bubble-app\\ed-bubble.log (máx. ~1 MB)
 const LOG_FILE = () => path.join(app.getPath('userData'), 'ed-bubble.log');
@@ -53,26 +54,28 @@ function defaultBounds() {
 // Ajustes del comandante (settings.json en la carpeta de datos de la app)
 const DEFAULT_PREFS = {
   autoJump: true,
-  jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true }, // a qué secciones salta solo
+  jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true }, // a qué secciones salta solo
   startSection: 'puente', lastSection: 'puente', // al abrir: Puente o la última sección vista
   alerts: { dock: true, fuelRoute: true }, // avisos opcionales en la cabecera
   fullscreen: false,
+  rigMin: 75, // guía de taladros: distancia mínima entre taladros (m)
 };
 let settings = {};
 function prefs() {
   const p = { ...DEFAULT_PREFS, ...settings };
   p.jump = { ...DEFAULT_PREFS.jump, ...(settings.jump || {}) };
   p.alerts = { ...DEFAULT_PREFS.alerts, ...(settings.alerts || {}) };
-  delete p.ppTracked;
+  delete p.ppTracked; delete p.skull; delete p.bindsFile; // datos internos, no son ajustes de la ventana
   return p;
 }
-const SECTION_IDS = ['puente', 'vuelo', 'orbita', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
+const SECTION_IDS = ['puente', 'vuelo', 'orbita', 'mineria', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
 /** Valida un ajuste que llega de la ventana; devuelve el valor limpio o undefined. */
 function cleanPref(key, value) {
   const bool = (x) => (typeof x === 'boolean' ? x : undefined);
   if (key === 'autoJump' || key === 'fullscreen') return bool(value);
   if (key === 'startSection') return ['puente', 'ultima'].includes(value) ? value : undefined;
   if (key === 'lastSection') return SECTION_IDS.includes(value) ? value : undefined;
+  if (key === 'rigMin') return Number.isFinite(value) && value >= 30 && value <= 200 ? Math.round(value) : undefined;
   const [group, sub] = String(key).split('.');
   if (group === 'jump' && sub in DEFAULT_PREFS.jump) return bool(value);
   if (group === 'alerts' && sub in DEFAULT_PREFS.alerts) return bool(value);
@@ -85,6 +88,104 @@ let last = null;
 let plotting = null; // { cancelled } mientras se traza una ruta
 // Repostaje en ruta: estaciones con "Refuel" en los sistemas a los que llegas (Spansh)
 const fuelStops = { key: null, busy: false, systems: {} };
+
+/* ---------- Minería: plugin Skull Mining de EDMC ---------- */
+// Carpeta del plugin: la que tenga skull_tracker.py dentro de los plugins de EDMC
+function findSkullDir() {
+  if (process.env.ED_BUBBLE_SKULL_DIR) return process.env.ED_BUBBLE_SKULL_DIR;
+  const base = path.join(process.env.LOCALAPPDATA || path.join(require('os').homedir(), 'AppData', 'Local'), 'EDMarketConnector', 'plugins');
+  try {
+    for (const d of fs.readdirSync(base)) {
+      if (fs.existsSync(path.join(base, d, 'skull_tracker.py'))) return path.join(base, d);
+    }
+  } catch (e) { /* EDMC no instalado */ }
+  return null;
+}
+let skull = { dir: null, live: null, zones: null, sites: null, sitesKey: null, sitesAt: 0, sitesBusy: false, sitesStatus: '' };
+function readJson(file) { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return null; } }
+function skullRead() {
+  skull.dir = findSkullDir();
+  if (!skull.dir) { skull.live = null; skull.zones = null; return; }
+  skull.live = readJson(path.join(skull.dir, 'live_session.json'));
+  skull.zones = readJson(path.join(skull.dir, 'zone_state.json'));
+}
+function skullInfo() {
+  return {
+    found: !!skull.dir, dir: skull.dir,
+    live: mining.liveView(skull.live),
+    zoneTarget: skull.zones && skull.zones.zone_target ? skull.zones.zone_target : null,
+    anchors: skull.zones && skull.zones.zone_anchors ? skull.zones.zone_anchors : {},
+    web: { configured: !!(settings.skull && settings.skull.url && settings.skull.token), status: skull.sitesStatus },
+    sites: skull.sites, sitesKey: skull.sitesKey, sitesAt: skull.sitesAt,
+  };
+}
+function sendSkull() { if (win && !win.isDestroyed()) win.webContents.send('ed:skull', skullInfo()); }
+
+/** Sitios de la flota del cuerpo actual, de la web Skullmining (la misma consulta que hace el plugin). */
+async function skullSites(snap, force) {
+  const st = snap.state; const body = clean(st.status.bodyName) || (st.location.approach && st.location.approach.body);
+  const sys = st.location.system; const cmdr = st.cmdr.name;
+  const conf = settings.skull || {};
+  if (!body || !sys || !conf.url || !conf.token || !cmdr) return;
+  const key = `${sys}|${body}`;
+  const due = force || key !== skull.sitesKey || Date.now() - skull.sitesAt > 2 * 60 * 1000;
+  if (!due || skull.sitesBusy) return;
+  if (key !== skull.sitesKey) { skull.sites = null; skull.sitesKey = key; }
+  skull.sitesBusy = true;
+  try {
+    const u = new URL(conf.url);
+    for (const [k, v] of Object.entries({ view: 'body', system: sys, body, cmdr, key: conf.token })) u.searchParams.set(k, v);
+    const r = await net.fetch(u.toString());
+    const txt = await r.text();
+    let d = null; try { d = JSON.parse(txt); } catch (e) { /* HTML */ }
+    if (!d) skull.sitesStatus = `La URL de la flota no devuelve datos (respuesta ${r.status})`;
+    else if (!d.ok) skull.sitesStatus = { auth: 'Clave incorrecta', member: 'Tu CMDR no está en la lista de la flota', token: 'La URL de la flota es antigua' }[d.error] || `La web respondió ${d.error}`;
+    else { skull.sites = d.sites || []; skull.sitesStatus = ''; }
+  } catch (e) { skull.sitesStatus = `Sin conexión con la web (${e.message})`; logLine(`[skull] sitios: ${e.message}`); }
+  skull.sitesAt = Date.now(); skull.sitesBusy = false;
+  sendSkull();
+}
+const clean = (x) => (x ? String(x).trim() : null);
+
+// Guía de taladros: taladros marcados en la app (se borran al cambiar de cuerpo)
+let rigs = { body: null, list: [] };
+function minePos(st) {
+  const s = st.status;
+  if (!s.flags || !s.flags.hasLatLong || s.latitude == null || !s.planetRadius) return null;
+  return { lat: s.latitude, lon: s.longitude, heading: s.heading, body: clean(s.bodyName), radius: s.planetRadius };
+}
+/** Lo que la pantalla de Minería necesita en cada actualización (posición, guía, zona, sitios). */
+function mineView(snap) {
+  const pos = minePos(snap.state);
+  if (pos && rigs.body !== pos.body) rigs = { body: pos.body, list: [] };
+  const live = mining.liveView(skull.live);
+  const known = live && pos && live.body === pos.body ? live.rigList : [];
+  const sameBody = pos && skull.sitesKey && skull.sitesKey.endsWith(`|${pos.body}`);
+  return {
+    pos: pos ? { lat: pos.lat, lon: pos.lon, body: pos.body } : null,
+    marked: rigs.list.length, known: known.length,
+    guide: pos ? mining.rigGuide([...rigs.list, ...known], pos, pos.radius, settings.rigMin || 75) : null,
+    zone: pos && live ? mining.zoneAt(skull.zones && skull.zones.zone_anchors, pos.body, pos.lat, pos.lon, pos.radius) : null,
+    sites: sameBody && skull.sites ? mining.sitesView(skull.sites, pos, pos.radius) : null,
+  };
+}
+
+/** Copia la URL y la clave de la flota desde la configuración de EDMC (registro de Windows). */
+function readEdmcSkull() {
+  if (process.platform !== 'win32') return { ok: false, error: 'Solo en Windows' };
+  const { execFileSync } = require('child_process');
+  const get = (name) => {
+    try {
+      const out = execFileSync('reg', ['query', 'HKCU\\Software\\Marginal\\EDMarketConnector', '/v', name], { encoding: 'utf8', windowsHide: true });
+      const m = out.match(new RegExp(`${name}\\s+REG_\\w+\\s+(.+)`));
+      return m ? m[1].trim() : '';
+    } catch (e) { return ''; }
+  };
+  const url = get('skullmining_url'); const token = get('skullmining_token');
+  if (!url || !token) return { ok: false, error: 'No encuentro la URL o la clave en los ajustes de Skull Mining en EDMC.' };
+  return { ok: true, url, token };
+}
+
 /** Estaciones y portanaves del sistema actual (Spansh), para la tarjeta de Vuelo. */
 let hereInfo = null; let hereName = null;
 async function lookHere(snap) {
@@ -194,7 +295,7 @@ function createWindow() {
     win.webContents.once('did-finish-load', async () => {
       const out = process.env.ED_BUBBLE_SHOT;
       await new Promise((r) => setTimeout(r, 2500));
-      for (const sec of ['puente', 'vuelo', 'orbita', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles']) {
+      for (const sec of ['puente', 'vuelo', 'orbita', 'mineria', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles']) {
         await win.webContents.executeJavaScript(`ui.section='${sec}'; ui.autoJump=false; if ('${sec}' === 'ajustes') loadSettingsInfo(); render();`);
         await new Promise((r) => setTimeout(r, 400));
         const img = await win.webContents.capturePage();
@@ -249,10 +350,12 @@ app.whenReady().then(() => {
   engine = new Engine({ folder: process.env.ED_JOURNAL_FOLDER || undefined });
   engine.on('update', (snap) => {
     last = snap;
+    snap.view.mine = mineView(snap);
     if (win && !win.isDestroyed()) win.webContents.send('ed:update', snap);
     lookFuelStops(snap);
     lookBody(snap);
     lookHere(snap);
+    skullSites(snap);
     // destino fijado sin cuerpo: se completa al llegar a uno
     const nt = geo.adoptBody(snap.state.surfaceTarget, snap.state);
     if (nt) {
@@ -389,6 +492,26 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('ed:bodies', () => bodyInfo);
   ipcMain.handle('ed:here', () => hereInfo);
+  // Minería (Skull Mining)
+  ipcMain.handle('ed:skull', () => { skullRead(); return skullInfo(); });
+  ipcMain.handle('ed:skull-connect', () => {
+    const r = readEdmcSkull();
+    if (r.ok) { settings.skull = { url: r.url, token: r.token }; saveSettings(); if (engine) skullSites(engine.snapshot(), true); }
+    return r.ok ? { ok: true } : r;
+  });
+  ipcMain.handle('ed:skull-disconnect', () => { delete settings.skull; saveSettings(); skull.sites = null; skull.sitesStatus = ''; sendSkull(); return true; });
+  ipcMain.handle('ed:rig', (_e, op) => {
+    const pos = minePos((last || engine.snapshot()).state);
+    if (op === 'add' && pos) { if (rigs.body !== pos.body) rigs = { body: pos.body, list: [] }; rigs.list.push({ lat: pos.lat, lon: pos.lon, t: Date.now() }); }
+    else if (op === 'undo') rigs.list.pop();
+    else if (op === 'clear') rigs.list = [];
+    if (last) { last.view.mine = mineView(last); if (win && !win.isDestroyed()) win.webContents.send('ed:update', last); }
+    return rigs.list.length;
+  });
+  ipcMain.handle('ed:skull-refresh', () => { if (engine) skullSites(engine.snapshot(), true); return true; });
+  ipcMain.handle('ed:open-skull-web', () => shell.openExternal('https://skullflota.github.io/SkullMining/'));
+  // relectura de los archivos del plugin cada 5 s (los guarda cada 20 s durante una sesión)
+  skullRead(); setInterval(() => { skullRead(); sendSkull(); }, 5000);
   ipcMain.handle('ed:open-data', () => shell.openPath(app.getPath('userData')));
   // Coordenadas de destino en un planeta (se guardan entre sesiones)
   const TARGET_FILE = path.join(app.getPath('userData'), 'surface-target.json');

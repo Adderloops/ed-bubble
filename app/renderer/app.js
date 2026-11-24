@@ -6,7 +6,7 @@ const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo' }, { id: 'srv', label: 'SRV' },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie' },
-  { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería' }, { id: 'colonizacion', label: 'Colonización', built: true },
+  { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
   { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
@@ -25,11 +25,12 @@ const ui = {
   bodyInfo: {}, // datos de cuerpos desde Spansh (gravedad…), por nombre
   here: null, herePage: 0, hereKinds: [], hereLarge: false, // estaciones y portanaves del sistema actual (Spansh)
   bioPage: 0,
+  skull: null, mineTab: null, sitesPage: 0, prospPage: 0, skullMsg: null, // minería
   coordText: '', coordMsg: null, // coordenadas en planeta: texto escrito y aviso
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
   plot: null, // { running, target, text, ok, error }
   extOk: null, // última consulta a Spansh: true / false
-  prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true }, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
+  prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true }, rigMin: 75, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
   displays: null, info: null, // Ajustes: pantallas conectadas y datos de la app
 };
 
@@ -43,7 +44,7 @@ function setPref(key, value) {
 }
 /** ¿Se salta solo a la sección de esta situación? */
 function jumpAllowed(key) {
-  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : 'vuelo';
+  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : key === 'rhino' || key === 'mining' ? 'mineria' : 'vuelo';
   return ui.prefs.jump[g] !== false;
 }
 /** Abre una sección (y la recuerda para la próxima vez). */
@@ -1198,6 +1199,148 @@ function screenOrbita(s, v) {
   </div>`;
 }
 
+/* ---------- Minería ---------- */
+const SKULL_PAGE = 5;
+const fmtDur = (sec) => { if (sec == null) return '—'; const m = Math.round(sec / 60); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`; };
+const turnArrow = (rel) => (rel == null ? '' : Math.abs(rel) < 8 ? '↑' : Math.abs(rel) > 165 ? '↓' : rel > 0 ? '↗' : '↖');
+const turnText = (rel) => (rel == null ? '' : Math.abs(rel) < 8 ? 'de frente' : Math.abs(rel) > 165 ? 'detrás' : `${Math.round(Math.abs(rel))}° a la ${rel > 0 ? 'derecha' : 'izquierda'}`);
+const pager2 = (key, page, pages) => (pages > 1 ? `<span style="display:flex;align-items:center;gap:6px"><button type="button" class="pg" data-mpager="${key}" data-d="-1" ${page === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${page + 1}/${pages}</span><button type="button" class="pg" data-mpager="${key}" data-d="1" ${page >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '');
+
+
+function screenMineria(s, v) {
+  const inSrv = s.status.flags && s.status.flags.isInSRV;
+  const shipActive = s.mining && s.mining.lastAt;
+  const tab = ui.mineTab || (inSrv ? 'surface' : shipActive ? 'ship' : 'surface');
+  const tabs = `<div style="display:flex;gap:8px">
+    <button type="button" class="tab ${tab === 'surface' ? 'on' : ''}" data-minetab="surface">Superficie · Rhino</button>
+    <button type="button" class="tab ${tab === 'ship' ? 'on' : ''}" data-minetab="ship">Nave · asteroides</button></div>`;
+  return `<div style="display:flex;flex-direction:column;gap:12px;min-height:0;height:100%">${tabs}${tab === 'ship' ? mineShip(s) : mineSurface(s, v)}</div>`;
+}
+
+function mineSurface(s, v) {
+  const k = ui.skull || {};
+  const mv = v.mine || {};
+  const pos = mv.pos;
+  const live = k.live;
+  // --- Sesión del plugin
+  let sess;
+  if (!k.found) {
+    sess = `<div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:18px;color:var(--soft)">No encuentro Skull Mining</span><span style="font-size:14px">Instala el plugin en EDMC y ábrelo: ED BUBBLE lee la sesión que calcula.</span></div>`;
+  } else if (!live) {
+    sess = `<div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:18px;color:var(--soft)">Sin sesión en curso</span><span style="font-size:14px">Baja con el Rhino y empieza a minar. Skull Mining guarda la sesión cada 20 s y aparece aquí.</span></div>`;
+  } else {
+    const zone = mv.zone ?? live.siteSignal ?? (k.zoneTarget && k.zoneTarget.body === live.body ? k.zoneTarget.index : null);
+    sess = `
+      <span class="va nowrap" style="font-size:20px">${esc(live.body || '—')}</span>
+      <span class="eb ${zone == null ? 'amber' : 'dim'}">${zone == null ? 'Zona desconocida · fíjala como destino en el juego' : `Zona de minería ${zone}`}${live.terrain ? ` · terreno ${esc(live.terrain)}` : ''}</span>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+        ${stat('Taladros', nf(live.rigs ?? 0))}${stat('Recogidas', nf(live.collections ?? 0))}
+        ${stat('Toneladas', nf(live.tonnes), 'cyan')}${stat('t / hora', live.perHour != null ? nf(live.perHour, 0) : '—')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">${live.byType.slice(0, 4).map((x) => `<div class="in" style="display:flex;justify-content:space-between;padding:8px 12px"><span class="va">${esc(x.name)}</span><span class="num">${nf(x.tonnes)} t</span></div>`).join('') || '<span class="soft" style="font-size:14px">Aún no has refinado nada.</span>'}</div>
+      <span class="eb dim" style="font-size:10px;margin-top:auto">Skull Mining · ${live.perCollection ? `${nf(live.perCollection, 1)} t por recogida · ` : ''}${live.ageS != null ? `actualizado hace ${live.ageS < 60 ? `${Math.round(live.ageS)} s` : fmtDur(live.ageS)}` : ''}</span>`;
+  }
+  const sessCard = `<section class="pn card" style="min-height:0"><span class="ti" style="font-size:16px">Sesión con el Rhino</span>${sess}</section>`;
+
+  // --- Guía de taladros
+  const g = mv.guide;
+  let guide;
+  if (!pos) guide = '<div class="empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">Sin posición</span><span style="font-size:14px">La guía funciona en la superficie de un planeta.</span></div>';
+  else if (!g || !g.nearest) guide = `<div class="in" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px"><span class="num cyan" style="font-size:44px">Libre</span><span class="soft">Sin taladros marcados en este cuerpo</span></div>`;
+  else guide = `<div class="in" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-color:${g.ok ? 'var(--cyan)' : 'var(--amber)'}">
+      <span class="eb ${g.ok ? 'cyan' : 'amber'}">${g.ok ? 'Puedes colocar el taladro' : 'Demasiado cerca'}</span>
+      <span class="num ${g.ok ? 'cyan' : 'amber'}" style="font-size:52px">${fmtDist(g.nearest.dist)}</span>
+      <span class="soft" style="font-size:15px">${g.ok ? `del taladro ${g.nearest.index} (mínimo ${g.minM} m)` : `aléjate ${fmtDist(g.missing)} más del taladro ${g.nearest.index}`}</span>
+      <span class="soft" style="font-size:14px">${g.nearest.rel != null ? `Está ${turnText(g.nearest.rel)} ${turnArrow(g.nearest.rel)}` : ''}</span>
+    </div>`;
+  const guideCard = `<section class="pn card" style="min-height:0">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Guía de taladros</span><span class="eb dim">${mv.marked || 0} marcados${mv.known ? ` · ${mv.known} recogidos` : ''}</span></div>
+      ${guide}
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px">
+        <button type="button" class="plot-btn" data-rig="add" style="width:100%" ${pos ? '' : 'disabled'}>Taladro aquí</button>
+        <button type="button" class="tab" data-rig="undo" ${mv.marked ? '' : 'disabled'}>Deshacer</button>
+        <button type="button" class="tab" data-rig="clear" ${mv.marked ? '' : 'disabled'}>Borrar</button>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span class="eb dim">Distancia mínima</span>
+        <span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-rigmin="-5">−</button><span class="num" style="font-size:18px;min-width:60px;text-align:center">${ui.prefs.rigMin || 75} m</span><button type="button" class="pg" data-rigmin="5">+</button></span>
+      </div>
+    </section>`;
+
+  // --- Sitios de la flota
+  const web = k.web || {};
+  let sitesBody;
+  if (!web.configured) {
+    sitesBody = `<div class="empty" style="flex-direction:column;gap:10px"><span style="font-size:14px">Para ver los sitios de la flota, ED BUBBLE usa la misma URL y clave que tienes en Skull Mining.</span><button type="button" class="tab" data-skull="connect">Usar la conexión de Skull Mining (EDMC)</button>${ui.skullMsg ? `<span class="red" style="font-size:13px">${esc(ui.skullMsg)}</span>` : ''}</div>`;
+  } else if (!pos) {
+    sitesBody = '<div class="empty">Aparecen al bajar a un planeta.</div>';
+  } else if (web.status) {
+    sitesBody = `<div class="empty" style="flex-direction:column;gap:8px"><span class="red">${esc(web.status)}</span><button type="button" class="tab small" data-skull="refresh">Reintentar</button></div>`;
+  } else if (!mv.sites) {
+    sitesBody = '<div class="empty">Buscando los sitios de la flota…</div>';
+  } else {
+    const list = mv.sites;
+    const pages = Math.max(1, Math.ceil(list.length / SKULL_PAGE));
+    ui.sitesPage = Math.min(ui.sitesPage, pages - 1);
+    sitesBody = list.length ? list.slice(ui.sitesPage * SKULL_PAGE, (ui.sitesPage + 1) * SKULL_PAGE).map((x) => `
+      <div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:6px 12px;${x.usable ? '' : 'opacity:.55'}">
+        <span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:16px">${esc(x.mineral || x.type || '?')}${x.rigs ? ` ×${x.rigs}` : ''}</span><span class="eb dim nowrap" style="font-size:10px">${x.depleted ? 'Agotado' : x.notWorth ? 'No rentable' : x.zone != null ? `Zona ${x.zone}` : ''}${x.dist != null ? ` · ${turnText(x.rel)}` : ''}</span></span>
+        <span class="num" style="font-size:16px">${x.dist != null ? `${fmtDist(x.dist)} ${turnArrow(x.rel)}` : '—'}</span>
+        <button type="button" class="tab small" data-spot="${x.lat},${x.lon}" title="Fijar como destino de la brújula (Órbita planetaria)">Fijar</button>
+      </div>`).join('') + `<span style="display:flex;justify-content:flex-end">${pager2('sites', ui.sitesPage, pages)}</span>` : '<div class="empty">La flota no tiene sitios en este cuerpo todavía.</div>';
+  }
+  const sitesCard = `<section class="pn card" style="min-height:0">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Sitios de la flota</span>${web.configured ? '<button type="button" class="tab small" data-skull="web">Web Skullmining</button>' : ''}</div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${sitesBody}</div>
+      ${web.configured ? '<button type="button" class="tab small" data-skull="disconnect" style="margin-top:auto;align-self:flex-start">Desconectar</button>' : ''}
+    </section>`;
+  return `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;flex:1;min-height:0">${sessCard}${guideCard}${sitesCard}</div>`;
+}
+
+function mineShip(s) {
+  const m = s.mining || {};
+  const p = (m.prospects || [])[0];
+  const pros = p ? `
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Contenido', esc(p.content || '—'), /high|alto/i.test(p.content || '') ? 'cyan' : '')}${stat('Queda', p.remaining != null ? `${nf(p.remaining, 0)} %` : '—')}</div>
+      ${p.motherlode ? `<div class="in" style="padding:10px 12px;border-color:var(--amber)"><span class="eb amber">Núcleo de</span> <span class="va" style="font-size:18px">${esc(p.motherlode)}</span></div>` : ''}
+      <div style="display:flex;flex-direction:column;gap:6px">${p.materials.slice(0, 5).map((x) => `<div style="display:grid;grid-template-columns:140px minmax(0,1fr) 60px;gap:10px;align-items:center"><span class="va nowrap">${esc(x.name)}</span><span class="bar"><span style="width:${Math.min(100, x.pct)}%;background:var(--cyan)"></span></span><span class="num" style="text-align:right">${nf(x.pct, 1)} %</span></div>`).join('')}</div>`
+    : '<div class="empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">Sin prospecciones</span><span style="font-size:14px">Lanza un dron prospector a un asteroide.</span></div>';
+  const refined = Object.values(m.refined || {}).sort((a, b) => b.tonnes - a.tonnes);
+  const total = refined.reduce((a, x) => a + x.tonnes, 0);
+  const hours = m.since && m.lastAt ? (Date.parse(m.lastAt) - Date.parse(m.since)) / 3600000 : 0;
+  const cap = s.ship.cargoCapacity; const used = (s.cargo && s.cargo.count) || 0;
+  const sess = `
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+        ${stat('Refinado', `${nf(total)} t`, 'cyan')}${stat('t / hora', hours > 0.05 ? nf(total / hours, 0) : '—')}
+        ${stat('Bodega', cap ? `${nf(used)} / ${nf(cap)} t` : nf(used), cap && used >= cap ? 'amber' : '')}${stat('Drones', `${nf(m.drones ? m.drones.prospector : 0)} P · ${nf(m.drones ? m.drones.collection : 0)} R`)}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">${refined.slice(0, 5).map((x) => `<div class="in" style="display:flex;justify-content:space-between;padding:8px 12px"><span class="va">${esc(x.name)}</span><span class="num">${nf(x.tonnes)} t</span></div>`).join('') || '<span class="soft" style="font-size:14px">Aún no has refinado nada desde el despegue.</span>'}</div>
+      <span class="eb dim" style="font-size:10px;margin-top:auto">Desde el último despegue${m.cracked ? ` · ${m.cracked} núcleos abiertos` : ''}${m.since ? ` · ${fmtDur(hours * 3600)}` : ''}</span>`;
+  const list = m.prospects || [];
+  const pages = Math.max(1, Math.ceil(list.length / 6));
+  ui.prospPage = Math.min(ui.prospPage, pages - 1);
+  const hist = list.length ? list.slice(ui.prospPage * 6, (ui.prospPage + 1) * 6).map((x, i) => {
+    const best = x.materials[0];
+    return `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 12px">
+      <span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:15px">${best ? `${esc(best.name)} ${nf(best.pct, 1)} %` : '—'}${x.motherlode ? ` · <span class="amber">núcleo de ${esc(x.motherlode)}</span>` : ''}</span><span class="eb dim" style="font-size:10px">${esc(x.content || '')}${x.materials.length > 1 ? ` · ${x.materials.slice(1, 3).map((y) => `${esc(y.name)} ${nf(y.pct, 0)} %`).join(' · ')}` : ''}</span></span>
+      <span class="num soft" style="font-size:13px">${x.at ? new Date(x.at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : ''}</span></div>`;
+  }).join('') : '<div class="empty">Sin prospecciones desde el despegue.</div>';
+  return `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;flex:1;min-height:0">
+    <section class="pn card" style="min-height:0"><span class="ti" style="font-size:16px">Última prospección</span>${pros}</section>
+    <section class="pn card" style="min-height:0"><span class="ti" style="font-size:16px">Esta sesión</span>${sess}</section>
+    <section class="pn card" style="min-height:0"><div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Prospecciones</span>${pager2('prosp', ui.prospPage, pages)}</div><div style="display:flex;flex-direction:column;gap:4px">${hist}</div></section>
+  </div>`;
+}
+
+async function skullAction(a) {
+  const api = window.edbubble; ui.skullMsg = null;
+  if (a === 'connect') { const r = await api.skullConnect(); if (!r.ok) ui.skullMsg = r.error; ui.skull = await api.skull(); }
+  else if (a === 'disconnect') { await api.skullDisconnect(); ui.skull = await api.skull(); }
+  else if (a === 'refresh') await api.skullRefresh();
+  else if (a === 'web') await api.openSkullWeb();
+  render();
+}
+
 /* ---------- Powerplay ---------- */
 const PP_STATE = { Exploited: 'Explotado', Fortified: 'Fortificado', Stronghold: 'Stronghold', Unoccupied: 'Sin ocupar' };
 const fmtCut = (ms) => { const d = ms - Date.now(); if (d <= 0) return 'ahora'; const h = Math.floor(d / 3600000); return h >= 24 ? `${Math.floor(h / 24)} d ${h % 24} h` : `${h} h ${Math.floor((d % 3600000) / 60000)} min`; };
@@ -1595,6 +1738,7 @@ function screenAjustes(s, v) {
       <span class="eb" style="margin-top:4px">Saltar a la sección cuando…</span>
       ${setRow('jump.vuelo', 'Vuelas, saltas o vas en supercrucero', '→ Vuelo', p.jump.vuelo, off)}
       ${setRow('jump.orbita', 'Te acercas a un planeta o aterrizas', '→ Órbita planetaria', p.jump.orbita, off)}
+      ${setRow('jump.mineria', 'Minas con el Rhino o con la nave', '→ Minería', p.jump.mineria, off)}
       ${setRow('jump.approach', 'Te conceden el atraque', '→ Vuelo, con el esquema de plataformas', p.jump.approach, off)}
       ${setRow('jump.docked', 'Atracas en una estación', '→ Estación', p.jump.docked, off)}
       ${setRow('jump.depot', 'Atracas en una construcción de colonización', '→ Colonización', p.jump.depot, off)}
@@ -1674,7 +1818,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -1774,6 +1918,19 @@ document.addEventListener('pointerdown', (ev) => {
   if (pt) { ev.preventDefault(); window.edbubble.ppTrack(pt.dataset.pptrack || null); return; }
   const hp = ev.target.closest('button[data-pager="here"], button[data-pager="bio"]');
   if (hp && !hp.disabled) { ev.preventDefault(); const k = hp.dataset.pager === 'here' ? 'herePage' : 'bioPage'; ui[k] = Math.max(0, ui[k] + Number(hp.dataset.d)); render(); return; }
+  const minTabBtn = ev.target.closest('button[data-minetab]');
+  if (minTabBtn) { ev.preventDefault(); ui.mineTab = minTabBtn.dataset.minetab; render(); return; }
+  const minPgBtn = ev.target.closest('button[data-mpager]');
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = minPgBtn.dataset.mpager === 'sites' ? 'sitesPage' : 'prospPage'; ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
+  const rigBtn = ev.target.closest('button[data-rig]');
+  if (rigBtn && !rigBtn.disabled) {
+    ev.preventDefault();
+    window.edbubble.rig(rigBtn.dataset.rig); return;
+  }
+  const rigMinBtn = ev.target.closest('button[data-rigmin]');
+  if (rigMinBtn) { ev.preventDefault(); setPref('rigMin', Math.max(30, Math.min(200, (ui.prefs.rigMin || 75) + Number(rigMinBtn.dataset.rigmin)))); return; }
+  const skullBtn = ev.target.closest('button[data-skull]');
+  if (skullBtn) { ev.preventDefault(); skullAction(skullBtn.dataset.skull); return; }
   const spot = ev.target.closest('button[data-spot]');
   if (spot) { ev.preventDefault(); ui.coordText = spot.dataset.spot.replace(',', ', '); coordAction('set'); return; }
   const co = ev.target.closest('button[data-coord]');
@@ -1860,6 +2017,8 @@ if (window.edbubble) {
   window.edbubble.onControls((c) => { ui.controls = c; render(); });
   window.edbubble.onFuelStops((x) => { ui.fuelStops = x || {}; render(); });
   if (window.edbubble.bodies) window.edbubble.bodies().then((b) => { ui.bodyInfo = { ...(b || {}), ...ui.bodyInfo }; render(); });
+  if (window.edbubble.skull) window.edbubble.skull().then((k) => { ui.skull = k; render(); });
+  if (window.edbubble.onSkull) window.edbubble.onSkull((k) => { ui.skull = k; render(); });
   if (window.edbubble.here) window.edbubble.here().then((h) => { if (h) { ui.here = h; render(); } });
   if (window.edbubble.onHere) window.edbubble.onHere((h) => { ui.here = h; ui.herePage = 0; ui.hereKinds = []; ui.hereLarge = false; render(); });
   if (window.edbubble.onBody) window.edbubble.onBody((b) => { if (b && b.body) { ui.bodyInfo[b.body] = b; render(); } });

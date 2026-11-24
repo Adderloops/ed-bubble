@@ -64,6 +64,18 @@ Para desarrollo: `ED_JOURNAL_FOLDER` apunta el motor a otra carpeta de Journals,
 
 **Filtro de estaciones** (ficha de un sistema en Navegación): un botón con el icono y el número de cada tipo de estación (las construcciones llevan la etiqueta «Construcción»). Se pueden marcar varios a la vez; «Solo L» deja las que tienen plataforma grande y «Todas» quita el filtro.
 
+## Minería
+
+Sección del grupo Actividades, con dos pestañas. La app salta sola a ella en el Rhino o al minar con la nave (se desactiva en Ajustes).
+
+**Superficie · Rhino** (con el plugin Skull Mining de EDMC):
+
+- Sesión con el Rhino: ED BUBBLE lee `live_session.json` y `zone_state.json` de la carpeta del plugin (la que tenga `skull_tracker.py` en `%LOCALAPPDATA%\EDMarketConnector\plugins`). Muestra cuerpo, zona, terreno, taladros, recogidas, toneladas por mineral y t/hora. El plugin guarda la sesión cada 20 s y sigue siendo quien envía los datos a la web.
+- Guía de taladros: «Taladro aquí» marca tu posición; la app dice a qué distancia estás del taladro más cercano (marcados o ya recogidos en la sesión) y si ya puedes colocar el siguiente. Distancia mínima ajustable (75 m por defecto).
+- Sitios de la flota: los del cuerpo en la web Skullmining, con distancia y dirección; «Fijar» los pone como destino de la brújula de Órbita planetaria. Para conectarse usa la URL y la clave de Skull Mining, que copia de los ajustes de EDMC al pulsar el botón (se guardan en `settings.json`).
+
+**Nave · asteroides** (desde el Journal, desde el último despegue): última prospección (contenido, lo que queda, núcleo y porcentajes), toneladas refinadas por mineral, t/hora, bodega, drones lanzados, núcleos abiertos e historial de prospecciones.
+
 ## Órbita planetaria
 
 Sección del grupo Nave para cuando estás cerca de un planeta (la app salta sola a ella; se desactiva en Ajustes):

@@ -22,13 +22,16 @@ function isScoopable(starClass) {
 function flightMode(state) {
   const f = state.status.flags || {};
   if (f.isOnFoot) return { key: 'onfoot', label: 'A pie', section: 'apie' };
-  if (f.isInSRV) return { key: 'srv', label: 'En SRV', section: 'srv' };
+  if (f.isInSRV) return state.srv && /rhino/i.test(state.srv.type || '') ? { key: 'rhino', label: 'Minando con el Rhino', section: 'mineria' } : { key: 'srv', label: 'En SRV', section: 'srv' };
   if (f.isFSDJump) return { key: 'jump', label: 'Saltando', section: 'vuelo' };
   if (f.isDocked || state.location.docked) {
     // en una construcción, la sección es Colonización
     const atDepot = /construction/i.test(state.location.stationType || '') || /construction site/i.test(state.location.station || '');
     return { key: atDepot ? 'docked-depot' : 'docked', label: 'Atracado', section: atDepot ? 'colonizacion' : 'estacion' };
   }
+  // minería con la nave: hubo prospección, dron o refinado hace menos de 5 minutos
+  const m = state.mining;
+  if (m && m.lastAt && !f.isSupercruise && Date.parse(state.status.timestamp || new Date().toISOString()) - Date.parse(m.lastAt) < 5 * 60 * 1000) return { key: 'mining', label: 'Minando', section: 'mineria' };
   if (f.isLanded || state.location.landed) return { key: 'landed', label: 'Aterrizado', section: 'orbita' };
   // cerca de un planeta (vuelo orbital o planeo): coordenadas en Status.json o aproximación a un cuerpo
   if (!state.docking.active && (f.hasLatLong || (state.location.approach && !f.isSupercruise))) return { key: 'orbit', label: 'Órbita planetaria', section: 'orbita' };

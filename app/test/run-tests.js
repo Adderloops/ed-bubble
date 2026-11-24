@@ -429,6 +429,41 @@ test('órbita planetaria: señales, géneros, muestras, anillos, modo y portanav
   assert.strictEqual(sp.stationKind('Planetary Outpost', 'Foo').label, 'Puesto planetario');
 });
 
+test('minería: sesión del plugin, zona, guía de taladros, sitios y minería con la nave', () => {
+  const m = require('../../core/mining');
+  const R = 1480000; const lat0 = -45.7; const lon0 = 94.65;
+  const north = (dm) => lat0 + (dm / R) * (180 / Math.PI);
+  // sesión del plugin
+  const live = { saved_at: 1000, session: { body: 'X 1 a', start_t: 0, site_signal: null, srv_type: 'mev_rhino' }, summary: { rigs: 3, collections: 9, tonnes: 99, tonnes_by_type: { thorium: 99 }, type_names: { thorium: 'Torio' }, duration_s: 3600, rig_list: [{ lat: lat0, lon: lon0, type: 'thorium' }] } };
+  const v = m.liveView(live, 1030);
+  assert.strictEqual(v.perHour, 99); assert.strictEqual(v.byType[0].name, 'Torio'); assert.strictEqual(v.ageS, 30); assert.strictEqual(v.rigList.length, 1);
+  // zona: el ancla más cercana del mismo cuerpo, hasta 10 km
+  const anchors = { 'X 1 a|3': [lat0, lon0, 0, 't'], 'X 1 a|5': [north(20000), lon0, 0, 't'], 'Y|1': [lat0, lon0, 0, 't'] };
+  assert.strictEqual(m.zoneAt(anchors, 'X 1 a', north(500), lon0, R), 3);
+  assert.strictEqual(m.zoneAt(anchors, 'X 1 a', north(40000), lon0, R), null);
+  // guía: a 60 m del taladro no se puede; a 80 m sí
+  const rigs = [{ lat: lat0, lon: lon0 }];
+  const g1 = m.rigGuide(rigs, { lat: north(60), lon: lon0, heading: 0 }, R, 75);
+  assert.ok(!g1.ok && Math.round(g1.nearest.dist) === 60 && Math.round(g1.missing) === 15 && Math.abs(g1.nearest.rel) > 165);
+  assert.ok(m.rigGuide(rigs, { lat: north(80), lon: lon0 }, R, 75).ok);
+  // sitios ordenados por distancia; agotados marcados
+  const sv = m.sitesView([{ lat: north(900), lon: lon0, mineral: 'B' }, { lat: north(100), lon: lon0, mineral: 'A', depleted: true }], { lat: lat0, lon: lon0, heading: 0 }, R);
+  assert.deepStrictEqual(sv.map((x) => x.mineral), ['A', 'B']); assert.strictEqual(sv[0].usable, false);
+  // nave: prospección, drones, refinado; se reinicia al despegar
+  const s = model.createState();
+  model.applyEvent(s, ev('LaunchDrone', { Type: 'Prospector' }));
+  model.applyEvent(s, ev('ProspectedAsteroid', { Materials: [{ Name: 'Platinum', Name_Localised: 'Platino', Proportion: 31.2 }], Content: '$AsteroidMaterialContent_High;', MotherlodeMaterial: 'Monazite' }));
+  model.applyEvent(s, ev('MiningRefined', { Type: '$platinum_name;', Type_Localised: 'Platino' }));
+  assert.strictEqual(s.mining.prospects[0].content, 'Alto'); assert.strictEqual(s.mining.motherlodes, 1);
+  assert.strictEqual(s.mining.refined.platinum.tonnes, 1); assert.strictEqual(s.mining.drones.prospector, 1);
+  model.applyEvent(s, ev('Undocked', { StationName: 'X' }));
+  assert.deepStrictEqual(s.mining.refined, {});
+  // en el Rhino la sección es Minería
+  model.applyEvent(s, ev('LaunchSRV', { SRVType: 'mev_rhino' }));
+  s.status.flags = { isInSRV: true };
+  assert.strictEqual(derive.flightMode(s).section, 'mineria');
+});
+
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
   const pads = require('../../core/pads');
   // comprobadas en el juego (Coriolis): 9 a las 8, 25 a las 12, 27 a la 1

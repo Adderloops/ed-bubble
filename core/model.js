@@ -47,6 +47,9 @@ function createState() {
     communityGoals: [], // objetivos comunitarios activos (evento CommunityGoal)
     engineering: { last: null, ranks: {} }, // último trabajo de ingeniero y rangos
     cargo: { count: 0, vessel: 'Ship', inventory: [] },
+    // minería con la nave (asteroides): desde el último despegue
+    mining: { since: null, lastAt: null, refined: {}, prospects: [], drones: { prospector: 0, collection: 0 }, cracked: 0, motherlodes: 0 },
+    srv: { type: null }, // SRV desplegado (LaunchSRV): 'mev_rhino' es el Rhino de minería
     session: { startedAt: null, jumps: 0, distance: 0, merits: 0, bounties: 0, mined: 0, deliveredToConstruction: 0 },
     log: [],
   };
@@ -284,6 +287,7 @@ const HANDLERS = {
     pushLog(state, e, 'Ingeniería', `${e.Engineer} · ${e.BlueprintName} G${e.Level}`);
   },
   Undocked(state, e) {
+    resetMining(state); // la minería con la nave cuenta desde el último despegue
     state.location.docked = false; state.location.station = null; state.location.stationType = null;
     pushLog(state, e, 'Despegue', e.StationName);
   },
@@ -306,7 +310,33 @@ const HANDLERS = {
   },
   PowerplayRank(state, e) { state.powerplay.rank = e.Rank ?? state.powerplay.rank; },
   Bounty(state, e) { state.session.bounties += Number(e.TotalReward || e.Reward) || 0; },
-  MiningRefined(state, e) { state.session.mined += 1; },
+  MiningRefined(state, e) {
+    state.session.mined += 1;
+    if (state.status.flags && state.status.flags.isInSRV) return; // en el Rhino lo cuenta Skull Mining
+    const m = miningTouch(state, e);
+    const k = String(e.Type || '').toLowerCase().replace(/^\$/, '').replace(/_name;?$/, '');
+    const r = m.refined[k] || (m.refined[k] = { name: e.Type_Localised || k, tonnes: 0 });
+    r.tonnes += 1;
+  },
+  ProspectedAsteroid(state, e) {
+    const m = miningTouch(state, e);
+    m.prospects.unshift({
+      at: e.timestamp || null, content: ({ High: 'Alto', Medium: 'Medio', Low: 'Bajo' })[(/_(High|Medium|Low);?$/.exec(e.Content || '') || [])[1]] || e.Content_Localised || e.Content || null, remaining: e.Remaining ?? null,
+      motherlode: e.MotherlodeMaterial_Localised || e.MotherlodeMaterial || null,
+      materials: (e.Materials || []).map((x) => ({ name: x.Name_Localised || x.Name, pct: x.Proportion ?? 0 })).sort((a, b) => b.pct - a.pct),
+    });
+    m.prospects.length = Math.min(m.prospects.length, 12);
+    if (e.MotherlodeMaterial) m.motherlodes += 1;
+  },
+  LaunchDrone(state, e) {
+    const m = miningTouch(state, e);
+    if (e.Type === 'Prospector') m.drones.prospector += 1;
+    else if (e.Type === 'Collection') m.drones.collection += 1;
+  },
+  AsteroidCracked(state, e) { miningTouch(state, e).cracked += 1; },
+  LaunchSRV(state, e) { state.srv.type = e.SRVType || null; },
+  DockSRV(state, e) { state.srv.type = null; },
+  SRVDestroyed(state, e) { state.srv.type = null; },
   ColonisationConstructionDepot(state, e) {
     const id = String(e.MarketID);
     const prev = state.colonisation.depots[id] || {};
@@ -352,6 +382,16 @@ function bodySignals(state, name, id, signals) {
     return { key: m ? m[1].toLowerCase() : String(x.Type || '').toLowerCase(), name: x.Type_Localised || (m ? m[1] : x.Type), count: x.Count || 0 };
   });
   return b;
+}
+
+function resetMining(state) {
+  state.mining = { since: null, lastAt: null, refined: {}, prospects: [], drones: { prospector: 0, collection: 0 }, cracked: 0, motherlodes: 0 };
+}
+function miningTouch(state, e) {
+  const m = state.mining;
+  if (!m.since) m.since = e.timestamp || null;
+  m.lastAt = e.timestamp || null;
+  return m;
 }
 
 function commodityKey(name) {
