@@ -7,7 +7,7 @@ const SECTIONS = [
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo' }, { id: 'srv', label: 'SRV' },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie', built: true },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
-  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
+  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
 
@@ -27,6 +27,7 @@ const ui = {
   bioPage: 0,
   lockTab: 'items', lockPage: 0, lockSrc: 'locker', // a pie: taquilla
   modTarget: 'suit', modPage: 0, modOpen: null, // a pie: mejoras de ingeniero
+  engKind: 'ship', engCat: null, engModule: null, engPage: 0, engOpen: null, // pantalla Ingenieros
   skull: null, mineTab: null, sitesPage: 0, prospPage: 0, skullMsg: null, // minería
   coordText: '', coordMsg: null, // coordenadas en planeta: texto escrito y aviso
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
@@ -1678,6 +1679,92 @@ function screenEstacion(s, v) {
   </div>`;
 }
 
+/* ---------- Ingenieros (naves y a pie) ---------- */
+// Retratos recortados de la ficha de ingenieros (los que el usuario tiene a la vista); el resto, iniciales.
+const PORTRAITS = new Set(['baltanos', 'bill-turner', 'broo-tarquin', 'colonel-bris-dekker', 'didi-vatermann', 'domino-green', 'elvira-martuuk', 'felicity-farseer', 'hera-tani', 'hero-ferrari', 'jude-navarro', 'juri-ishmaak', 'kit-fowler', 'lei-cheung', 'liz-ryder', 'lori-jameson', 'marco-qwent', 'petra-olmanova', 'professor-palin', 'ram-tah', 'rosa-dayette', 'selene-jean', 'the-dweller', 'the-sarge', 'tiana-fortune', 'tod-the-blaster-mcquinn', 'uma-laszlo', 'wellington-beck', 'yarden-bond', 'zacariah-nemo']);
+const ENG_CATS = [['H', 'Armas'], ['U', 'Utilidades'], ['C', 'Núcleo'], ['O', 'Opcionales']];
+const ENG_PAGE = 15;
+function portrait(e, size) {
+  if (PORTRAITS.has(e.slug)) return `<img class="eng-pic" src="engineers/${e.slug}.jpg" alt="" style="width:${size}px;height:${size}px">`;
+  const ini = e.name.replace(/'.*?'/g, '').split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join('');
+  return `<span class="eng-pic eng-ini" style="width:${size}px;height:${size}px;font-size:${Math.round(size / 2.6)}px">${esc(ini)}</span>`;
+}
+function engStatus(e, kind) {
+  if (e.status === 'unlocked') return kind === 'ship' ? ['cyan', e.rank ? `Tu grado ${e.rank}` : 'Desbloqueado'] : ['cyan', 'Con acceso'];
+  if (e.status === 'invited') return ['amber', 'Invitado'];
+  if (e.status === 'known') return ['amber', 'Conocido'];
+  return ['dim', 'Sin datos'];
+}
+function screenIngenieros(s, v) {
+  const E = v.engineers || { ship: [], suit: [], modules: {} };
+  const kind = ui.engKind === 'suit' ? 'suit' : 'ship';
+  const tabs = `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <button type="button" class="tab ${kind === 'ship' ? 'on' : ''}" data-engkind="ship">Naves · ${E.ship.length}</button>
+    <button type="button" class="tab ${kind === 'suit' ? 'on' : ''}" data-engkind="suit">A pie · ${E.suit.length}</button>
+    ${kind === 'ship' ? `<span style="width:16px"></span><button type="button" class="tab small ${!ui.engCat ? 'on' : ''}" data-engcat="">Todos</button>${ENG_CATS.map(([k, t]) => `<button type="button" class="tab small ${ui.engCat === k ? 'on' : ''}" data-engcat="${k}">${t}</button>`).join('')}` : ''}
+  </div>`;
+  const chips = kind === 'ship' && ui.engCat ? `<div style="display:flex;gap:6px;flex-wrap:wrap">${(E.modules[ui.engCat] || []).map((m) => `<button type="button" class="tab small ${ui.engModule === m.key ? 'on' : ''}" data-engmodule="${esc(m.key)}">${esc(m.name)}</button>`).join('')}</div>` : '';
+  let list = kind === 'ship' ? E.ship.slice() : E.suit.slice();
+  const mod = kind === 'ship' && ui.engModule ? ui.engModule : null;
+  if (mod) {
+    list = list.filter((e) => e.mods.some((m) => m.key === mod)).map((e) => ({ ...e, grade: e.mods.find((m) => m.key === mod).grade }));
+    const order = { unlocked: 0, invited: 1, known: 2, none: 3 };
+    list.sort((a, b) => b.grade - a.grade || order[a.status] - order[b.status] || !!a.colonia - !!b.colonia);
+  } else {
+    const order = { unlocked: 0, invited: 1, known: 2, none: 3 };
+    list.sort((a, b) => order[a.status] - order[b.status] || !!a.colonia - !!b.colonia || a.name.localeCompare(b.name));
+  }
+  const pages = Math.max(1, Math.ceil(list.length / ENG_PAGE));
+  ui.engPage = Math.min(ui.engPage, pages - 1);
+  const modName = mod ? ((Object.values(E.modules).flat().find((m) => m.key === mod) || {}).name || mod) : null;
+  const cards = list.slice(ui.engPage * ENG_PAGE, (ui.engPage + 1) * ENG_PAGE).map((e) => {
+    const [cls, txt] = engStatus(e, kind);
+    const extra = mod ? `<span class="num ${e.grade >= 5 ? 'cyan' : ''}" style="font-size:22px">G${e.grade}</span>`
+      : kind === 'ship' ? `<span class="soft" style="font-size:12px">${e.mods.length} módulos</span>` : `<span class="soft" style="font-size:12px">${e.suitMods.length} de traje · ${e.weaponMods.length} de arma</span>`;
+    return `<button type="button" class="in eng-card ${ui.engOpen === e.slug ? 'sel' : ''}" data-engopen="${e.slug}">
+      ${portrait(e, 64)}
+      <span style="display:flex;flex-direction:column;gap:3px;min-width:0;flex:1">
+        <span style="display:flex;justify-content:space-between;gap:6px;align-items:baseline"><span class="va nowrap" style="font-size:16px">${esc(e.name)}</span><span class="eb ${cls}" style="font-size:10px">${txt}</span></span>
+        <span class="soft nowrap" style="font-size:12px">${esc(e.site)} · ${esc(e.system)}</span>
+        <span style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="display:flex;gap:4px">${e.permit ? '<span class="eb red" style="font-size:9px">Permiso</span>' : ''}${e.colonia ? '<span class="eb dim" style="font-size:9px">Colonia</span>' : ''}</span>${extra}</span>
+      </span>
+    </button>`;
+  }).join('') || '<div class="empty">Ningún ingeniero mejora ese módulo.</div>';
+  const open = list.find((e) => e.slug === ui.engOpen) || list[0];
+  let detail = '<div class="empty">Elige un ingeniero.</div>';
+  if (open) {
+    const [cls, txt] = engStatus(open, kind);
+    const status = kind === 'ship'
+      ? (open.status === 'unlocked' ? `Desbloqueado${open.rank ? ` · tu grado con él: G${open.rank}` : ''}` : open.status === 'invited' ? 'Invitado: te falta el contrato inicial' : open.status === 'known' ? 'Lo conoces, pero aún no tienes acceso' : 'Aún no sabes de él')
+      : (open.status === 'unlocked' ? 'Tienes acceso' : open.status === 'known' ? 'Lo conoces, pero aún no tienes acceso' : 'Aún no sabes de él');
+    const groups = kind === 'ship'
+      ? ENG_CATS.map(([k, t]) => { const ms = open.mods.filter((m) => m.cat === k); return ms.length ? `<span class="eb dim" style="margin-top:6px">${t}</span>${ms.map((m) => `<span class="eng-mod ${m.key === mod ? 'on' : ''}"><span>${esc(m.name)}</span><span class="num ${m.grade >= 5 ? 'cyan' : ''}">G${m.grade}</span></span>`).join('')}` : ''; }).join('')
+      : `<span class="eb dim" style="margin-top:6px">Traje</span>${open.suitMods.map((m) => `<span class="eng-mod"><span>${esc(m)}</span></span>`).join('')}<span class="eb dim" style="margin-top:6px">Armas</span>${open.weaponMods.map((m) => `<span class="eng-mod"><span>${esc(m)}</span></span>`).join('')}`;
+    detail = `
+      <div style="display:flex;gap:14px;align-items:center">${portrait(open, 112)}
+        <span style="display:flex;flex-direction:column;gap:4px;min-width:0"><span class="ti" style="font-size:20px">${esc(open.name)}</span>
+          <span class="soft" style="font-size:14px">${esc(open.site)}</span>
+          <span style="display:flex;gap:8px;align-items:center"><span class="va" style="font-size:15px">${esc(open.system)}</span><button type="button" class="tab small" data-copy="1" data-name="${esc(open.system)}">Copiar</button></span>
+        </span></div>
+      <span class="eb ${cls}">${status}</span>
+      ${open.permit ? '<span class="eb red">Su sistema pide permiso</span>' : ''}${open.colonia ? '<span class="eb dim">Está en Colonia, a unos 22.000 ly de la Burbuja</span>' : ''}
+      ${open.unlock && open.status !== 'unlocked' ? `<div class="in" style="padding:8px 12px;display:flex;flex-direction:column;gap:4px"><span class="eb amber" style="font-size:10px">Cómo desbloquearlo</span><span style="font-size:13px;line-height:1.35">${esc(open.unlock).replace(/\. (?=(Conocer|Acceso|Desbloqueo):)/g, '.<br>')}</span></div>` : ''}
+      <div style="display:flex;flex-direction:column;gap:2px">${groups}</div>`;
+  }
+  const feedback = ui.navFeedback && Date.now() - ui.navFeedback.at < 3000 ? `<span class="eb cyan">${esc(ui.navFeedback.text)}</span>` : '';
+  return `<div style="display:flex;flex-direction:column;gap:12px;min-height:0;height:100%">
+    <section class="pn card" style="gap:10px">${tabs}${chips}</section>
+    <div style="flex:1;display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:12px;min-height:0">
+      <section class="pn card" style="min-height:0;overflow:hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">${mod ? `Quién mejora: ${esc(modName)}` : kind === 'ship' ? 'Ingenieros de naves' : 'Ingenieros de equipo a pie'}</span><span class="eb dim">${list.length} ingenieros</span></div>
+        <div class="eng-grid">${cards}</div>
+        <span style="display:flex;justify-content:flex-end;margin-top:auto">${pager2('eng', ui.engPage, pages)}</span>
+      </section>
+      <section class="pn card" style="min-height:0;overflow:hidden">${detail}${feedback}</section>
+    </div>
+  </div>`;
+}
+
 /* ---------- destino final (estación) ---------- */
 function finalStrip(s) {
   const f = ui.finalDest;
@@ -1957,7 +2044,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -2057,6 +2144,15 @@ document.addEventListener('pointerdown', (ev) => {
   if (pt) { ev.preventDefault(); window.edbubble.ppTrack(pt.dataset.pptrack || null); return; }
   const hp = ev.target.closest('button[data-pager="here"], button[data-pager="bio"]');
   if (hp && !hp.disabled) { ev.preventDefault(); const k = hp.dataset.pager === 'here' ? 'herePage' : 'bioPage'; ui[k] = Math.max(0, ui[k] + Number(hp.dataset.d)); render(); return; }
+  const engBtn = ev.target.closest('[data-engkind], [data-engcat], [data-engmodule], [data-engopen]');
+  if (engBtn) {
+    ev.preventDefault(); const d = engBtn.dataset;
+    if (d.engkind != null) { ui.engKind = d.engkind; ui.engPage = 0; ui.engOpen = null; ui.engModule = null; }
+    else if (d.engcat != null) { ui.engCat = d.engcat || null; ui.engModule = null; ui.engPage = 0; }
+    else if (d.engmodule != null) { ui.engModule = ui.engModule === d.engmodule ? null : d.engmodule; ui.engPage = 0; ui.engOpen = null; }
+    else ui.engOpen = d.engopen;
+    render(); return;
+  }
   const modOpenBtn = ev.target.closest('[data-modopen]');
   if (modOpenBtn) { ev.preventDefault(); ui.modOpen = modOpenBtn.dataset.modopen || null; render(); return; }
   const modTgt = ev.target.closest('[data-modtarget]');
@@ -2066,7 +2162,7 @@ document.addEventListener('pointerdown', (ev) => {
   const minTabBtn = ev.target.closest('button[data-minetab]');
   if (minTabBtn) { ev.preventDefault(); ui.mineTab = minTabBtn.dataset.minetab; render(); return; }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage' }[minPgBtn.dataset.mpager]; ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage' }[minPgBtn.dataset.mpager]; ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {
     ev.preventDefault();

@@ -219,10 +219,23 @@ function view(state) {
     suit: modsFor('suit', lo.suit, of.locker, ranks),
     weapons: Object.fromEntries(lo.weapons.map((w) => [w.id, modsFor('weapon', w, of.locker, ranks)])),
   } : null;
+  // ingenieros de nave y de a pie con el estado de cada uno (pantalla Ingenieros)
+  const se = require('./shipengineers');
+  const om = require('./odymods');
+  const engineers = {
+    ship: se.shipList(ranks, null),
+    modules: se.moduleIndex(),
+    suit: om.ENGINEERS.map((e) => ({
+      name: e.name, slug: se.slug(e.name), site: e.site, system: e.system, colonia: !!e.colonia, unlock: e.unlock || null,
+      status: om.access(ranks, e.name) === 'yes' ? 'unlocked' : om.access(ranks, e.name) === 'known' ? 'known' : 'none',
+      suitMods: e.suit.map((id) => om.modInfo(id).es), weaponMods: e.weapon.map((id) => om.modInfo(id).es),
+    })),
+  };
   return {
     dockPadHour: dockPad ? dockPad.hour : null,
     upgrades,
     mods,
+    engineers,
     dockPad,
     mode: flightMode(state),
     alerts: alerts(state),

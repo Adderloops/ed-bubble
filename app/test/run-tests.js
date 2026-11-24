@@ -537,6 +537,18 @@ test('a pie: mejoras de ingeniero (materiales por tipo de arma, ranuras, acceso 
   assert.strictEqual(m.modsFor('suit', { key: 'utilitysuit_class1', grade: 1, mods: [] }, null, {}).slots, 0);
 });
 
+test('ingenieros de nave: 25, módulos conocidos, filtro por módulo y estado del diario', () => {
+  const se = require('../../core/shipengineers');
+  assert.strictEqual(se.ENGINEERS.length, 25);
+  for (const e of se.ENGINEERS) for (const [m, g] of e.mods) { assert.ok(se.MODULES[m], m); assert.ok(g >= 1 && g <= 5); }
+  const ranks = { 'Elvira Martuuk': { progress: 'Unlocked', rank: 5 }, 'Chloe Sedesi': { progress: 'Invited' }, 'Mel Brandon': { progress: 'Known' } };
+  const fsd = se.shipList(ranks, 'Frame Shift Drive');
+  assert.deepStrictEqual(fsd.map((e) => [e.name, e.grade, e.status]).slice(0, 3), [['Elvira Martuuk', 5, 'unlocked'], ['Mel Brandon', 5, 'known'], ['Felicity Farseer', 5, 'none']]);
+  assert.strictEqual(fsd.find((e) => e.name === 'Chloe Sedesi').status, 'invited');
+  assert.strictEqual(se.slug("Tod 'The Blaster' McQuinn"), 'tod-the-blaster-mcquinn');
+  assert.deepStrictEqual(Object.keys(se.moduleIndex()).sort(), ['C', 'H', 'O', 'U']);
+});
+
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
   const pads = require('../../core/pads');
   // comprobadas en el juego (Coriolis): 9 a las 8, 25 a las 12, 27 a la 1

@@ -42,3 +42,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 `core/odyssey.js` recoge los materiales y créditos para subir de grado los trajes y las armas de Odyssey, consultados en Elite Dangerous Wiki (https://elite-dangerous.fandom.com: Dominator Suit, Artemis Suit, TK Aphelion, Karma AR-50; contenido bajo CC BY-SA) y en una tabla publicada por un jugador en el foro de Frontier (https://forums.frontier.co.uk). Los materiales y las cantidades totales de G1 a G5 de los tres trajes (Dominator, Maverick, Artemis) y de las once armas (Kinematic, Manticore y Takada) se han comprobado a mano en la pantalla de Odyssey Materials Helper del usuario (sin copiar su código). Son datos del juego, de Frontier Developments.
 
 `core/odymods.js` recoge los materiales de las mejoras de ingeniero de trajes y armas de Odyssey y los ingenieros que las montan, con su sitio y sus requisitos de desbloqueo. Se transcribieron a mano de las pantallas de Odyssey Materials Helper del usuario y de la ficha de ingenieros del juego; no se ha copiado código ni archivos de ese programa. Son datos del juego, de Frontier Developments.
+
+## Ingenieros de nave y retratos
+
+`core/shipengineers.js` recoge los ingenieros de nave, su sitio, los módulos que mejoran con su grado máximo y, de los que estaban bloqueados, cómo se desbloquean. Se transcribió a mano de la ficha de ingenieros de Odyssey Materials Helper del usuario. Son datos del juego, de Frontier Developments.
+
+Los retratos de `app/renderer/engineers/` son imágenes del juego Elite Dangerous (© Frontier Developments plc), recortadas de capturas de pantalla del usuario para identificar a cada ingeniero. ED BUBBLE es un proyecto de aficionado sin ánimo de lucro y no está afiliado a Frontier.

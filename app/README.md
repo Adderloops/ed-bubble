@@ -76,6 +76,15 @@ Sección del grupo Viaje (Odyssey):
 - Ranuras: cada traje y arma muestra cuántas ranuras de mejora ocupa de las que da su grado (una por grado a partir de G2).
 - Mejoras de ingeniero: pestaña «Mejoras» junto a Taquilla y Mochila (o tocando el traje o un arma del equipo). Lista las mejoras que aún no lleva esa pieza, con lo que te falta, y al tocar una muestra sus materiales y los ingenieros que la montan. Las mejoras de arma por tipo (alcance, daño en la cabeza, precisión sin apuntar) usan la variante del arma: cinética (Kinematic), láser (Takada) o plasma (Manticore). El acceso a cada ingeniero sale del evento `EngineerProgress` del diario: en Odyssey «Invited» ya da acceso. Si no tienes acceso, dice qué pide para desbloquearlo. Datos en `core/odymods.js`.
 
+## Ingenieros
+
+Sección del grupo Comandante, con dos pestañas:
+
+- Naves (25 ingenieros): filtra por categoría (armas, utilidades, núcleo, opcionales) y por módulo para ver quién lo mejora y hasta qué grado, ordenados por grado y por acceso. La ficha de cada uno muestra su retrato, sitio y sistema (con botón para copiarlo), si pide permiso o está en Colonia, tu grado con él y qué le falta para desbloquearlo. El estado sale de `EngineerProgress` (en naves, «Invited» aún pide el contrato inicial).
+- A pie (13 ingenieros): lo mismo con las mejoras de traje y arma que montan.
+
+Datos en `core/shipengineers.js` y `core/odymods.js`; retratos en `app/renderer/engineers/` (los que faltan salen con iniciales).
+
 ## Minería
 
 Sección del grupo Actividades, con dos pestañas. La app salta sola a ella en el Rhino o al minar con la nave (se desactiva en Ajustes).
