@@ -70,7 +70,9 @@ class Engine extends EventEmitter {
       // a pie: equipos, trajes y armas (no hay evento con todo lo que tienes)
       'SuitLoadout', 'SwitchSuitLoadout', 'CreateSuitLoadout', 'RenameSuitLoadout', 'DeleteSuitLoadout', 'LoadoutEquipModule', 'LoadoutRemoveModule', 'BuySuit', 'SellSuit', 'UpgradeSuit', 'BuyWeapon', 'SellWeapon', 'UpgradeWeapon',
       // materiales de ingeniería de nave: el total al arrancar el juego y lo que cambia después
-      'Materials', 'MaterialCollected', 'MaterialDiscarded', 'MaterialTrade', 'Synthesis', 'TechnologyBroker', 'ScientificResearch', 'EngineerContribution', 'MissionCompleted'];
+      'Materials', 'MaterialCollected', 'MaterialDiscarded', 'MaterialTrade', 'Synthesis', 'TechnologyBroker', 'ScientificResearch', 'EngineerContribution', 'MissionCompleted',
+      // combate: bonos y recompensas por cobrar, y misiones de masacre en curso
+      'MissionAccepted', 'MissionRedirected', 'MissionAbandoned', 'MissionFailed', 'Missions', 'Bounty', 'FactionKillBond', 'CapShipBond', 'RedeemVoucher', 'Died'];
     let files;
     try { files = fs.readdirSync(this.folder).filter((f) => /^Journal\..*\.log$/.test(f)).sort(); } catch (e) { return 0; }
     files = files.slice(0, -1); // el último lo lee el tailer en vivo
@@ -100,6 +102,8 @@ class Engine extends EventEmitter {
     this.state.log = [];
     this.state.location.docked = false;
     this.state.colonisation.current = null;
+    this.state.session.bounties = 0;
+    require('./combat').afterHistory(this.state);
     return n;
   }
 

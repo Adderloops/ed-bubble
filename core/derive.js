@@ -32,6 +32,11 @@ function flightMode(state) {
   // minería con la nave: hubo prospección, dron o refinado hace menos de 5 minutos
   const m = state.mining;
   if (m && m.lastAt && !f.isSupercruise && Date.parse(state.status.timestamp || new Date().toISOString()) - Date.parse(m.lastAt) < 5 * 60 * 1000) return { key: 'mining', label: 'Minando', section: 'mineria' };
+  // combate: en una zona de conflicto o de extracción, o te han atacado / has derribado a alguien hace poco
+  if (!f.isSupercruise && !state.docking.active && !f.isLanded && !state.location.landed) {
+    const cv = require('./combat').view(state, Date.parse(state.status.timestamp || '') || Date.now());
+    if (cv.zone || cv.recent) return { key: 'combat', label: cv.zone ? 'En zona de combate' : 'En combate', section: 'combate' };
+  }
   if (f.isLanded || state.location.landed) return { key: 'landed', label: 'Aterrizado', section: 'orbita' };
   // cerca de un planeta (vuelo orbital o planeo): coordenadas en Status.json o aproximación a un cuerpo
   if (!state.docking.active && (f.hasLatLong || (state.location.approach && !f.isSupercruise))) return { key: 'orbit', label: 'Órbita planetaria', section: 'orbita' };
@@ -238,6 +243,7 @@ function view(state) {
     engineers,
     dockPad,
     mode: flightMode(state),
+    combat: require('./combat').view(state),
     alerts: alerts(state),
     fuel: fuel(state),
     route: routeView(state),

@@ -4,7 +4,7 @@
 
 const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
-  { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo', built: true }, { id: 'srv', label: 'SRV' },
+  { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate', built: true }, { id: 'equipo', label: 'Equipo', built: true }, { id: 'srv', label: 'SRV' },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie', built: true },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
   { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
@@ -36,7 +36,7 @@ const ui = {
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
   plot: null, // { running, target, text, ok, error }
   extOk: null, // última consulta a Spansh: true / false
-  prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true }, rigMin: 75, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
+  prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true }, rigMin: 75, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
   displays: null, info: null, // Ajustes: pantallas conectadas y datos de la app
 };
 
@@ -50,7 +50,7 @@ function setPref(key, value) {
 }
 /** ¿Se salta solo a la sección de esta situación? */
 function jumpAllowed(key) {
-  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : key === 'rhino' || key === 'mining' ? 'mineria' : 'vuelo';
+  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : key === 'rhino' || key === 'mining' ? 'mineria' : key === 'combat' ? 'combate' : 'vuelo';
   return ui.prefs.jump[g] !== false;
 }
 /** Abre una sección (y la recuerda para la próxima vez). */
@@ -1625,6 +1625,131 @@ function screenPowerplay(s, v) {
   return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:12px;min-height:0">${main}${right}</div>`;
 }
 
+/* ---------- Combate ---------- */
+const CB_PER = { kills: 6, cobrar: 6, masacre: 6, conflictos: 3 };
+function cbPager(key, page, pages) {
+  return pages > 1 ? `<span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-cbpg="${key}" data-d="-1" ${page === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${page + 1}/${pages}</span><button type="button" class="pg" data-cbpg="${key}" data-d="1" ${page >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
+}
+function cbPage(key, list) {
+  const per = CB_PER[key]; const pages = Math.max(1, Math.ceil(list.length / per));
+  const k = `cb_${key}`; ui[k] = Math.min(ui[k] || 0, pages - 1);
+  return { items: list.slice(ui[k] * per, ui[k] * per + per), pager: cbPager(key, ui[k], pages) };
+}
+function cbBar(label, pct, col) {
+  const r = pct == null ? null : Math.max(0, Math.min(100, pct));
+  return `<div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between"><span class="eb">${label}</span><span class="num" style="font-size:18px;color:${col}">${r == null ? '—' : `${nf(r)} %`}</span></div><span class="bar" style="height:10px"><span style="width:${r || 0}%;background:${col}"></span></span></div>`;
+}
+const agoText = (iso) => { if (!iso) return ''; const sec = Math.max(0, (Date.now() - Date.parse(iso)) / 1000); return sec < 60 ? 'ahora' : sec < 3600 ? `hace ${Math.round(sec / 60)} min` : `${String(iso).slice(0, 10)} ${hhmm(iso)}`; };
+
+function screenCombate(s, v) {
+  const c = v.combat || {};
+  const t = c.target;
+  const f = s.status.flags || {};
+  // --- Objetivo
+  let tgt;
+  if (!t) {
+    tgt = '<div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:20px;color:var(--soft)">Sin objetivo</span><span style="font-size:14px">Fija una nave en el juego: aquí verás quién la pilota, su estado legal y su recompensa.</span></div>';
+  } else {
+    const legalCol = t.hostile ? 'var(--cyan)' : t.legal === 'Clean' ? 'var(--amber)' : 'var(--soft)';
+    tgt = `
+      <span class="ti nowrap" style="font-size:28px">${esc(t.ship || '—')}</span>
+      <span class="soft nowrap" style="font-size:15px">${t.stage >= 1 ? esc(or(t.pilot, 'Piloto desconocido')) : 'Escaneando…'}${t.rank ? ` · <span class="va">${esc(t.rank)}</span>` : ''}</span>
+      <div class="kv" style="font-size:16px">
+        <span class="eb" style="font-size:10px">Facción</span><span class="nowrap">${esc(or(t.faction))}</span>
+        <span class="eb" style="font-size:10px">Estado legal</span><span style="color:${legalCol}">${esc(or(t.legalEs))}${t.legal === 'Clean' ? ' · atacarla es delito' : ''}</span>
+        <span class="eb" style="font-size:10px">Recompensa</span><span class="num ${t.bounty ? 'cyan' : 'soft'}">${t.bounty ? fmtCr(t.bounty) : t.stage >= 3 ? 'Ninguna' : '—'}</span>
+        ${t.power ? `<span class="eb" style="font-size:10px">Potencia</span><span>${esc(t.power)}</span>` : ''}
+      </div>
+      ${cbBar('Escudo', t.shield, 'var(--cyan)')}
+      ${cbBar('Casco', t.hull, 'var(--amber)')}
+      ${t.subsystem ? `<div class="in" style="display:flex;justify-content:space-between;padding:8px 12px"><span class="eb">Subsistema · ${esc(t.subsystem)}</span><span class="num">${t.subHealth != null ? `${nf(t.subHealth)} %` : '—'}</span></div>` : ''}
+      <span class="eb dim" style="font-size:10px;margin-top:auto">${t.stage >= 3 ? 'Escaneo completo' : `Escaneo ${t.stage}/3`} · ${agoText(t.at)}</span>`;
+  }
+  const hull = s.ship.hull;
+  const shieldsUp = f.areShieldsUp;
+  const own = `<section class="pn card">
+      <span class="ti" style="font-size:16px">Tu nave</span>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+        ${stat('Escudos', shieldsUp === false ? 'Caídos' : shieldsUp ? 'Activos' : '—', shieldsUp === false ? 'red' : 'cyan')}
+        ${stat('Casco', hull != null ? `${nf(hull * 100)} %` : '—', hull != null && hull < 0.5 ? 'red' : '')}
+        ${stat('Estado legal', s.cmdr.legalState === 'Clean' ? 'Limpio' : or(s.cmdr.legalState), s.cmdr.legalState && s.cmdr.legalState !== 'Clean' ? 'amber' : '')}
+        ${stat('Caza', c.fighter ? `Fuera · ${c.fighter.crew ? 'tripulante' : 'tú'}` : 'En el hangar')}
+      </div>
+    </section>`;
+  const left = `<aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">
+      <section class="pn card" style="flex:1;min-height:0;border-left:3px solid ${t && t.hostile ? 'var(--cyan)' : t && t.legal === 'Clean' ? 'var(--amber)' : 'var(--line2)'}"><span class="eb">Objetivo</span>${tgt}</section>
+      ${own}
+    </aside>`;
+
+  // --- Zona y sesión
+  const z = c.zone; const S = c.session || {};
+  const zoneHead = z
+    ? `<span class="ti nowrap" style="font-size:24px">${esc(z.name)}</span>
+       <span class="soft" style="font-size:15px">${z.side ? `Luchas por <span class="cyan">${esc(z.side)}</span> contra <span class="red">${esc(z.enemy || '—')}</span>` : z.kind === 'cz' ? 'Elige bando en el panel de funciones: el primer bono dirá por quién luchas.' : 'Las recompensas se cobran en la facción que las emite.'}</span>
+       <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+         ${stat('Bajas aquí', nf(z.bonds + z.bounties), 'cyan')}${stat('Créditos aquí', fmtCr(z.bondCr + z.bountyCr), 'cyan')}${stat('Desde', hhmm(z.at))}
+       </div>`
+    : `<span class="ti" style="font-size:24px;color:var(--soft)">Fuera de zona de combate</span><span class="soft" style="font-size:14px">Al caer en una zona de conflicto o de extracción, aquí se cuentan las bajas y los créditos de esa zona.</span>`;
+  const { items: kills, pager: killPager } = cbPage('kills', c.kills || []);
+  const mid = `<main style="display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0">
+      <section class="pn card" style="border-left:3px solid ${z ? 'var(--red,#ff4b4b)' : 'var(--line2)'}"><span class="eb">Zona</span>${zoneHead}</section>
+      <section class="pn card">
+        <span class="ti" style="font-size:16px">Esta sesión de juego</span>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+          ${stat('Bonos de combate', `${nf(S.bonds)} · ${fmtCr(S.bondCr)}`)}${stat('Recompensas', `${nf(S.bounties)} · ${fmtCr(S.bountyCr)}`)}${stat('Interdicciones', `${nf((S.interdicted || 0) + (S.escaped || 0))}${S.escaped ? ` · ${nf(S.escaped)} evadidas` : ''}`)}${stat('Destruido', nf(S.deaths), S.deaths ? 'red' : '')}
+        </div>
+      </section>
+      <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Últimas bajas</span>${killPager}</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          ${kills.map((k) => `<div class="in row" style="grid-template-columns:70px minmax(0,1fr) minmax(0,1fr) 130px;height:38px">
+            <span class="num soft" style="padding-left:12px">${hhmm(k.at)}</span>
+            <span class="nowrap va">${esc(or(k.ship, k.kind === 'bond' ? 'Nave enemiga' : 'Nave buscada'))}${k.pilot ? ` <span class="soft">· ${esc(k.pilot)}</span>` : ''}</span>
+            <span class="nowrap soft">${esc(or(k.faction))}</span>
+            <span class="num ${k.kind === 'bond' ? 'amber' : 'cyan'}" style="text-align:right;padding-right:12px">${fmtCr(k.reward)}</span></div>`).join('') || '<span class="soft" style="font-size:14px">Sin bajas en esta sesión.</span>'}
+        </div>
+        <span class="note" style="margin-top:auto"><span class="amber">■</span> bono de combate · <span class="cyan">■</span> recompensa</span>
+      </section>
+    </main>`;
+
+  // --- Pestañas de la derecha
+  const tab = ui.cbTab || 'cobrar';
+  const nMass = (c.massacre || []).length;
+  const tabs = `<div style="display:flex;gap:6px">
+      <button type="button" class="tab ${tab === 'cobrar' ? 'on' : ''}" data-cbtab="cobrar" style="flex:1;white-space:nowrap;padding:0 6px">Por cobrar</button>
+      <button type="button" class="tab ${tab === 'masacre' ? 'on' : ''}" data-cbtab="masacre" style="flex:1;white-space:nowrap;padding:0 6px">Masacres${nMass ? ` <span class="num">${nMass}</span>` : ''}</button>
+      <button type="button" class="tab ${tab === 'conflictos' ? 'on' : ''}" data-cbtab="conflictos" style="flex:1;white-space:nowrap;padding:0 6px">Conflictos${c.conflicts && c.conflicts.length ? ` <span class="num">${c.conflicts.length}</span>` : ''}</button></div>`;
+  let body;
+  if (tab === 'cobrar') {
+    const rows = [...(c.bonds || []).map((x) => ({ ...x, kind: 'bond' })), ...(c.bounties || []).map((x) => ({ ...x, kind: 'bounty' }))];
+    const { items, pager } = cbPage('cobrar', rows);
+    body = `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Bonos de combate', fmtCr(c.bondsTotal), 'amber')}${stat('Recompensas', fmtCr(c.bountiesTotal), 'cyan')}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="eb">Por facción</span>${pager}</div>
+      <div style="display:flex;flex-direction:column;gap:4px">${items.map((x) => `<div class="in" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px"><span style="display:flex;flex-direction:column;min-width:0"><span class="nowrap va">${esc(x.faction)}</span><span class="eb dim" style="font-size:10px">${x.kind === 'bond' ? 'Bonos' : 'Recompensas'} · ${nf(x.n)}</span></span><span class="num ${x.kind === 'bond' ? 'amber' : 'cyan'}">${fmtCr(x.cr)}</span></div>`).join('') || '<span class="soft" style="font-size:14px">Nada pendiente de cobrar.</span>'}</div>
+      <span class="note" style="margin-top:auto">Los bonos se cobran en una estación de la facción que los da (o en un Interstellar Factors, con descuento). Si destruyen tu nave, se pierden.</span>`;
+  } else if (tab === 'masacre') {
+    const { items, pager } = cbPage('masacre', c.massacre || []);
+    const st = (c.stacks || [])[0];
+    body = `${st ? `<div class="in" style="display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-color:var(--amber)"><span class="eb">Objetivo · ${esc(st.target)}</span><span class="num amber" style="font-size:26px">${st.left ? `Faltan ${nf(st.left)} bajas` : 'Todas listas'}</span><span class="soft" style="font-size:13px">${nf(st.missions)} misiones de ${nf(Object.keys(st.issuers).length)} facciones · ${fmtCr(st.reward)}</span></div>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="eb">Misiones</span>${pager}</div>
+      <div style="display:flex;flex-direction:column;gap:6px">${items.map((m) => `<div class="in" style="display:flex;flex-direction:column;gap:4px;padding:8px 12px;${m.done ? 'border-color:var(--cyan)' : ''}">
+          <div style="display:flex;justify-content:space-between;gap:8px"><span class="nowrap va">${esc(m.faction)}</span><span class="num ${m.done ? 'cyan' : ''}">${nf(Math.min(m.kills, m.need))}/${nf(m.need)}</span></div>
+          <span class="bar" style="height:6px"><span style="width:${Math.min(1, m.kills / Math.max(1, m.need)) * 100}%;background:${m.done ? 'var(--cyan)' : 'var(--amber)'}"></span></span>
+          <span class="eb dim nowrap" style="font-size:10px">Contra ${esc(m.target)} · ${fmtCr(m.reward)}${m.wing ? ' · ala' : ''}${m.done ? ' · <span class="cyan">entrégala</span>' : m.expiry ? ` · vence ${String(m.expiry).slice(5, 10)} ${hhmm(m.expiry)}` : ''}</span></div>`).join('') || '<span class="soft" style="font-size:14px">No tienes misiones de masacre.</span>'}</div>
+      <span class="note" style="margin-top:auto">Cada baja cuenta para una misión de cada facción que te la dio, como en el juego. Las bajas que hiciste antes de abrir la app se cuentan desde tus diarios.</span>`;
+  } else {
+    const { items, pager } = cbPage('conflictos', c.conflicts || []);
+    body = `<div style="display:flex;justify-content:space-between;align-items:center"><span class="eb">${esc(or(clean(s.location.system), 'Sistema'))}</span>${pager}</div>
+      <div style="display:flex;flex-direction:column;gap:8px">${items.map((x) => {
+        const side = (y, col) => `<div style="display:grid;grid-template-columns:minmax(0,1fr) 54px;gap:8px;align-items:center"><span style="display:flex;flex-direction:column;min-width:0"><span class="nowrap va">${esc(y.name)}</span><span class="eb dim nowrap" style="font-size:10px">${y.stake ? `En juego: ${esc(y.stake)}` : 'Sin activo en juego'}</span></span><span class="num" style="font-size:22px;color:${col};text-align:right">${nf(y.won)}</span></div>`;
+        return `<div class="in" style="display:flex;flex-direction:column;gap:6px;padding:10px 12px"><div style="display:flex;justify-content:space-between"><span class="eb">${esc(x.type)}</span><span class="eb ${x.status === 'En curso' ? 'red' : 'dim'}">${esc(x.status)}</span></div>${side(x.a, 'var(--cyan)')}${side(x.b, 'var(--amber)')}</div>`;
+      }).join('') || '<span class="soft" style="font-size:14px">No hay guerras ni elecciones en este sistema.</span>'}</div>
+      <span class="note" style="margin-top:auto">Los números grandes son los días ganados de cada bando. El diario los da al entrar en el sistema.</span>`;
+  }
+  const right = `<aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0"><section class="pn card" style="flex:1;min-height:0;overflow:hidden">${tabs}${body}</section></aside>`;
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) 440px;gap:12px;min-height:0;height:100%">${left}${mid}${right}</div>`;
+}
+
 /* ---------- Estación ---------- */
 const STATION_ICON = { Coriolis: 'coriolis', Orbis: 'orbis', Bernal: 'ocellus', Ocellus: 'ocellus', Dodec: 'dodec', Outpost: 'outpost', AsteroidBase: 'asteroid', MegaShip: 'megaship', FleetCarrier: 'carrier', CraterPort: 'surface_port', CraterOutpost: 'surface_outpost', OnFootSettlement: 'settlement', SpaceConstructionDepot: 'outpost', PlanetaryConstructionDepot: 'surface_outpost' };
 const STATE_ES = { Expansion: 'Expansión', Boom: 'Auge', Bust: 'Quiebra', CivilUnrest: 'Disturbios', CivilWar: 'Guerra civil', War: 'Guerra', Election: 'Elecciones', Lockdown: 'Confinamiento', Outbreak: 'Epidemia', Famine: 'Hambruna', Retreat: 'Retirada', InfrastructureFailure: 'Fallo de infraestructuras', Investment: 'Inversión', PirateAttack: 'Ataque pirata', PublicHoliday: 'Festividad', Drought: 'Sequía', Blight: 'Plaga', None: 'Sin estado' };
@@ -2193,13 +2318,16 @@ function screenAjustes(s, v) {
       <span class="ti" style="font-size:16px">Salto automático</span>
       <span class="soft" style="font-size:14px">La app cambia sola a la sección que corresponde a lo que haces en el juego. Si tocas otra sección, se queda ahí hasta el siguiente cambio.</span>
       ${setRow('autoJump', 'Salto automático', p.autoJump ? 'Activado' : 'Desactivado: la app solo cambia de sección cuando tú la eliges', p.autoJump)}
-      <span class="eb" style="margin-top:4px">Saltar a la sección cuando…</span>
-      ${setRow('jump.vuelo', 'Vuelas, saltas o vas en supercrucero', '→ Vuelo', p.jump.vuelo, off)}
-      ${setRow('jump.orbita', 'Te acercas a un planeta o aterrizas', '→ Órbita planetaria', p.jump.orbita, off)}
-      ${setRow('jump.mineria', 'Minas con el Rhino o con la nave', '→ Minería', p.jump.mineria, off)}
-      ${setRow('jump.approach', 'Te conceden el atraque', '→ Vuelo, con el esquema de plataformas', p.jump.approach, off)}
-      ${setRow('jump.docked', 'Atracas en una estación', '→ Estación', p.jump.docked, off)}
-      ${setRow('jump.depot', 'Atracas en una construcción de colonización', '→ Colonización', p.jump.depot, off)}
+      <span class="eb" style="margin-top:4px">Saltar a la sección…</span>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+      ${setRow('jump.vuelo', 'Vuelo', 'Vuelas, saltas o vas en supercrucero', p.jump.vuelo, off)}
+      ${setRow('jump.orbita', 'Órbita planetaria', 'Te acercas a un planeta o aterrizas', p.jump.orbita, off)}
+      ${setRow('jump.mineria', 'Minería', 'Minas con el Rhino o con la nave', p.jump.mineria, off)}
+      ${setRow('jump.combate', 'Combate', 'Zona de combate o te atacan', p.jump.combate !== false, off)}
+      ${setRow('jump.approach', 'Vuelo · plataformas', 'Te conceden el atraque', p.jump.approach, off)}
+      ${setRow('jump.docked', 'Estación', 'Atracas en una estación', p.jump.docked, off)}
+      ${setRow('jump.depot', 'Colonización', 'Atracas en una construcción', p.jump.depot, off)}
+      </div>
     </section>`;
 
   const ds = ui.displays;
@@ -2276,7 +2404,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -2399,6 +2527,13 @@ document.addEventListener('pointerdown', (ev) => {
   if (modTgt) { ev.preventDefault(); ui.modTarget = modTgt.dataset.modtarget; ui.lockSrc = 'mods'; ui.modPage = 0; ui.modOpen = null; render(); return; }
   const lockTabBtn = ev.target.closest('button[data-locktab], button[data-locksrc]');
   if (lockTabBtn) { ev.preventDefault(); if (lockTabBtn.dataset.locktab) ui.lockTab = lockTabBtn.dataset.locktab; else ui.lockSrc = lockTabBtn.dataset.locksrc; ui.lockPage = 0; render(); return; }
+  const cbBtn = ev.target.closest('button[data-cbtab], button[data-cbpg]');
+  if (cbBtn && !cbBtn.disabled) {
+    ev.preventDefault();
+    if (cbBtn.dataset.cbtab) ui.cbTab = cbBtn.dataset.cbtab;
+    else { const k = `cb_${cbBtn.dataset.cbpg}`; ui[k] = Math.max(0, (ui[k] || 0) + Number(cbBtn.dataset.d)); }
+    render(); return;
+  }
   const minTabBtn = ev.target.closest('button[data-minetab]');
   if (minTabBtn) { ev.preventDefault(); ui.mineTab = minTabBtn.dataset.minetab; render(); return; }
   const minPgBtn = ev.target.closest('button[data-mpager]');

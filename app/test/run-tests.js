@@ -5,6 +5,7 @@
 const assert = require('assert');
 const model = require('../../core/model');
 const derive = require('../../core/derive');
+const combat = require('../../core/combat');
 
 let ok = 0; let fail = 0;
 function test(name, fn) {
@@ -653,6 +654,38 @@ test('Spansh: tipo de estación, icono y plataforma (las obras siempre L)', () =
   const n = sp.normalise({ name: 'X', bodies: [{ is_main_star: true, subtype: 'K (Yellow-Orange) Star' }], stations: [{ name: 'A', distance_to_arrival: 5 }, { name: 'B', type: 'Orbis Starport', distance_to_arrival: 9, has_large_pad: true, has_market: true }] });
   assert.strictEqual(n.starClass, 'K');
   assert.deepStrictEqual(n.stations.map((x) => x.name), ['B'], 'sin tipo ni mercado se descarta');
+});
+
+test('combate: objetivo, zona de conflicto, bonos por cobrar, masacres y salto a Combate', () => {
+  const s = model.createState();
+  const T = (sec) => `2026-11-24T10:00:${String(sec).padStart(2, '0')}Z`;
+  model.applyEvent(s, ev('LoadGame', { timestamp: T(0), Commander: 'Adder' }));
+  model.applyEvent(s, ev('MissionAccepted', { timestamp: T(1), Name: 'Mission_Massacre_Conflict_CivilWar', Faction: 'A', TargetFaction: 'Z', KillCount: 2, Reward: 1000, MissionID: 1, Expiry: '2099-01-01T00:00:00Z' }));
+  model.applyEvent(s, ev('MissionAccepted', { timestamp: T(2), Name: 'Mission_Massacre_Conflict_CivilWar', Faction: 'A', TargetFaction: 'Z', KillCount: 3, Reward: 2000, MissionID: 2, Expiry: '2099-01-01T00:00:00Z' }));
+  model.applyEvent(s, ev('MissionAccepted', { timestamp: T(3), Name: 'Mission_Massacre_Conflict_CivilWar', Faction: 'B', TargetFaction: 'Z', KillCount: 2, Reward: 500, MissionID: 3, Expiry: '2099-01-01T00:00:00Z' }));
+  model.applyEvent(s, ev('SupercruiseDestinationDrop', { timestamp: T(4), Type: '$Warzone_PointRace_High:#index=1;', Type_Localised: 'Conflict Zone [High Intensity]' }));
+  model.applyEvent(s, ev('ShipTargeted', { timestamp: T(5), TargetLocked: true, Ship: 'vulture', ScanStage: 3, PilotName_Localised: 'Fuerzas', PilotRank: 'Master', ShieldHealth: 40, HullHealth: 90, Faction: 'Z', LegalStatus: 'Enemy' }));
+  let v = combat.view(s, Date.parse(T(6)));
+  assert.strictEqual(v.target.ship, 'Vulture'); assert.strictEqual(v.target.rank, 'Maestro'); assert.strictEqual(v.target.hostile, true);
+  assert.strictEqual(v.zone.intensity, 'Alta');
+  for (let i = 0; i < 3; i++) model.applyEvent(s, ev('FactionKillBond', { timestamp: T(10 + i), Reward: 100, AwardingFaction: 'Yo', VictimFaction: 'Z' }));
+  model.applyEvent(s, ev('Bounty', { timestamp: T(20), Rewards: [{ Faction: 'Policía', Reward: 50 }], TotalReward: 50, Target: 'cobramkiv', VictimFaction: 'Piratas' }));
+  v = combat.view(s, Date.parse(T(21)));
+  assert.strictEqual(v.zone.side, 'Yo'); assert.strictEqual(v.zone.bonds, 3);
+  assert.strictEqual(v.kills[1].ship, 'Vulture', 'la baja por bono toma la nave del último objetivo');
+  assert.strictEqual(v.bondsTotal, 300); assert.strictEqual(v.bountiesTotal, 50);
+  // A: la misión 1 (2 bajas) se completa y la tercera baja pasa a la 2; B recibe las mismas bajas a la vez
+  assert.deepStrictEqual(v.massacre.map((m) => [m.id, m.kills, m.done]), [[1, 2, true], [2, 1, false], [3, 2, true]]);
+  assert.strictEqual(v.stacks[0].left, 2);
+  assert.strictEqual(derive.flightMode(s).section, 'combate', 'en zona de conflicto -> Combate');
+  model.applyEvent(s, ev('RedeemVoucher', { timestamp: T(30), Type: 'CombatBond', Faction: 'Yo', Amount: 300 }));
+  model.applyEvent(s, ev('SupercruiseEntry', { timestamp: T(31) }));
+  v = combat.view(s, Date.parse(T(32)));
+  assert.strictEqual(v.bondsTotal, 0); assert.strictEqual(v.zone, null); assert.strictEqual(v.target, null);
+  model.applyEvent(s, ev('Died', { timestamp: T(40) }));
+  assert.strictEqual(combat.view(s).bountiesTotal, 0, 'al morir se pierden las recompensas');
+  model.applyEvent(s, ev('FSDJump', { timestamp: T(50), StarSystem: 'X', Conflicts: [{ WarType: 'civilwar', Status: 'active', Faction1: { Name: 'A', Stake: 'Base', WonDays: 2 }, Faction2: { Name: 'Z', Stake: '', WonDays: 1 } }] }));
+  assert.strictEqual(combat.view(s).conflicts[0].type, 'Guerra civil');
 });
 
 (async () => {

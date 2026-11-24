@@ -76,6 +76,18 @@ Sección del grupo Viaje (Odyssey):
 - Ranuras: cada traje y arma muestra cuántas ranuras de mejora ocupa de las que da su grado (una por grado a partir de G2).
 - Mejoras de ingeniero: pestaña «Mejoras» junto a Taquilla y Mochila (o tocando el traje o un arma del equipo). Lista las mejoras que aún no lleva esa pieza, con lo que te falta, y al tocar una muestra sus materiales y los ingenieros que la montan. Las mejoras de arma por tipo (alcance, daño en la cabeza, precisión sin apuntar) usan la variante del arma: cinética (Kinematic), láser (Takada) o plasma (Manticore). El acceso a cada ingeniero sale del evento `EngineerProgress` del diario: en Odyssey «Invited» ya da acceso. Si no tienes acceso, dice qué pide para desbloquearlo. Datos en `core/odymods.js`.
 
+## Combate
+
+Sección del grupo Nave, con tres columnas (datos de `core/combat.js`):
+
+- **Objetivo**: la nave fijada (`ShipTargeted`) con piloto, rango de combate, facción, estado legal (en cian si puedes atacarla sin delito, en ámbar si está limpia), recompensa, escudo, casco y el subsistema apuntado. **Tu nave**: escudos, casco, tu estado legal y si tu caza está fuera.
+- **Zona**: al caer en una zona de conflicto (con su intensidad), de extracción o en una baliza, cuenta las bajas y los créditos de esa zona y, con el primer bono, por quién luchas y contra quién. Debajo, los totales de la sesión de juego y las últimas bajas (la nave de un bono sale del último objetivo de esa facción).
+- **Por cobrar**: bonos de combate y recompensas pendientes por facción. Se descuentan al cobrar (`RedeemVoucher`; en un Interstellar Factors se cobra todo) y se pierden al morir. Se reconstruyen desde los diarios recientes, así que incluyen lo que hiciste antes de abrir la app.
+- **Masacres**: progreso de cada misión de masacre. Cada baja cuenta para la primera misión sin terminar de cada facción emisora, como en el juego, y se marca «entrégala» al completarse. Arriba, las bajas que faltan para la pila más larga.
+- **Conflictos**: guerras, guerras civiles y elecciones del sistema, con lo que está en juego y los días ganados de cada bando.
+
+No muestra pips, grupo de fuego ni arma seleccionada. Salto automático a Combate al entrar en una zona de combate o si te atacan, interdictan o derribas a alguien (90 s), salvo en supercrucero, atracado o aterrizado; se desactiva en Ajustes.
+
 ## Equipo
 
 Sección del grupo Nave, con tres pestañas:
@@ -137,7 +149,7 @@ Sección **Controles** (menú, grupo Comandante; también el botón «Guía» de
 
 Botón **Ajustes** de la cabecera (vuelve a pulsarlo para regresar a la sección anterior). Se guardan en `settings.json`, en la carpeta de datos de la app.
 
-- **Salto automático**: activarlo o no, y a qué secciones salta (vuelo, atraque concedido, estación, construcción de colonización).
+- **Salto automático**: activarlo o no, y a qué secciones salta (vuelo, órbita, minería, combate, atraque concedido, estación, construcción de colonización).
 - **Pantalla**: llevar la ventana a otra pantalla y pantalla completa. La ventana nunca se pone por encima del juego.
 - **Al abrir**: empezar en Puente de mando o en la última sección vista.
 - **Avisos opcionales** en la cabecera: atraque concedido y combustible en ruta. Los de peligro se muestran siempre.

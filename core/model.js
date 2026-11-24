@@ -8,6 +8,7 @@
  */
 
 const { computeControl } = require('../src/services/powerplay-control');
+const combat = require('./combat');
 
 const MAX_LOG = 40;
 
@@ -53,6 +54,7 @@ function createState() {
     // a pie (Odyssey): equipo actual, equipos y trajes/armas vistos, taquilla y mochila
     onfoot: { loadout: null, loadouts: {}, suits: {}, weapons: {}, locker: null, backpack: null },
     srv: { type: null }, // SRV desplegado (LaunchSRV): 'mev_rhino' es el Rhino de minería
+    combat: combat.create(), // objetivo, zona de combate, bajas, bonos por cobrar, masacres (core/combat.js)
     session: { startedAt: null, jumps: 0, distance: 0, merits: 0, bounties: 0, mined: 0, deliveredToConstruction: 0 },
     log: [],
   };
@@ -524,6 +526,7 @@ function applyEvent(state, e) {
     state._pendingStarClass = null;
   }
   state.connection.lastEventAt = e.timestamp || state.connection.lastEventAt;
+  combat.apply(state, e);
   const h = HANDLERS[e.event];
   if (!h) return false;
   h(state, e);
