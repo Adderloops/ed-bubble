@@ -494,6 +494,10 @@ test('a pie: materiales para subir de grado (trajes por modelo, armas por fabric
   assert.strictEqual(w.materials[0].have, 5); assert.deepStrictEqual(w.materials.map((m) => m.key), ['weaponschematic', 'ionisedgas', 'manufacturinginstructions', 'chemicalsuperbase', 'microelectrode']);
   assert.strictEqual(o.weaponMaker('wpn_m_assaultrifle_laser_fauto'), 'takada');
   assert.strictEqual(o.nextUpgrade('suit', 'tacticalsuit_class5', 5, locker), null);
+  // Maverick G1 → G5 (comprobado en Odyssey Materials Helper): 12 de cada común y 28 de Carbon Fibre Plating y Graphene
+  const tot = {};
+  for (let g = 1; g < 5; g++) for (const m of o.nextUpgrade('suit', 'utilitysuit_class1', g, locker).materials) tot[m.key] = (tot[m.key] || 0) + m.need;
+  assert.deepStrictEqual(tot, { suitschematic: 12, healthmonitor: 12, manufacturinginstructions: 12, carbonfibreplating: 28, graphene: 28 });
 });
 
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {

@@ -19,7 +19,7 @@ const WEAPON_CR = { 2: 500000, 3: 1875000, 4: 3750000, 5: null };
 const SUIT_MATS = {
   common: ['suitschematic', 'healthmonitor', 'manufacturinginstructions'],
   tacticalsuit: ['titaniumplating', 'graphene'], // Dominator
-  utilitysuit: ['titaniumplating', 'graphene'], // Maverick (sin confirmar en la wiki)
+  utilitysuit: ['carbonfibreplating', 'graphene'], // Maverick (comprobado con Odyssey Materials Helper)
   explorationsuit: ['aerogel', 'graphene'], // Artemis
 };
 const WEAPON_MATS = {
@@ -29,7 +29,7 @@ const WEAPON_MATS = {
 };
 const NAMES = {
   suitschematic: 'Suit Schematic', healthmonitor: 'Health Monitor', manufacturinginstructions: 'Manufacturing Instructions',
-  titaniumplating: 'Titanium Plating', graphene: 'Graphene', aerogel: 'Aerogel', weaponschematic: 'Weapon Schematic',
+  titaniumplating: 'Titanium Plating', carbonfibreplating: 'Carbon Fibre Plating', graphene: 'Graphene', aerogel: 'Aerogel', weaponschematic: 'Weapon Schematic',
   compressionliquefiedgas: 'Compression-Liquefied Gas', tungstencarbide: 'Tungsten Carbide', weaponcomponent: 'Weapon Component',
   ionisedgas: 'Ionised Gas', microelectrode: 'Microelectrode', opticalfibre: 'Optical Fibre', chemicalsuperbase: 'Chemical Superbase',
 };
