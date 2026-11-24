@@ -64,6 +64,17 @@ Para desarrollo: `ED_JOURNAL_FOLDER` apunta el motor a otra carpeta de Journals,
 
 **Filtro de estaciones** (ficha de un sistema en Navegación): un botón con el icono y el número de cada tipo de estación (las construcciones llevan la etiqueta «Construcción»). Se pueden marcar varios a la vez; «Solo L» deja las que tienen plataforma grande y «Todas» quita el filtro.
 
+## Órbita planetaria
+
+Sección del grupo Nave para cuando estás cerca de un planeta (la app salta sola a ella; se desactiva en Ajustes):
+
+- Destino en superficie con brújula (pegar, escribir o fijar desde una especie conocida).
+- Cuerpo: tipo, atmósfera, gravedad, temperatura, radio y si se puede aterrizar (Journal o Spansh).
+- Exobiología: señales, géneros del DSS, progreso de las muestras y especies conocidas en Spansh.
+- Minería: señales geológicas, zonas de minería y puntos calientes de los anillos.
+
+En **Vuelo**, la tarjeta «En este sistema» muestra las estaciones y los portanaves del sistema actual, con los bastión de Powerplay primero.
+
 ## Controles
 
 Sección **Controles** (menú, grupo Comandante; también el botón «Guía» de la tarjeta de controles de Puente). Pensada para quien instala la app por primera vez:

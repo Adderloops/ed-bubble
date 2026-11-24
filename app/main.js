@@ -53,7 +53,7 @@ function defaultBounds() {
 // Ajustes del comandante (settings.json en la carpeta de datos de la app)
 const DEFAULT_PREFS = {
   autoJump: true,
-  jump: { vuelo: true, approach: true, docked: true, depot: true }, // a qué secciones salta solo
+  jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true }, // a qué secciones salta solo
   startSection: 'puente', lastSection: 'puente', // al abrir: Puente o la última sección vista
   alerts: { dock: true, fuelRoute: true }, // avisos opcionales en la cabecera
   fullscreen: false,
@@ -66,7 +66,7 @@ function prefs() {
   delete p.ppTracked;
   return p;
 }
-const SECTION_IDS = ['puente', 'vuelo', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
+const SECTION_IDS = ['puente', 'vuelo', 'orbita', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
 /** Valida un ajuste que llega de la ventana; devuelve el valor limpio o undefined. */
 function cleanPref(key, value) {
   const bool = (x) => (typeof x === 'boolean' ? x : undefined);
@@ -85,6 +85,20 @@ let last = null;
 let plotting = null; // { cancelled } mientras se traza una ruta
 // Repostaje en ruta: estaciones con "Refuel" en los sistemas a los que llegas (Spansh)
 const fuelStops = { key: null, busy: false, systems: {} };
+/** Estaciones y portanaves del sistema actual (Spansh), para la tarjeta de Vuelo. */
+let hereInfo = null; let hereName = null;
+async function lookHere(snap) {
+  const name = snap.state.location.system;
+  if (!name || name === hereName) return;
+  hereName = name; hereInfo = null;
+  try {
+    const y = await spansh.system(name);
+    if (hereName !== name) return;
+    hereInfo = y ? { system: y.name, stations: y.stations, at: Date.now() } : { system: name, stations: [], at: Date.now() };
+  } catch (e) { hereInfo = { system: name, error: e.message }; hereName = null; logLine(`[spansh] sistema ${name}: ${e.message}`); }
+  if (win && !win.isDestroyed()) win.webContents.send('ed:here', hereInfo);
+}
+
 /** Gravedad del cuerpo al que te acercas, desde Spansh (Status.json solo la da a pie). */
 let bodyLooked = null;
 const bodyInfo = {}; // por nombre, para la ventana aunque se abra después de la consulta
@@ -180,7 +194,7 @@ function createWindow() {
     win.webContents.once('did-finish-load', async () => {
       const out = process.env.ED_BUBBLE_SHOT;
       await new Promise((r) => setTimeout(r, 2500));
-      for (const sec of ['puente', 'vuelo', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles']) {
+      for (const sec of ['puente', 'vuelo', 'orbita', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles']) {
         await win.webContents.executeJavaScript(`ui.section='${sec}'; ui.autoJump=false; if ('${sec}' === 'ajustes') loadSettingsInfo(); render();`);
         await new Promise((r) => setTimeout(r, 400));
         const img = await win.webContents.capturePage();
@@ -238,6 +252,7 @@ app.whenReady().then(() => {
     if (win && !win.isDestroyed()) win.webContents.send('ed:update', snap);
     lookFuelStops(snap);
     lookBody(snap);
+    lookHere(snap);
     // destino fijado sin cuerpo: se completa al llegar a uno
     const nt = geo.adoptBody(snap.state.surfaceTarget, snap.state);
     if (nt) {
@@ -373,6 +388,7 @@ app.whenReady().then(() => {
     return fs.existsSync(f) ? shell.openPath(f) : 'No existe la carpeta';
   });
   ipcMain.handle('ed:bodies', () => bodyInfo);
+  ipcMain.handle('ed:here', () => hereInfo);
   ipcMain.handle('ed:open-data', () => shell.openPath(app.getPath('userData')));
   // Coordenadas de destino en un planeta (se guardan entre sesiones)
   const TARGET_FILE = path.join(app.getPath('userData'), 'surface-target.json');

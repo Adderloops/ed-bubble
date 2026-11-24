@@ -406,6 +406,29 @@ test('mercancías: nombre en inglés para Spansh desde el símbolo interno (jueg
   assert.strictEqual(englishName('Acero'), null);
 });
 
+test('órbita planetaria: señales, géneros, muestras, anillos, modo y portanaves bastión', () => {
+  const s = model.createState();
+  model.applyEvent(s, ev('Scan', { BodyName: 'X 1', BodyID: 5, PlanetClass: 'Rocky body', SurfaceGravity: 0.98, Landable: true, Rings: [{ Name: 'X 1 A Ring' }] }));
+  model.applyEvent(s, ev('SAASignalsFound', { BodyName: 'X 1', BodyID: 5, Signals: [{ Type: '$SAA_SignalType_Biological;', Type_Localised: 'Biológicas', Count: 3 }, { Type: '$SAA_SignalType_Geological;', Count: 2 }], Genuses: [{ Genus: '$Codex_Ent_Stratum_Genus_Name;', Genus_Localised: 'Stratum' }] }));
+  model.applyEvent(s, ev('SAASignalsFound', { BodyName: 'X 1 A Ring', BodyID: 6, Signals: [{ Type: 'Platinum', Type_Localised: 'Platino', Count: 2 }] }));
+  model.applyEvent(s, ev('ScanOrganic', { ScanType: 'Analyse', Genus: '$Codex_Ent_Stratum_Genus_Name;', Genus_Localised: 'Stratum', Species_Localised: 'Stratum Tectonicas', Body: 5, SystemAddress: 1 }));
+  const b = s.bodies['X 1'];
+  assert.deepStrictEqual(b.signals.map((x) => [x.key, x.count]), [['biological', 3], ['geological', 2]]);
+  assert.strictEqual(b.genuses[0].name, 'Stratum');
+  assert.deepStrictEqual(b.rings, ['X 1 A Ring']);
+  assert.strictEqual(s.bodies['X 1 A Ring'].signals[0].name, 'Platino');
+  assert.strictEqual(s.bio[5]['$Codex_Ent_Stratum_Genus_Name;'].step, 3);
+  // modo: con coordenadas en Status.json, la sección es Órbita planetaria
+  s.status.flags = { hasLatLong: true };
+  assert.strictEqual(derive.flightMode(s).section, 'orbita');
+  s.status.flags = { isSupercruise: true };
+  assert.strictEqual(derive.flightMode(s).section, 'vuelo');
+  // portanaves bastión de Powerplay (Spansh los da como Planetary Outpost)
+  const sp = require('../../core/spansh');
+  assert.strictEqual(sp.stationKind('Planetary Outpost', 'Stronghold Carrier').label, 'Portanaves bastión');
+  assert.strictEqual(sp.stationKind('Planetary Outpost', 'Foo').label, 'Puesto planetario');
+});
+
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
   const pads = require('../../core/pads');
   // comprobadas en el juego (Coriolis): 9 a las 8, 25 a las 12, 27 a la 1

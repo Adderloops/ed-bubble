@@ -23,7 +23,10 @@ function createState() {
       faction: null, factionState: null, powerplayState: null, controllingPower: null, systemAddress: null, starPos: null,
       approach: null, // cuerpo al que te acercas (ApproachBody): { body, bodyId, systemAddress }
     },
-    bodies: {}, // datos de cuerpos escaneados en este sistema: { nombre: { gravity (g), radius (m), landable } }
+    // cuerpos de este sistema según el Journal: { nombre: { id, gravity (g), radius (m), landable, planetClass,
+    //   atmosphere, temperature (K), rings: [nombres], signals: [{ key, name, count }], genuses: [{ key, name }] } }
+    bodies: {},
+    bio: {}, // muestras exobiológicas de este sistema: { bodyId: { genusKey: { genus, species, step 1-3 } } }
     destination: { name: null, body: null, system: null },
     status: {
       flags: {}, pips: null, fireGroup: null, guiFocus: null,
@@ -183,7 +186,7 @@ const HANDLERS = {
   },
   FSDJump(state, e) {
     setSystemInfo(state, e);
-    state.location.approach = null; state.bodies = {};
+    state.location.approach = null; state.bodies = {}; state.bio = {};
     state.location.docked = false; state.location.station = null; state.location.stationType = null;
     state.location.landed = false;
     state.lastJump = { distance: e.JumpDist ?? null, fuelUsed: e.FuelUsed ?? null, at: e.timestamp || null };
@@ -223,8 +226,31 @@ const HANDLERS = {
   },
   LeaveBody(state, e) { state.location.approach = null; pushLog(state, e, 'Alejándose', e.Body); },
   Scan(state, e) {
+    if (!e.BodyName) return;
+    const b = bodyEntry(state, e.BodyName, e.BodyID);
     // SurfaceGravity viene en m/s²; se guarda en g
-    if (e.BodyName && e.SurfaceGravity != null) state.bodies[e.BodyName] = { gravity: e.SurfaceGravity / 9.80665, radius: e.Radius ?? null, landable: e.Landable ?? null };
+    if (e.SurfaceGravity != null) b.gravity = e.SurfaceGravity / 9.80665;
+    if (e.Radius != null) b.radius = e.Radius;
+    if (e.Landable != null) b.landable = !!e.Landable;
+    if (e.PlanetClass) b.planetClass = e.PlanetClass;
+    if (e.StarType) b.starType = e.StarType;
+    if (e.Atmosphere !== undefined) b.atmosphere = e.Atmosphere_Localised || e.Atmosphere || '';
+    if (e.SurfaceTemperature != null) b.temperature = e.SurfaceTemperature;
+    if (e.Volcanism !== undefined) b.volcanism = e.Volcanism_Localised || e.Volcanism || '';
+    if (Array.isArray(e.Rings)) b.rings = e.Rings.map((r) => r.Name).filter(Boolean);
+  },
+  FSSBodySignals(state, e) { if (e.BodyName) bodySignals(state, e.BodyName, e.BodyID, e.Signals); },
+  SAASignalsFound(state, e) {
+    if (!e.BodyName) return;
+    const b = bodySignals(state, e.BodyName, e.BodyID, e.Signals);
+    if (Array.isArray(e.Genuses)) b.genuses = e.Genuses.map((g) => ({ key: g.Genus, name: g.Genus_Localised || g.Genus }));
+  },
+  ScanOrganic(state, e) {
+    if (e.Body == null || !e.Genus) return;
+    const step = { Log: 1, Sample: 2, Analyse: 3 }[e.ScanType] || 1;
+    const byBody = state.bio[e.Body] || (state.bio[e.Body] = {});
+    byBody[e.Genus] = { genus: e.Genus_Localised || e.Genus, species: e.Species_Localised || e.Species || null, variant: e.Variant_Localised || null, step };
+    pushLog(state, e, 'Exobiología', `${e.Species_Localised || e.Genus_Localised || ''} · ${step}/3`);
   },
   DockingRequested(state, e) { pushLog(state, e, 'Atraque solicitado', e.StationName); },
   DockingGranted(state, e) {
@@ -311,6 +337,23 @@ const HANDLERS = {
 };
 
 /** Clave común para un material: "$CMMComposite_name;" y "cmmcomposite" -> "cmmcomposite". */
+function bodyEntry(state, name, id) {
+  const b = state.bodies[name] || (state.bodies[name] = {});
+  if (id != null) b.id = id;
+  return b;
+}
+
+/** Señales de un cuerpo o anillo: biológicas, geológicas… y puntos calientes de minería. */
+function bodySignals(state, name, id, signals) {
+  const b = bodyEntry(state, name, id);
+  if (!Array.isArray(signals)) return b;
+  b.signals = signals.map((x) => {
+    const m = /^\$SAA_SignalType_(\w+);?$/.exec(x.Type || '');
+    return { key: m ? m[1].toLowerCase() : String(x.Type || '').toLowerCase(), name: x.Type_Localised || (m ? m[1] : x.Type), count: x.Count || 0 };
+  });
+  return b;
+}
+
 function commodityKey(name) {
   return String(name || '').toLowerCase().replace(/^\$/, '').replace(/_name;?$/, '').replace(/[^a-z0-9]/g, '');
 }

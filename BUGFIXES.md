@@ -95,3 +95,19 @@ Revisado todo lo que la app toma del Journal y de los archivos del juego:
 | Tipo de estación, servicios, estados de facción y de Powerplay, ingenieros | No (códigos) | Sin cambios |
 | Sistemas, estaciones, potencias, cuerpos | No (nombres propios) | Sin cambios |
 | Teclas de los controles | No | El juego guarda las teclas por su posición en un teclado estadounidense, sea cual sea la distribución (un jugador francés lo confirma en el foro de Frontier: pulsa Z y el archivo guarda W). La app envía la tecla por esa posición, así que vale para AZERTY, QWERTZ o español. Comprobado en español; sin probar en AZERTY ni QWERTZ |
+
+## Sugerencias de los probadores
+
+| # | Sugerencia | Propuesta por | Fecha | Estado |
+|---|------------|---------------|-------|--------|
+| S1 | Nueva sección **Órbita planetaria** (grupo Nave): coordenadas y brújula (se sacan de Vuelo), más información exobiológica del cuerpo y cuántos puntos de minería tiene. En el hueco que queda en **Vuelo**: estaciones y portanaves del sistema, incluidos los bastión de Powerplay. | Specter A.G. | 24-11-2026 | Hecha en 0.7.0-beta.2 |
+
+### S1 · Órbita planetaria y estaciones del sistema en Vuelo
+
+- **Nueva sección «Órbita planetaria»** (grupo Nave). La app salta a ella al entrar en la órbita de un cuerpo (con coordenadas en `Status.json`) o al aterrizar; se puede desactivar en Ajustes.
+  - Destino en superficie: coordenadas, botones Pegar, Fijar y Quitar, y la brújula (antes en Vuelo), más altitud, rumbo, latitud y longitud.
+  - Cuerpo: tipo, atmósfera, gravedad, temperatura, radio y si se puede aterrizar. Datos del escaneo del Journal (`Scan`) o, si no, de Spansh.
+  - Exobiología: señales biológicas, géneros del DSS (`SAASignalsFound`) y progreso de cada muestra (`ScanOrganic`, 1 a 3). Si aún no has escaneado, las especies conocidas en Spansh con su valor y un botón «Fijar» que pone su posición como destino de la brújula.
+  - Minería: señales geológicas, zonas de minería del planeta (Spansh) y puntos calientes de cada anillo (DSS o Spansh).
+- **Vuelo**, en el hueco de la aproximación: tarjeta «En este sistema», con pestañas de estaciones y portanaves del sistema actual (Spansh). Los portanaves bastión de Powerplay salen primero, con su potencia; Spansh los da como «Planetary Outpost» con el nombre «Stronghold Carrier».
+- **Archivos:** `core/model.js`, `core/derive.js`, `core/spansh.js`, `app/main.js`, `app/preload.js`, `app/renderer/app.js`, `app/test/run-tests.js`.

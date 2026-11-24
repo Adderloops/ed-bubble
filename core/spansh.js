@@ -43,6 +43,7 @@ function suggest(q) {
 
 // Tipo de estación de Spansh -> icono, nombre y si es de superficie.
 const STATION_KIND = [
+  [/^stronghold carrier$/i, 'carrier', 'Portanaves bastión', false], // Powerplay (Spansh los marca como Planetary Outpost)
   [/coriolis/i, 'coriolis', 'Coriolis', false],
   [/orbis/i, 'orbis', 'Orbis', false],
   [/ocellus|bernal/i, 'ocellus', 'Ocellus', false],
@@ -58,7 +59,8 @@ const STATION_KIND = [
   [/outpost/i, 'outpost', 'Puesto orbital', false],
 ];
 
-function stationKind(type) {
+function stationKind(type, name) {
+  if (/^stronghold carrier$/i.test(String(name || ''))) type = 'Stronghold Carrier';
   const k = STATION_KIND.find(([re]) => re.test(String(type || '')));
   return k ? { icon: k[1], label: k[2], surface: k[3] } : { icon: null, label: type || 'Desconocido', surface: false };
 }
@@ -81,7 +83,7 @@ function normalise(r) {
   };
   const stations = (r.stations || [])
     .filter((st) => st.type || st.has_market) // sin tipo ni mercado suelen ser datos incompletos
-    .map((st) => ({ name: st.name, type: st.type || null, ...stationKind(st.type), pad: padSize(st), distance: st.distance_to_arrival ?? null, faction: st.controlling_minor_faction || null, services: services(st) }))
+    .map((st) => { const k = stationKind(st.type, st.name); return { name: st.name, type: st.type || null, ...k, carrier: k.icon === 'carrier', bastion: /bastión/.test(k.label), pad: k.label === 'Portanaves bastión' ? 'L' : padSize(st), distance: st.distance_to_arrival ?? null, faction: st.controlling_minor_faction || null, services: services(st) }; })
     .sort((a, b) => (a.distance ?? 1e12) - (b.distance ?? 1e12));
   const factions = (r.minor_faction_presences || [])
     .map((f) => ({ name: f.name, influence: f.influence ?? null, state: f.state || null, government: f.government || null, allegiance: f.allegiance || null, controlling: f.name === r.controlling_minor_faction }))
@@ -135,7 +137,7 @@ function markets({ commodity, reference, minSupply = 1, largePad = false }) {
     });
     return (d.results || []).map((r) => {
       const m = (r.market || []).find((x) => String(x.commodity).toLowerCase() === c.toLowerCase()) || {};
-      const kind = stationKind(r.type);
+      const kind = stationKind(r.type, r.name);
       return {
         station: r.name, system: r.system_name, type: r.type || null, ...kind,
         carrier: /carrier/i.test(r.type || ''), planetary: !!r.is_planetary || kind.surface,
@@ -160,7 +162,20 @@ function body(id64) {
     const d = await getJson(`https://spansh.co.uk/api/body/${encodeURIComponent(id64)}`);
     const r = d.record || d;
     if (!r || !r.name) return null;
-    return { name: r.name, gravity: r.gravity ?? null, radius: r.radius ?? null, landable: r.is_landable ?? null };
+    // especies conocidas con su primera posición (para fijarla como destino)
+    const species = [];
+    for (const l of r.landmarks || []) {
+      if (!l.subtype) continue;
+      const x = species.find((y) => y.species === l.subtype);
+      if (x) x.count += 1; else species.push({ species: l.subtype, genus: l.type || null, value: l.value ?? null, count: 1, lat: l.latitude ?? null, lon: l.longitude ?? null });
+    }
+    return {
+      name: r.name, gravity: r.gravity ?? null, radius: r.radius ?? null, landable: r.is_landable ?? null,
+      subtype: r.subtype || null, atmosphere: r.atmosphere || null, temperature: r.surface_temperature ?? null, volcanism: r.volcanism_type || null,
+      signals: (r.signals || []).map((x) => ({ name: x.name, count: x.count || 0 })),
+      rings: (r.rings || []).map((g) => ({ name: g.name, type: g.type || null, signals: (g.signals || []).map((x) => ({ name: x.name, count: x.count || 0 })) })),
+      species: species.sort((a, b) => (b.value || 0) - (a.value || 0)),
+    };
   });
 }
 

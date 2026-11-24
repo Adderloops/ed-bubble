@@ -4,7 +4,7 @@
 
 const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
-  { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo' }, { id: 'srv', label: 'SRV' },
+  { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate' }, { id: 'equipo', label: 'Equipo' }, { id: 'srv', label: 'SRV' },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie' },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería' }, { id: 'colonizacion', label: 'Colonización', built: true },
   { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
@@ -23,11 +23,13 @@ const ui = {
   mkFilter: { large: null, surface: true, carriers: false },
   fuelStops: {}, // sistema -> estación con repostaje (Spansh) o null
   bodyInfo: {}, // datos de cuerpos desde Spansh (gravedad…), por nombre
+  here: null, hereTab: 'stations', herePage: 0, // estaciones y portanaves del sistema actual (Spansh)
+  bioPage: 0,
   coordText: '', coordMsg: null, // coordenadas en planeta: texto escrito y aviso
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
   plot: null, // { running, target, text, ok, error }
   extOk: null, // última consulta a Spansh: true / false
-  prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true }, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
+  prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true }, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
   displays: null, info: null, // Ajustes: pantallas conectadas y datos de la app
 };
 
@@ -41,7 +43,7 @@ function setPref(key, value) {
 }
 /** ¿Se salta solo a la sección de esta situación? */
 function jumpAllowed(key) {
-  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : 'vuelo';
+  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : 'vuelo';
   return ui.prefs.jump[g] !== false;
 }
 /** Abre una sección (y la recuerda para la próxima vez). */
@@ -369,15 +371,6 @@ function screenVuelo(s, v) {
   const inds = INDICATORS.map(([l, k, w]) => `<span class="chip ${fl[k] ? (w ? 'warnon' : 'on') : ''}"><span class="dot ${fl[k] ? (w ? 'warn' : 'on') : ''}"></span>${l}</span>`).join('');
   const toggles = TOGGLES.map(([l, k, id]) => { const a = actAttrs(id); return `<button type="button" class="ctl ${fl[k] ? 'on' : ''}${a.cls || ''}" data-act="${id}" ${a.dis} title="${esc(a.title)}"><span style="display:flex;align-items:center;gap:8px"><span class="dot ${fl[k] ? 'on' : ''}"></span>${l}</span>${a.key ? `<span class="k">${esc(a.key)}</span>` : ''}</button>`; }).join('');
   const actions = ACTIONS.map(([l, id]) => { const a = actAttrs(id); return `<button type="button" class="act${a.cls || ''}" data-act="${id}" ${a.dis} title="${esc(a.title)}">${l}${a.key ? `<span class="k">${esc(a.key)}</span>` : ''}</button>`; }).join('');
-  const nearBody = fl.hasLatLong;
-  const approach = nearBody
-    ? `<div class="in" style="padding:12px;display:flex;justify-content:space-between;align-items:center"><span class="eb">Cuerpo</span><span class="va nowrap" style="font-size:18px">${esc(clean(s.status.bodyName) || clean(s.location.body) || '—')}</span></div>
-       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
-         ${stat('Altitud', s.status.altitude != null ? `${nf(s.status.altitude)} m` : '—')}${stat('Gravedad', fmtGravity(s))}
-         ${stat('Rumbo', s.status.heading != null ? `${s.status.heading}°` : '—')}${stat('Lat · Long', `${nf(s.status.latitude, 2)} · ${nf(s.status.longitude, 2)}`)}
-       </div>`
-    : `<div class="in empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:20px;color:var(--dim)">No disponible ahora</span><span class="soft" style="font-size:14px">Aparece al acercarte a un planeta (altitud, rumbo y coordenadas de Status.json).</span></div>`;
-
   const dock = s.docking;
   const dockCard = docking ? `
     <section class="pn card" style="flex:1;min-height:0;align-items:center">
@@ -388,12 +381,7 @@ function screenVuelo(s, v) {
         <div style="display:flex;justify-content:space-between;width:430px"><span class="eb" style="color:#ff6b6b">● Luz roja</span><span class="eb dim">Vista al entrar</span><span class="eb" style="color:#3be37a">Luz verde ●</span></div>`
       : `<div class="empty" style="flex-direction:column;gap:10px"><span class="eb">Plataforma</span><span class="num amber" style="font-size:120px;line-height:1">${String(Number(dock.pad) || 0).padStart(2, '0')}</span><span style="font-size:14px">Sin esquema para este tipo de estación.</span></div>`}
     </section>` : '';
-  const approachCard = `
-    <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
-      <div style="display:flex;justify-content:space-between;gap:10px"><span class="ti nowrap" style="font-size:16px">Aproximación a planeta</span><span class="eb dim">${s.surfaceTarget ? 'Destino fijado' : 'Solo cerca de un cuerpo'}</span></div>
-      ${coordControls(s)}
-      ${s.surfaceTarget && v.surfaceNav ? compassBlock(s, v.surfaceNav) : approach}
-    </section>`;
+  const approachCard = hereCard(s);
 
   const r = v.route;
   const nextLeg = r.legs.length ? (r.legs[0].here ? r.legs[1] : r.legs[0]) : null;
@@ -1064,6 +1052,147 @@ async function coordAction(kind) {
   say(r.ok, r.ok ? 'Destino fijado' : r.error);
 }
 
+/* ---------- Vuelo: estaciones y portanaves del sistema actual (Spansh) ---------- */
+const HERE_PAGE = 6;
+function hereCard(s) {
+  const h = ui.here;
+  const sys = clean(s.location.system);
+  const fresh = h && h.system && sys && h.system.toLowerCase() === sys.toLowerCase();
+  let body;
+  const all = fresh && h.stations ? h.stations : [];
+  const carriers = all.filter((x) => x.carrier).sort((a, b) => (b.bastion - a.bastion) || (a.distance ?? 1e12) - (b.distance ?? 1e12));
+  const stations = all.filter((x) => !x.carrier);
+  const list = ui.hereTab === 'carriers' ? carriers : stations;
+  const pages = Math.max(1, Math.ceil(list.length / HERE_PAGE));
+  ui.herePage = Math.min(ui.herePage, pages - 1);
+  if (!sys) body = '<div class="empty">Sin sistema actual.</div>';
+  else if (!fresh) body = `<div class="empty">${h && h.error ? `Spansh no responde: ${esc(h.error)}` : 'Buscando estaciones en Spansh…'}</div>`;
+  else if (!list.length) body = `<div class="empty">${ui.hereTab === 'carriers' ? 'Spansh no tiene portanaves en este sistema.' : 'Spansh no tiene estaciones en este sistema.'}</div>`;
+  else {
+    body = list.slice(ui.herePage * HERE_PAGE, (ui.herePage + 1) * HERE_PAGE).map((st) => `
+      <div class="in" style="display:grid;grid-template-columns:40px minmax(0,1fr) auto 34px;gap:10px;align-items:center;padding:6px 10px;height:58px${st.bastion ? ';border-color:#5a4524' : ''}">
+        ${st.icon ? `<img src="icons/${st.icon}.png" alt="" style="width:38px;height:38px;object-fit:contain">` : '<span></span>'}
+        <span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:16px">${esc(siteName(st.name))}</span><span class="eb nowrap ${st.bastion ? 'amber' : 'dim'}" style="font-size:10px">${esc(st.label)}${st.bastion && st.faction ? ` · ${esc(st.faction)}` : ''}</span></span>
+        <span class="num soft" style="font-size:14px">${st.distance != null ? `${nf(st.distance, 0)} ls` : '—'}</span>
+        <span class="pad pad-${st.pad || 'x'}">${st.pad || '?'}</span>
+      </div>`).join('');
+  }
+  const tab = (k, t) => `<button type="button" class="tab small ${ui.hereTab === k ? 'on' : ''}" data-here="${k}">${t}</button>`;
+  const pager = pages > 1 ? `<span style="display:flex;align-items:center;gap:6px"><button type="button" class="pg" data-pager="here" data-d="-1" ${ui.herePage === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.herePage + 1}/${pages}</span><button type="button" class="pg" data-pager="here" data-d="1" ${ui.herePage >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
+  return `
+    <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span class="ti nowrap" style="font-size:16px">En este sistema</span>${pager}</div>
+      <div style="display:flex;gap:8px">${tab('stations', `Estaciones · ${stations.length}`)}${tab('carriers', `Portanaves · ${carriers.length}`)}</div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${body}</div>
+      ${ui.hereTab === 'carriers' && fresh ? '<span class="soft" style="font-size:12px;margin-top:auto">Según Spansh: los portanaves de jugadores pueden haberse movido.</span>' : ''}
+    </section>`;
+}
+
+/* ---------- Órbita planetaria ---------- */
+const SIGNAL_LABEL = { biological: 'Biológicas', geological: 'Geológicas', human: 'Humanas', thargoid: 'Thargoid', guardian: 'Guardianes', other: 'Otras', planetanomaly: 'Anomalías', 'planetary mining location': 'Zonas de minería' };
+const sigKey = (x) => (x.key || String(x.name || '').toLowerCase());
+const fmtCr = (n) => (n == null ? '—' : n >= 1e6 ? `${nf(n / 1e6, 1)} M CR` : `${nf(n)} CR`);
+
+function orbitBody(s) {
+  const name = clean(s.status.bodyName) || (s.location.approach && s.location.approach.body) || null;
+  if (!name) return null;
+  const jb = (s.bodies && s.bodies[name]) || {};
+  const sp = ui.bodyInfo[name] || null;
+  // señales: las del Journal (escaneo) y, si falta alguna, las de Spansh
+  const count = (k) => {
+    const x = (jb.signals || []).find((y) => sigKey(y) === k) || ((sp && sp.signals) || []).find((y) => sigKey(y) === k);
+    return x ? x.count : null;
+  };
+  const signals = jb.signals || (sp && sp.signals) || [];
+  // anillos: puntos calientes del Journal (DSS) o de Spansh
+  const ringNames = jb.rings && jb.rings.length ? jb.rings : sp ? sp.rings.map((r) => r.name) : [];
+  const rings = ringNames.map((rn) => {
+    const jr = s.bodies && s.bodies[rn];
+    const spr = sp && sp.rings.find((r) => r.name === rn);
+    const hot = jr && jr.signals && jr.signals.length ? jr.signals : spr ? spr.signals : [];
+    return { name: rn, short: rn.startsWith(name) ? rn.slice(name.length).trim() : rn, type: spr && spr.type, hotspots: hot };
+  });
+  const scans = jb.id != null && s.bio ? s.bio[jb.id] || {} : {};
+  return { name, jb, sp, signals, bio: count('biological'), geo: count('geological'), zones: count('planetary mining location'), rings, scans };
+}
+
+function screenOrbita(s, v) {
+  const fl = s.status.flags || {};
+  const b = orbitBody(s);
+  const near = fl.hasLatLong;
+  const approachStats = near
+    ? `<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+         ${stat('Altitud', s.status.altitude != null ? fmtDist(s.status.altitude) : '—')}${stat('Rumbo', s.status.heading != null ? `${s.status.heading}°` : '—')}
+         ${stat('Latitud', nf(s.status.latitude, 4))}${stat('Longitud', nf(s.status.longitude, 4))}
+       </div>`
+    : '';
+  const left = `
+    <section class="pn card" style="min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;gap:10px"><span class="ti nowrap" style="font-size:16px">Destino en superficie</span><span class="eb dim">${s.surfaceTarget ? 'Destino fijado' : 'Pega o escribe unas coordenadas'}</span></div>
+      ${coordControls(s)}
+      ${approachStats}
+      ${s.surfaceTarget && v.surfaceNav ? compassBlock(s, v.surfaceNav) : near ? '<div class="in empty" style="flex:1;flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">Sin destino fijado</span><span style="font-size:14px">Fija unas coordenadas o una especie de la lista de exobiología y aparecerá la brújula.</span></div>' : '<div class="in empty" style="flex:1;flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">Lejos de un planeta</span><span style="font-size:14px">La brújula funciona al entrar en la órbita del cuerpo (vuelo orbital, planeo o en superficie).</span></div>'}
+    </section>`;
+
+  if (!b) {
+    return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 640px;gap:12px;min-height:0">${left}
+      <section class="pn card"><span class="ti" style="font-size:16px">Cuerpo</span><div class="empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">No estás cerca de un cuerpo</span><span style="font-size:14px">Al acercarte a un planeta verás su gravedad, exobiología y minería.</span></div></section></div>`;
+  }
+  const jb = b.jb; const sp = b.sp || {};
+  const cls = jb.planetClass || sp.subtype || '—';
+  const temp = jb.temperature != null ? jb.temperature : sp.temperature;
+  const atmo = jb.atmosphere != null ? jb.atmosphere : sp.atmosphere;
+  const landable = jb.landable != null ? jb.landable : sp.landable;
+  const bodyCard = `
+    <section class="pn card">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline"><span class="ti nowrap" style="font-size:16px">Cuerpo</span><span class="eb ${landable ? 'cyan' : 'dim'}">${landable == null ? '' : landable ? 'Se puede aterrizar' : 'No se puede aterrizar'}</span></div>
+      <span class="va nowrap" style="font-size:22px">${esc(b.name)}</span>
+      <span class="eb dim nowrap">${esc(cls)}${atmo ? ` · ${esc(atmo)}` : ''}</span>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+        ${stat('Gravedad', fmtGravity(s))}${stat('Temperatura', temp != null ? `${nf(temp, 0)} K` : '—')}${stat('Radio', (jb.radius || sp.radius) ? `${nf(jb.radius ? jb.radius / 1000 : sp.radius, 0)} km` : '—')}
+      </div>
+    </section>`;
+
+  // Exobiología: señales, géneros (DSS), muestras tomadas y especies conocidas (Spansh)
+  const genuses = jb.genuses || [];
+  const scanned = Object.entries(b.scans);
+  const species = sp.species || [];
+  const dots = (n) => `<span style="display:inline-flex;gap:4px">${[1, 2, 3].map((i) => `<span class="dot ${i <= n ? 'on' : ''}"></span>`).join('')}</span>`;
+  const bioRows = [
+    ...scanned.map(([, x]) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 12px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:15px">${esc(x.species || x.genus)}</span><span class="eb dim" style="font-size:10px">${x.step >= 3 ? 'Análisis completo' : `Muestra ${x.step} de 3`}</span></span>${dots(x.step)}</div>`),
+    ...genuses.filter((g) => !b.scans[g.key]).map((g) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 12px"><span class="va nowrap" style="font-size:15px">${esc(g.name)}</span><span class="eb dim" style="font-size:10px">Sin muestras</span></div>`),
+    ...(genuses.length || scanned.length ? [] : species.map((x) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:6px 12px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:15px">${esc(x.species)}</span><span class="eb dim" style="font-size:10px">${fmtCr(x.value)} · ${x.count} conocida${x.count === 1 ? '' : 's'}</span></span>${x.lat != null ? `<button type="button" class="tab small" data-spot="${x.lat},${x.lon}" title="Fijar como destino la primera posición conocida">Fijar</button>` : '<span></span>'}</div>`)),
+  ];
+  const BIO_PAGE = 4;
+  const bioPages = Math.max(1, Math.ceil(bioRows.length / BIO_PAGE));
+  ui.bioPage = Math.min(ui.bioPage, bioPages - 1);
+  const bioPager = bioPages > 1 ? `<span style="display:flex;align-items:center;gap:6px"><button type="button" class="pg" data-pager="bio" data-d="-1" ${ui.bioPage === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.bioPage + 1}/${bioPages}</span><button type="button" class="pg" data-pager="bio" data-d="1" ${ui.bioPage >= bioPages - 1 ? 'disabled' : ''}>›</button></span>` : '';
+  const bioSource = scanned.length || genuses.length ? 'Tus escaneos' : species.length ? 'Especies conocidas · Spansh' : '';
+  const bioCard = `
+    <section class="pn card" style="min-height:0">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Exobiología</span>${bioPager}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Señales biológicas', b.bio != null ? nf(b.bio) : '—', b.bio ? 'cyan' : '')}${stat('Muestras completas', `${scanned.filter(([, x]) => x.step >= 3).length}${b.bio ? ` / ${b.bio}` : ''}`)}</div>
+      ${bioSource ? `<span class="eb dim" style="font-size:10px">${bioSource}</span>` : ''}
+      <div style="display:flex;flex-direction:column;gap:4px">${bioRows.slice(ui.bioPage * BIO_PAGE, (ui.bioPage + 1) * BIO_PAGE).join('') || `<span class="soft" style="font-size:14px">${b.bio ? 'Escanea el cuerpo con el DSS para ver los géneros.' : 'Sin señales biológicas conocidas.'}</span>`}</div>
+    </section>`;
+
+  const ringRows = b.rings.map((r) => `<div class="in" style="display:flex;flex-direction:column;gap:4px;padding:8px 12px">
+      <span style="display:flex;justify-content:space-between;gap:10px"><span class="va nowrap" style="font-size:15px">${esc(r.short || r.name)}</span><span class="eb dim" style="font-size:10px">${esc(r.type || '')}</span></span>
+      <span style="display:flex;flex-wrap:wrap;gap:6px">${r.hotspots.length ? r.hotspots.map((h) => `<span class="chip on" style="font-size:12px">${esc(h.name)} × ${h.count}</span>`).join('') : '<span class="soft" style="font-size:13px">Sin puntos calientes conocidos (escanea el anillo con el DSS)</span>'}</span>
+    </div>`).slice(0, 2).join('');
+  const mineCard = `
+    <section class="pn card" style="min-height:0">
+      <span class="ti" style="font-size:16px">Minería</span>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Señales geológicas', b.geo != null ? nf(b.geo) : '—', b.geo ? 'cyan' : '')}${stat('Zonas de minería', b.zones != null ? nf(b.zones) : '—', b.zones ? 'cyan' : '')}</div>
+      ${ringRows || '<span class="soft" style="font-size:14px">Este cuerpo no tiene anillos.</span>'}
+    </section>`;
+
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 640px;gap:12px;min-height:0">
+    ${left}
+    <div style="display:flex;flex-direction:column;gap:12px;min-height:0">${bodyCard}${bioCard}${mineCard}</div>
+  </div>`;
+}
+
 /* ---------- Powerplay ---------- */
 const PP_STATE = { Exploited: 'Explotado', Fortified: 'Fortificado', Stronghold: 'Stronghold', Unoccupied: 'Sin ocupar' };
 const fmtCut = (ms) => { const d = ms - Date.now(); if (d <= 0) return 'ahora'; const h = Math.floor(d / 3600000); return h >= 24 ? `${Math.floor(h / 24)} d ${h % 24} h` : `${h} h ${Math.floor((d % 3600000) / 60000)} min`; };
@@ -1460,6 +1589,7 @@ function screenAjustes(s, v) {
       ${setRow('autoJump', 'Salto automático', p.autoJump ? 'Activado' : 'Desactivado: la app solo cambia de sección cuando tú la eliges', p.autoJump)}
       <span class="eb" style="margin-top:4px">Saltar a la sección cuando…</span>
       ${setRow('jump.vuelo', 'Vuelas, saltas o vas en supercrucero', '→ Vuelo', p.jump.vuelo, off)}
+      ${setRow('jump.orbita', 'Te acercas a un planeta o aterrizas', '→ Órbita planetaria', p.jump.orbita, off)}
       ${setRow('jump.approach', 'Te conceden el atraque', '→ Vuelo, con el esquema de plataformas', p.jump.approach, off)}
       ${setRow('jump.docked', 'Atracas en una estación', '→ Estación', p.jump.docked, off)}
       ${setRow('jump.depot', 'Atracas en una construcción de colonización', '→ Colonización', p.jump.depot, off)}
@@ -1539,7 +1669,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -1635,6 +1765,12 @@ document.addEventListener('pointerdown', (ev) => {
   }
   const pt = ev.target.closest('button[data-pptrack]');
   if (pt) { ev.preventDefault(); window.edbubble.ppTrack(pt.dataset.pptrack || null); return; }
+  const hb = ev.target.closest('button[data-here]');
+  if (hb) { ev.preventDefault(); ui.hereTab = hb.dataset.here; ui.herePage = 0; render(); return; }
+  const hp = ev.target.closest('button[data-pager="here"], button[data-pager="bio"]');
+  if (hp && !hp.disabled) { ev.preventDefault(); const k = hp.dataset.pager === 'here' ? 'herePage' : 'bioPage'; ui[k] = Math.max(0, ui[k] + Number(hp.dataset.d)); render(); return; }
+  const spot = ev.target.closest('button[data-spot]');
+  if (spot) { ev.preventDefault(); ui.coordText = spot.dataset.spot.replace(',', ', '); coordAction('set'); return; }
   const co = ev.target.closest('button[data-coord]');
   if (co) { ev.preventDefault(); coordAction(co.dataset.coord); return; }
   const go = ev.target.closest('[data-goto]');
@@ -1719,6 +1855,8 @@ if (window.edbubble) {
   window.edbubble.onControls((c) => { ui.controls = c; render(); });
   window.edbubble.onFuelStops((x) => { ui.fuelStops = x || {}; render(); });
   if (window.edbubble.bodies) window.edbubble.bodies().then((b) => { ui.bodyInfo = { ...(b || {}), ...ui.bodyInfo }; render(); });
+  if (window.edbubble.here) window.edbubble.here().then((h) => { if (h) { ui.here = h; render(); } });
+  if (window.edbubble.onHere) window.edbubble.onHere((h) => { ui.here = h; ui.herePage = 0; render(); });
   if (window.edbubble.onBody) window.edbubble.onBody((b) => { if (b && b.body) { ui.bodyInfo[b.body] = b; render(); } });
   window.edbubble.onPlotStatus((p) => {
     ui.plot = { ...p, at: Date.now() };
