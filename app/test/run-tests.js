@@ -563,6 +563,12 @@ test('recetas de nave: materiales por grado, tope del ingeniero y materiales del
   assert.deepStrictEqual(lr.grades[0].materials.map((m) => [m.key, m.need, m.ok]), [['disruptedwakeechoes', 1, true]]);
   assert.strictEqual(lr.grades[1].ready, true);
   assert.ok(r.specials.some((x) => x.name === 'Mass Manager'));
+  // recetas de Inara: todos los módulos de los ingenieros tienen receta; Merc Coin no cuenta como falta
+  for (const m of Object.keys(se.MODULES)) assert.ok(b.MODULE_RECIPES[m], 'sin receta: ' + m);
+  const ml = b.recipesFor('Mining Laser', 5, { sulphur: 1, heatdispersionplate: 1, consumerfirmware: 1 }).blueprints[0];
+  assert.deepStrictEqual([ml.name, ml.merc, ml.grades.map((g) => g.grade)], ['Long range', true, [2, 3, 4, 5]]);
+  assert.strictEqual(ml.grades[0].ready, true);
+  assert.deepStrictEqual(b.recipesFor('Guardian Gauss Cannon', 1, {}).blueprints[0].grades[0].materials.map((m) => [m.name, m.need]), [['Hardened Surface Fragments', 2], ['Caustic Crystal', 1]]);
   // materiales del diario: total al arrancar y cambios
   const model = require('../../core/model');
   const s = model.createState();

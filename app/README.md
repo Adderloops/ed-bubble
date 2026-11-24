@@ -83,7 +83,7 @@ Sección del grupo Comandante, con dos pestañas:
 - Naves (25 ingenieros): filtra por categoría (armas, utilidades, núcleo, opcionales) y por módulo para ver quién lo mejora y hasta qué grado, ordenados por grado y por acceso. La ficha de cada uno muestra su retrato, sitio y sistema (con botón para copiarlo), si pide permiso o está en Colonia, tu grado con él y qué le falta para desbloquearlo. El estado sale de `EngineerProgress` (en naves, «Invited» aún pide el contrato inicial).
 - A pie (13 ingenieros): lo mismo con las mejoras de traje y arma que montan.
 
-- Recetas de nave: en la ficha de un ingeniero de naves, toca un módulo para ver sus recetas (por ejemplo, FSD «Increased range») con los materiales de cada grado hasta el tope de ese ingeniero, y sus efectos experimentales. Cada material muestra lo que tienes y lo que pide; los grados que aún no puedes pedirle (por tu grado con él) salen atenuados. Tus materiales salen del diario (`Materials` al empezar la partida, y luego recogidas, descartes, intercambios, síntesis, trabajos de ingeniero y recompensas de misión). Recetas en `core/shipblueprints.js`.
+- Recetas de nave: en la ficha de un ingeniero de naves, toca un módulo para ver sus recetas (por ejemplo, FSD «Increased range») con los materiales de cada grado hasta el tope de ese ingeniero, y sus efectos experimentales. Cada material muestra lo que tienes y lo que pide; los grados que aún no puedes pedirle (por tu grado con él) salen atenuados. Tus materiales salen del diario (`Materials` al empezar la partida, y luego recogidas, descartes, intercambios, síntesis, trabajos de ingeniero y recompensas de misión). Recetas en `core/shipblueprints.js`: las de coriolis-data y, para lo que no trae (módulos guardianes, refuerzo de módulos, láser de minería, lanzamisiles de enzimas, desintegrador abrasivo y las recetas nuevas, muchas solo para módulos «Merc»), las de Inara. «Merc Coin» y los materiales thargoid no salen en el diario: se muestran con su cantidad pero sin la tuya.
 
 Datos en `core/shipengineers.js`, `core/odymods.js` y `core/shipblueprints.js`; retratos en `app/renderer/engineers/` (los que faltan salen con iniciales).
 
@@ -150,8 +150,6 @@ El instalador no pide permisos de administrador: instala en `%LOCALAPPDATA%\Prog
 No está firmado: la primera vez Windows SmartScreen avisa («Windows protegió su PC» › Más información › Ejecutar de todas formas).
 
 ## Pendiente
-
-- Recetas de ingeniería que faltan en coriolis-data (en la ficha del ingeniero salen sin flecha): módulos guardianes (cañón Gauss, cargador de plasma, cañón de esquirlas, planta y distribuidor de energía, potenciador FSD y refuerzos de casco, módulos y escudo), refuerzo de módulos, láser de minería, lanzamisiles de enzimas y desintegrador abrasivo. Idea: pedir a otro comandante capturas de esas recetas (materiales de cada grado, por ejemplo desde Odyssey Materials Helper) y añadirlas a `core/shipblueprints.js`.
 
 - Traducción de la interfaz a inglés, francés, italiano y alemán (ahora solo español; en Ajustes › Idioma sale «English · pronto»).
 

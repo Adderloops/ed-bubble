@@ -52,3 +52,5 @@ Los retratos de `app/renderer/engineers/` son imágenes del juego Elite Dangerou
 ## Recetas de ingeniería de nave (coriolis-data)
 
 `core/shipblueprints.js` recoge las recetas de ingeniería de nave (materiales de cada grado) y los efectos experimentales de cada módulo, tomados de coriolis-data (EDCD, https://github.com/EDCD/coriolis-data). Según su licencia, los datos y sus archivos JSON son propiedad intelectual de Frontier Developments plc y están sujetos a sus términos (https://www.frontierstore.net/terms-and-conditions/); el código de Coriolis está bajo licencia MIT y no se usa aquí. Los nombres internos de los materiales vienen de EDCD FDevIDs (material.csv).
+
+Las recetas que coriolis-data no trae (anti-guardián de Ram Tah para los módulos guardianes y las recetas nuevas de nave, muchas solo para módulos «Merc») se transcribieron a mano de Inara (https://inara.cz/elite/blueprints/) el 24-11-2026, leyendo sus páginas desde el navegador del usuario. Inara es una base de datos no oficial de Elite Dangerous; los datos son del juego, de Frontier Developments.

@@ -1701,7 +1701,8 @@ function loadRecipes() {
   ui.recipes = 'loading';
   window.edbubble.recipes().then((r) => { ui.recipes = r; render(); }).catch(() => { ui.recipes = null; });
 }
-const matChip = (k, need, have, R) => { const h = (have && have[k]) || 0; const m = R.mats[k] || {}; return `<span class="upm ${h >= need ? 'ok' : ''}" title="${esc(m.name || k)} · ${esc({ Raw: 'bruto', Manufactured: 'fabricado', Encoded: 'codificado' }[m.type] || '')} G${m.grade || '?'}">${esc(m.name || k)} <b>${h}/${need}</b></span>`; };
+const matHave = (k, n, have, R) => ((R.mats[k] || {}).untracked ? true : ((have && have[k]) || 0) >= n);
+const matChip = (k, need, have, R) => { const m = R.mats[k] || {}; if (m.untracked) return `<span class="upm" title="No sale en el diario de materiales: compruébalo en el juego">${esc(m.name || k)} <b>×${need}</b></span>`; const h = (have && have[k]) || 0; return `<span class="upm ${h >= need ? 'ok' : ''}" title="${esc(m.name || k)} · ${esc({ Raw: 'bruto', Manufactured: 'fabricado', Encoded: 'codificado' }[m.type] || '')} G${m.grade || '?'}">${esc(m.name || k)} <b>${h}/${need}</b></span>`; };
 /** Recetas de un módulo con el tope de grado del ingeniero y lo que tienes. */
 function recipePanel(s, e, module) {
   const R = ui.recipes;
@@ -1715,17 +1716,18 @@ function recipePanel(s, e, module) {
   const tabs = `<div style="display:flex;gap:6px;flex-wrap:wrap">${mr.bp.map((id) => `<button type="button" class="tab small ${!ui.engExp && id === bpId ? 'on' : ''}" data-engbp="${esc(id)}">${esc(R.blueprints[id].name)}</button>`).join('')}${mr.sp.length ? `<button type="button" class="tab small ${ui.engExp ? 'on' : ''}" data-engexp="1">Experimentales</button>` : ''}</div>`;
   let body;
   if (ui.engExp) {
-    body = mr.sp.map((id) => { const sp = R.specials[id]; const ok = sp.m.every(([k, n]) => ((have && have[k]) || 0) >= n);
+    body = mr.sp.map((id) => { const sp = R.specials[id]; const ok = sp.m.every(([k, n]) => matHave(k, n, have, R));
       return `<div class="in" style="padding:7px 10px;display:flex;flex-direction:column;gap:4px"><span style="display:flex;justify-content:space-between;gap:8px"><span class="va nowrap">${esc(sp.name)}</span>${have ? `<span class="eb ${ok ? 'cyan' : 'dim'}" style="font-size:10px">${ok ? 'Listo' : ''}</span>` : ''}</span><span style="display:flex;flex-wrap:wrap;gap:4px">${sp.m.map(([k, n]) => matChip(k, n, have, R)).join('')}</span></div>`; }).join('');
   } else {
     const bp = R.blueprints[bpId];
     const rank = e.status === 'unlocked' ? (e.rank || 0) : 0;
-    body = Object.keys(bp.g).map(Number).filter((g) => g <= mod.grade).sort((a, b) => a - b).map((g) => { const ok = bp.g[g].every(([k, n]) => ((have && have[k]) || 0) >= n);
+    body = Object.keys(bp.g).map(Number).filter((g) => g <= mod.grade).sort((a, b) => a - b).map((g) => { const ok = bp.g[g].every(([k, n]) => matHave(k, n, have, R));
       return `<div class="in" style="padding:7px 10px;display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px;align-items:center;${g > rank ? 'opacity:.6' : ''}"><span class="num ${have && ok ? 'cyan' : ''}" style="font-size:18px">G${g}</span><span style="display:flex;flex-wrap:wrap;gap:4px">${bp.g[g].map(([k, n]) => matChip(k, n, have, R)).join('')}${g > rank ? `<span class="eb amber" style="font-size:9px;align-self:center">${rank ? `Necesitas grado ${g} con ${esc(e.name)}` : 'Aún no lo tienes desbloqueado'}</span>` : ''}</span></div>`; }).join('');
   }
   return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:17px">${esc(mod.name)}</span><span class="eb dim" style="font-size:10px">${esc(e.name)} lo hace hasta G${mod.grade}</span></span>${back}</div>
     ${tabs}
     ${have ? '' : '<span class="eb amber">Aún no sé tus materiales: el juego los guarda al empezar la partida</span>'}
+    ${!ui.engExp && R.blueprints[bpId].merc ? '<span class="eb amber">Solo para módulos Merc · pide Merc Coin</span>' : ''}
     <div style="display:flex;flex-direction:column;gap:4px">${body}</div>
     <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">Cada tirada gasta la receta de su grado. Los materiales son los mismos con cualquier ingeniero; él solo pone el grado máximo.</span>`;
 }
