@@ -1214,14 +1214,20 @@ function screenEstacion(s, v) {
           <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:4px">${stat('Nivel', esc(g.tier || '—'))}${stat('Tu aporte', nf(g.contribution))}${stat('Tu posición', g.band != null ? `top ${g.band} %` : '—', 'cyan')}</div>
         </div>`).join('') : '<span class="soft" style="font-size:14px">No participas en ningún objetivo comunitario activo.</span>'}
     </section>`;
-  const ranks = Object.entries(st.engineering.ranks || {});
-  const unlocked = ranks.filter(([, r]) => r.progress === 'Unlocked');
-  const g5 = unlocked.filter(([, r]) => r.rank === 5).length;
+  // Ingenieros de naves (Horizons, ID 300xxx, grados 1-5) y de equipo a pie (Odyssey, ID 400xxx, sin grados)
+  const ranks = Object.entries(st.engineering.ranks || {}).map(([name, r]) => ({ name, ...r }));
+  const isSuit = (r) => String(r.id || '').startsWith('4') || ODYSSEY_ENGINEERS.has(r.name);
+  const shipEng = ranks.filter((r) => !isSuit(r));
+  const suitEng = ranks.filter(isSuit);
+  const shipG5 = shipEng.filter((r) => r.progress === 'Unlocked' && r.rank === 5).length;
+  const shipUnl = shipEng.filter((r) => r.progress === 'Unlocked').length;
+  const suitUnl = suitEng.filter((r) => r.progress === 'Unlocked').length;
   const last = st.engineering.last;
   const engCard = `
     <section class="pn card" style="min-height:0;overflow:hidden">
       <span class="ti" style="font-size:16px">Ingenieros</span>
-      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">${stat('Desbloqueados', `${unlocked.length} / ${ranks.length || '—'}`)}${stat('Rango 5', nf(g5), 'cyan')}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">${stat('Naves · grado 5', shipEng.length ? `${shipG5} / ${shipEng.length}` : '—', shipEng.length && shipG5 === shipEng.length ? 'cyan' : '')}${stat('A pie · desbloqueados', suitEng.length ? `${suitUnl} / ${suitEng.length}` : '—')}</div>
+      ${shipEng.length ? `<span class="soft" style="font-size:13px;line-height:1.35">${shipG5 === shipEng.length ? '<span class="cyan">Todos los de naves en grado 5.</span>' : `${shipUnl} de ${shipEng.length} de naves desbloqueados.`} Los de a pie no tienen grados.</span>` : ''}
       ${last ? `<div class="in" style="padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span class="eb" style="font-size:10px">Último trabajo · ${hhmm(last.at)} UTC</span><span class="va" style="font-size:15px">${esc(last.blueprint)} G${esc(last.level)}</span><span class="soft" style="font-size:13px">${esc(last.engineer)}</span></div>` : '<span class="soft" style="font-size:14px">Sin trabajos de ingeniero en esta sesión.</span>'}
       ${st.services.find((x) => x.key === 'engineer' && x.on) ? '<span class="eb cyan">Esta estación tiene ingeniero</span>' : ''}
     </section>`;
@@ -1323,6 +1329,9 @@ function reportError(where, e) {
 }
 window.addEventListener('error', (ev) => reportError('error', ev.error || ev.message));
 window.addEventListener('unhandledrejection', (ev) => reportError('promesa', ev.reason));
+
+// Ingenieros de equipo a pie (Odyssey), por si el Journal no trae EngineerID
+const ODYSSEY_ENGINEERS = new Set(['Domino Green', 'Hero Ferrari', 'Jude Navarro', 'Kit Fowler', 'Oden Geiger', 'Terra Velasquez', 'Uma Laszlo', 'Wellington Beck', 'Yarden Bond', 'Baltanos', 'Eleanor Bresa', 'Rosa Dayette', 'Yi Shen']);
 
 /* ---------- Controles: guía e importación de .binds ---------- */
 const BINDS_PAGE = 10;

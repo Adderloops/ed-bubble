@@ -241,7 +241,7 @@ const HANDLERS = {
     }));
   },
   EngineerProgress(state, e) {
-    for (const x of e.Engineers || (e.Engineer ? [e] : [])) state.engineering.ranks[x.Engineer] = { rank: x.Rank ?? null, progress: x.Progress || null };
+    for (const x of e.Engineers || (e.Engineer ? [e] : [])) state.engineering.ranks[x.Engineer] = { id: x.EngineerID ?? null, rank: x.Rank ?? null, progress: x.Progress || null };
   },
   EngineerCraft(state, e) {
     state.engineering.last = { engineer: e.Engineer, blueprint: e.BlueprintName, level: e.Level ?? null, module: e.Slot || e.Module || null, at: e.timestamp || null };
