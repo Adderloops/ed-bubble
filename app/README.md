@@ -73,7 +73,7 @@ Sección del grupo Nave para cuando estás cerca de un planeta (la app salta sol
 - Exobiología: señales, géneros del DSS, progreso de las muestras y especies conocidas en Spansh.
 - Minería: señales geológicas, zonas de minería y puntos calientes de los anillos.
 
-En **Vuelo**, la tarjeta «En este sistema» muestra las estaciones y los portanaves del sistema actual, con los bastión de Powerplay primero.
+En **Vuelo**, la tarjeta «En este sistema» muestra las estaciones y los portanaves del sistema actual, con el mismo filtro por iconos que Navegación (los bastión de Powerplay tienen su propio botón).
 
 ## Controles
 

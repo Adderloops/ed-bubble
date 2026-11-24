@@ -23,7 +23,7 @@ const ui = {
   mkFilter: { large: null, surface: true, carriers: false },
   fuelStops: {}, // sistema -> estación con repostaje (Spansh) o null
   bodyInfo: {}, // datos de cuerpos desde Spansh (gravedad…), por nombre
-  here: null, hereTab: 'stations', herePage: 0, // estaciones y portanaves del sistema actual (Spansh)
+  here: null, herePage: 0, hereKinds: [], hereLarge: false, // estaciones y portanaves del sistema actual (Spansh)
   bioPage: 0,
   coordText: '', coordMsg: null, // coordenadas en planeta: texto escrito y aviso
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
@@ -683,24 +683,8 @@ function systemDetail(s) {
     <div class="in" style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px"><span class="eb">Powerplay</span><span class="amber nowrap" style="font-size:16px">${pp}${conflict}</span></div>`;
 
   const tabs = [['stations', `Estaciones · ${ui.sysKinds.length || ui.sysLarge ? `${y.stations.filter((st) => (!ui.sysKinds.length || ui.sysKinds.includes(st.label)) && (!ui.sysLarge || st.pad === 'L')).length}/` : ''}${y.stations.length}`], ['factions', `Facciones · ${y.factions.length}`], ['bodies', `Cuerpos · ${y.bodyCount}`]];
-  // filtro por tipo de estación (iconos), en el orden de spansh.js
-  const kinds = [];
-  for (const st of y.stations) {
-    const k = kinds.find((x) => x.label === st.label);
-    if (k) k.n += 1; else kinds.push({ label: st.label, icon: st.icon, obra: /^Construcción/.test(st.label), n: 1 });
-  }
-  const KIND_ORDER = ['Coriolis', 'Orbis', 'Ocellus', 'Dodec', 'Base en asteroide', 'Puesto orbital', 'Puerto planetario', 'Puesto planetario', 'Asentamiento', 'Construcción orbital', 'Construcción en superficie', 'Meganave', 'Fleet carrier'];
-  const ord = (l) => { const i = KIND_ORDER.indexOf(l); return i < 0 ? 99 : i; };
-  kinds.sort((a, b) => ord(a.label) - ord(b.label));
-  ui.sysKinds = ui.sysKinds.filter((k) => kinds.some((x) => x.label === k));
-  const shown = y.stations.filter((st) => (!ui.sysKinds.length || ui.sysKinds.includes(st.label)) && (!ui.sysLarge || st.pad === 'L'));
-  const filtering = ui.sysKinds.length || ui.sysLarge;
-  const filterBar = ui.sysTab === 'stations' && y.stations.length > 1 ? `
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:nowrap;overflow:hidden">
-      <button type="button" class="kf all${filtering ? '' : ' on'}" data-kind="" title="Todas las estaciones">Todas</button>
-      ${kinds.map((k) => `<button type="button" class="kf${ui.sysKinds.includes(k.label) ? ' on' : ''}" data-kind="${esc(k.label)}" title="${esc(k.label)}">${k.icon ? `<img src="icons/${k.icon}.png" alt="">` : '<span class="soft">?</span>'}${k.obra ? '<span class="kf-obra">Construcción</span>' : ''}<span class="num">${k.n}</span></button>`).join('')}
-      <button type="button" class="kf${ui.sysLarge ? ' on' : ''}" data-kind="L" title="Solo con plataforma grande" style="margin-left:auto"><span class="pad pad-L" style="width:24px;height:24px;font-size:13px">L</span>Solo L</button>
-    </div>` : '';
+  const { bar, shown, filtering } = stationFilter(y.stations, 'sys');
+  const filterBar = ui.sysTab === 'stations' && y.stations.length > 1 ? bar : '';
   const per = { stations: 7, factions: 9, bodies: 11 }[ui.sysTab];
   const items = ui.sysTab === 'stations' ? shown : ui.sysTab === 'factions' ? y.factions : y.bodies;
   const pages = Math.max(1, Math.ceil(items.length / per));
@@ -1052,6 +1036,30 @@ async function coordAction(kind) {
   say(r.ok, r.ok ? 'Destino fijado' : r.error);
 }
 
+/* Filtro de estaciones por tipo con iconos (Navegación y Vuelo). scope: 'sys' | 'here' */
+const KIND_ORDER = ['Coriolis', 'Orbis', 'Ocellus', 'Dodec', 'Base en asteroide', 'Puesto orbital', 'Puerto planetario', 'Puesto planetario', 'Asentamiento', 'Construcción orbital', 'Construcción en superficie', 'Meganave', 'Portanaves bastión', 'Fleet carrier'];
+function stationFilter(list, scope, compact) {
+  const K = scope === 'here' ? 'hereKinds' : 'sysKinds'; const Lk = scope === 'here' ? 'hereLarge' : 'sysLarge';
+  const kinds = [];
+  for (const st of list) {
+    const k = kinds.find((x) => x.label === st.label);
+    if (k) k.n += 1; else kinds.push({ label: st.label, icon: st.icon, obra: /^Construcción/.test(st.label), bastion: !!st.bastion, n: 1 });
+  }
+  const ord = (l) => { const i = KIND_ORDER.indexOf(l); return i < 0 ? 99 : i; };
+  kinds.sort((a, b) => ord(a.label) - ord(b.label));
+  ui[K] = ui[K].filter((k) => kinds.some((x) => x.label === k));
+  const shown = list.filter((st) => (!ui[K].length || ui[K].includes(st.label)) && (!ui[Lk] || st.pad === 'L'));
+  const filtering = ui[K].length > 0 || ui[Lk];
+  const tag = (k) => (k.obra ? `<span class="kf-obra">${compact ? 'Constr.' : 'Construcción'}</span>` : k.bastion ? '<span class="kf-obra">Bastión</span>' : '');
+  const bar = `
+    <div class="kf-bar${compact ? ' sm' : ''}">
+      <button type="button" class="kf all${filtering ? '' : ' on'}" data-kind="" data-kscope="${scope}" title="Todas">Todas</button>
+      ${kinds.map((k) => `<button type="button" class="kf${ui[K].includes(k.label) ? ' on' : ''}" data-kind="${esc(k.label)}" data-kscope="${scope}" title="${esc(k.label)}">${k.icon ? `<img src="icons/${k.icon}.png" alt="">` : '<span class="soft">?</span>'}${tag(k)}<span class="num">${k.n}</span></button>`).join('')}
+      <button type="button" class="kf${ui[Lk] ? ' on' : ''}" data-kind="L" data-kscope="${scope}" title="Solo con plataforma grande" style="margin-left:auto"><span class="pad pad-L" style="width:${compact ? 20 : 24}px;height:${compact ? 20 : 24}px;font-size:${compact ? 11 : 13}px">L</span>Solo L</button>
+    </div>`;
+  return { bar, shown, filtering, kinds };
+}
+
 /* ---------- Vuelo: estaciones y portanaves del sistema actual (Spansh) ---------- */
 const HERE_PAGE = 6;
 function hereCard(s) {
@@ -1060,14 +1068,12 @@ function hereCard(s) {
   const fresh = h && h.system && sys && h.system.toLowerCase() === sys.toLowerCase();
   let body;
   const all = fresh && h.stations ? h.stations : [];
-  const carriers = all.filter((x) => x.carrier).sort((a, b) => (b.bastion - a.bastion) || (a.distance ?? 1e12) - (b.distance ?? 1e12));
-  const stations = all.filter((x) => !x.carrier);
-  const list = ui.hereTab === 'carriers' ? carriers : stations;
+  const { bar, shown: list, filtering } = stationFilter(all, 'here', true);
   const pages = Math.max(1, Math.ceil(list.length / HERE_PAGE));
   ui.herePage = Math.min(ui.herePage, pages - 1);
   if (!sys) body = '<div class="empty">Sin sistema actual.</div>';
   else if (!fresh) body = `<div class="empty">${h && h.error ? `Spansh no responde: ${esc(h.error)}` : 'Buscando estaciones en Spansh…'}</div>`;
-  else if (!list.length) body = `<div class="empty">${ui.hereTab === 'carriers' ? 'Spansh no tiene portanaves en este sistema.' : 'Spansh no tiene estaciones en este sistema.'}</div>`;
+  else if (!list.length) body = `<div class="empty">${filtering ? 'Ninguna con este filtro.' : 'Spansh no tiene estaciones en este sistema.'}</div>`;
   else {
     body = list.slice(ui.herePage * HERE_PAGE, (ui.herePage + 1) * HERE_PAGE).map((st) => `
       <div class="in" style="display:grid;grid-template-columns:40px minmax(0,1fr) auto 34px;gap:10px;align-items:center;padding:6px 10px;height:58px${st.bastion ? ';border-color:#5a4524' : ''}">
@@ -1077,14 +1083,13 @@ function hereCard(s) {
         <span class="pad pad-${st.pad || 'x'}">${st.pad || '?'}</span>
       </div>`).join('');
   }
-  const tab = (k, t) => `<button type="button" class="tab small ${ui.hereTab === k ? 'on' : ''}" data-here="${k}">${t}</button>`;
   const pager = pages > 1 ? `<span style="display:flex;align-items:center;gap:6px"><button type="button" class="pg" data-pager="here" data-d="-1" ${ui.herePage === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.herePage + 1}/${pages}</span><button type="button" class="pg" data-pager="here" data-d="1" ${ui.herePage >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
   return `
     <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span class="ti nowrap" style="font-size:16px">En este sistema</span>${pager}</div>
-      <div style="display:flex;gap:8px">${tab('stations', `Estaciones · ${stations.length}`)}${tab('carriers', `Portanaves · ${carriers.length}`)}</div>
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span class="ti nowrap" style="font-size:16px">En este sistema${fresh ? ` <span class="eb dim">· ${filtering ? `${list.length}/` : ''}${all.length}</span>` : ''}</span>${pager}</div>
+      ${fresh && all.length > 1 ? bar : ''}
       <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${body}</div>
-      ${ui.hereTab === 'carriers' && fresh ? '<span class="soft" style="font-size:12px;margin-top:auto">Según Spansh: los portanaves de jugadores pueden haberse movido.</span>' : ''}
+      ${fresh && list.some((x) => x.carrier && !x.bastion) ? '<span class="soft" style="font-size:12px;margin-top:auto">Según Spansh: los portanaves de jugadores pueden haberse movido.</span>' : ''}
     </section>`;
 }
 
@@ -1747,9 +1752,11 @@ document.addEventListener('pointerdown', (ev) => {
   if (kf) {
     ev.preventDefault();
     const k = kf.dataset.kind;
-    if (k === '') { ui.sysKinds = []; ui.sysLarge = false; } else if (k === 'L') ui.sysLarge = !ui.sysLarge;
-    else ui.sysKinds = ui.sysKinds.includes(k) ? ui.sysKinds.filter((x) => x !== k) : [...ui.sysKinds, k];
-    ui.sysPage = 0; render(); return;
+    const here = kf.dataset.kscope === 'here';
+    const K = here ? 'hereKinds' : 'sysKinds'; const Lk = here ? 'hereLarge' : 'sysLarge';
+    if (k === '') { ui[K] = []; ui[Lk] = false; } else if (k === 'L') ui[Lk] = !ui[Lk];
+    else ui[K] = ui[K].includes(k) ? ui[K].filter((x) => x !== k) : [...ui[K], k];
+    ui[here ? 'herePage' : 'sysPage'] = 0; render(); return;
   }
   const sp = ev.target.closest('button[data-pager="sys"]');
   if (sp && !sp.disabled) { ev.preventDefault(); ui.sysPage = Math.max(0, ui.sysPage + Number(sp.dataset.d)); render(); return; }
@@ -1765,8 +1772,6 @@ document.addEventListener('pointerdown', (ev) => {
   }
   const pt = ev.target.closest('button[data-pptrack]');
   if (pt) { ev.preventDefault(); window.edbubble.ppTrack(pt.dataset.pptrack || null); return; }
-  const hb = ev.target.closest('button[data-here]');
-  if (hb) { ev.preventDefault(); ui.hereTab = hb.dataset.here; ui.herePage = 0; render(); return; }
   const hp = ev.target.closest('button[data-pager="here"], button[data-pager="bio"]');
   if (hp && !hp.disabled) { ev.preventDefault(); const k = hp.dataset.pager === 'here' ? 'herePage' : 'bioPage'; ui[k] = Math.max(0, ui[k] + Number(hp.dataset.d)); render(); return; }
   const spot = ev.target.closest('button[data-spot]');
@@ -1856,7 +1861,7 @@ if (window.edbubble) {
   window.edbubble.onFuelStops((x) => { ui.fuelStops = x || {}; render(); });
   if (window.edbubble.bodies) window.edbubble.bodies().then((b) => { ui.bodyInfo = { ...(b || {}), ...ui.bodyInfo }; render(); });
   if (window.edbubble.here) window.edbubble.here().then((h) => { if (h) { ui.here = h; render(); } });
-  if (window.edbubble.onHere) window.edbubble.onHere((h) => { ui.here = h; ui.herePage = 0; render(); });
+  if (window.edbubble.onHere) window.edbubble.onHere((h) => { ui.here = h; ui.herePage = 0; ui.hereKinds = []; ui.hereLarge = false; render(); });
   if (window.edbubble.onBody) window.edbubble.onBody((b) => { if (b && b.body) { ui.bodyInfo[b.body] = b; render(); } });
   window.edbubble.onPlotStatus((p) => {
     ui.plot = { ...p, at: Date.now() };
