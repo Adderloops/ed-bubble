@@ -1787,7 +1787,7 @@ function slotLayout(sh) {
   return `<div style="display:flex;flex-direction:column;gap:6px">
     <span class="eb dim">Núcleo</span><span style="font-size:13px;line-height:1.4">${std.map((c, i) => `${names[i] || '?'} ${c}`).join(' · ')}</span>
     <span class="eb dim">Armas y utilidades</span><span style="font-size:13px">${hpTxt || 'Ninguna'} · ${ut} de utilidad</span>
-    <span class="eb dim">Internos opcionales</span><span style="font-size:13px;line-height:1.4">${sh.slots.internal.map((x) => (typeof x === 'number' ? x : `${x.cl} (${{ Military: 'militar', PlanetaryApproachSuite: 'aprox. planetaria' }[x.name] || x.name})`)).join(' · ')}</span>
+    <span class="eb dim">Internos opcionales</span><span style="font-size:13px;line-height:1.4">${sh.slots.internal.map((x) => (typeof x === 'number' ? x : `${x.cl} (${{ Military: 'militar', PlanetaryApproachSuite: 'aprox. planetaria', Passenger: 'pasajeros' }[x.name] || x.name})`)).join(' · ')}</span>
   </div>`;
 }
 function screenEquipo(s, v) {
@@ -1838,7 +1838,7 @@ function eqShips(D) {
   return `<div style="flex:1;display:grid;grid-template-columns:minmax(0,1fr) 640px;gap:12px;min-height:0">
     <section class="pn card" style="min-height:0;overflow:hidden"><div class="plan-row head"><span class="eb">Nave</span><span class="eb" style="text-align:right">Plataforma</span><span class="eb" style="text-align:right">Precio</span></div>
       <div style="display:flex;flex-direction:column;gap:4px">${rows}</div><span style="display:flex;justify-content:flex-end;margin-top:auto">${pager2('eqship', ui.eqShipPage, pages)}</span></section>
-    <section class="pn card" style="min-height:0;overflow:hidden"><span class="ti" style="font-size:24px">${esc(sel.n)}</span><span class="eb dim">${esc(sel.spec ? sel.spec.manufacturer : '')}</span>${shipStats(sel)}${slotLayout(sel)}</section></div>`;
+    <section class="pn card" style="min-height:0;overflow:hidden"><span class="ti" style="font-size:24px">${esc(sel.n)}</span><span class="eb dim">${esc(sel.spec ? sel.spec.manufacturer : '')}${sel.spec && sel.spec.source === 'inara' ? ' · ficha de Inara' : ''}</span>${shipStats(sel)}${slotLayout(sel)}</section></div>`;
 }
 const GRP_PAGE = 14;
 function eqMods(D) {

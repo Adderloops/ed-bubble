@@ -84,7 +84,7 @@ Sección del grupo Nave, con tres pestañas:
 - Naves: las naves del juego con fabricante, plataforma, precio, velocidad, escudo y blindaje base, masa, masslock y su reparto de ranuras.
 - Módulos: por categoría (núcleo, opcionales, armas, utilidades), cada módulo con sus variantes por clase y grado: masa, energía, precio y sus valores clave (masa óptima, combustible por salto, generación, carga, daño, alcance…).
 
-Datos en `core/data/shipdata.json`: lista de naves y módulos de EDCD FDevIDs (shipyard.csv, outfitting.csv) con las características de coriolis-data. Faltan las fichas de la Lynx Highliner y la Anaconda Mk II y las características de unos 300 módulos recientes (salen con «—»).
+Datos en `core/data/shipdata.json`: lista de naves y módulos de EDCD FDevIDs (shipyard.csv, outfitting.csv) con las características de coriolis-data. La ficha de la Lynx Highliner sale de Inara. Falta la de la Anaconda Mk II y las características de unos 300 módulos recientes (salen con «—»).
 
 ## Colonización · planificar
 
