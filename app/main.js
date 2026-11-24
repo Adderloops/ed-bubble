@@ -237,7 +237,8 @@ app.whenReady().then(() => {
     if (!res.ok) { console.warn(`[teclas] ${id}: ${res.error}`); logLine(`[teclas] ${id}: ${res.error}`); }
     return res;
   });
-  ipcMain.handle('ed:copy', (_e, text) => { clipboard.writeText(String(text || '').slice(0, 200)); return true; });
+  // En Electron 45 el portapapeles es asíncrono (devuelve promesas): hay que esperarlo
+  ipcMain.handle('ed:copy', async (_e, text) => { await clipboard.writeText(String(text || '').slice(0, 200)); return true; });
   // Solo se abren estas webs, construidas aquí: la ventana no puede pedir una URL cualquiera.
   ipcMain.handle('ed:open', (_e, req) => {
     const name = encodeURIComponent(String((req && req.name) || '').slice(0, 120));
@@ -348,7 +349,7 @@ app.whenReady().then(() => {
   // Coordenadas de destino en un planeta (se guardan entre sesiones)
   const TARGET_FILE = path.join(app.getPath('userData'), 'surface-target.json');
   try { engine.setSurfaceTarget(JSON.parse(fs.readFileSync(TARGET_FILE, 'utf8'))); } catch (e) { /* sin destino guardado */ }
-  ipcMain.handle('ed:clipboard-read', () => clipboard.readText().slice(0, 200));
+  ipcMain.handle('ed:clipboard-read', async () => String((await clipboard.readText()) || '').slice(0, 200));
   ipcMain.handle('ed:target-set', (_e, text) => {
     const c = geo.parseCoords(String(text || '').slice(0, 200));
     if (!c) return { ok: false, error: 'No entiendo esas coordenadas. Ejemplo: 12.345, -67.89' };

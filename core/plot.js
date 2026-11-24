@@ -67,7 +67,7 @@ async function plotRoute(target, distanceLy, ctx) {
   };
 
   try {
-    clipboard.writeText(target);
+    await clipboard.writeText(target); // en Electron 45 es asíncrono
 
     // Si el mapa ya está abierto, se cierra para empezar siempre igual.
     if (guiFocus() === 'GalaxyMap') {

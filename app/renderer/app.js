@@ -1039,7 +1039,12 @@ function compassBlock(s, nav) {
 
 async function coordAction(kind) {
   const say = (ok, text) => { ui.coordMsg = { ok, text, at: Date.now() }; render(); setTimeout(render, 5100); };
-  if (kind === 'paste') { ui.coordText = await window.edbubble.clipboardRead(); render(); return; }
+  if (kind === 'paste') {
+    let text = '';
+    try { text = await window.edbubble.clipboardRead(); } catch (e) { reportError('pegar', e.message); }
+    if (!text.trim()) { say(false, 'El portapapeles está vacío o no tiene texto'); return; }
+    ui.coordText = text.trim(); render(); return;
+  }
   if (kind === 'clear') { await window.edbubble.targetClear(); ui.coordText = ''; say(true, 'Destino quitado'); return; }
   const r = await window.edbubble.targetSet(ui.coordText);
   say(r.ok, r.ok ? 'Destino fijado' : r.error);
