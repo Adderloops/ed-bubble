@@ -41,7 +41,7 @@ VIAddVersionKey /LANG=${LANG_SPANISH} "FileDescription" "Instalador de ${APPNAME
 VIAddVersionKey /LANG=${LANG_SPANISH} "FileVersion" "${VERSION}"
 VIAddVersionKey /LANG=${LANG_SPANISH} "ProductVersion" "${VERSION}"
 VIAddVersionKey /LANG=${LANG_SPANISH} "CompanyName" "Adder"
-VIAddVersionKey /LANG=${LANG_SPANISH} "LegalCopyright" "© Adder · MIT"
+VIAddVersionKey /LANG=${LANG_SPANISH} "LegalCopyright" "© Adder · GPLv3"
 
 Section "ED BUBBLE" SecMain
   SectionIn RO

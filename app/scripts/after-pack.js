@@ -24,7 +24,7 @@ exports.default = async function afterPack(ctx) {
   vi.setFileVersion(a, b, c, 0, 1033); vi.setProductVersion(a, b, c, 0, 1033);
   vi.setStringValues({ lang: 1033, codepage: 1200 }, {
     FileDescription: 'ED BUBBLE', ProductName: 'ED BUBBLE', CompanyName: 'Adder', OriginalFilename: 'ED BUBBLE.exe',
-    InternalName: 'ED BUBBLE', LegalCopyright: '© Adder · MIT', FileVersion: ctx.packager.appInfo.version, ProductVersion: ctx.packager.appInfo.version,
+    InternalName: 'ED BUBBLE', LegalCopyright: '© Adder · GPLv3', FileVersion: ctx.packager.appInfo.version, ProductVersion: ctx.packager.appInfo.version,
   });
   vi.outputToResourceEntries(res.entries);
   res.outputResource(file);

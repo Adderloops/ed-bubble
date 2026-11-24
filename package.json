@@ -12,5 +12,5 @@
     "touchportal-api": "^4.0.0"
   },
   "author": "Adder",
-  "license": "MIT"
+  "license": "GPL-3.0-or-later"
 }

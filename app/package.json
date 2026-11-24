@@ -11,7 +11,7 @@
     "dist": "node scripts/stage.js && electron-builder --win --x64 --dir && node scripts/make-installer.js"
   },
   "author": "Adder",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "dependencies": {
     "@fontsource/exo-2": "^5.3.0",
     "@fontsource/rajdhani": "^5.3.0",
@@ -25,7 +25,7 @@
   "build": {
     "appId": "com.adder.edbubble",
     "productName": "ED BUBBLE",
-    "copyright": "© Adder · MIT",
+    "copyright": "© Adder · GPLv3",
     "directories": {
       "app": "dist/stage",
       "output": "dist/release",
