@@ -2,19 +2,19 @@
 
 Errores encontrados en las versiones publicadas y versión en la que se corrigen.
 
-- **Versión actual publicada:** 0.7.0-beta.1 (23-11-2026)
-- **Próxima versión con correcciones:** 0.7.0-beta.2
+- **Versión actual publicada:** 0.7.0-beta.2 (24-11-2026)
+- **Versión anterior:** 0.7.0-beta.1 (23-11-2026)
 
 Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo, pendiente de publicar) · **Publicado** (incluido en una versión publicada).
 
 | # | Error | Informado por | Encontrado en | Corregido en | Estado |
 |---|-------|---------------|---------------|--------------|--------|
-| 1 | Estación › Ingenieros mezcla los de naves y los de a pie, y parece que no están todos en grado 5 | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
-| 2 | Vuelo › Aproximación a planeta: el botón «Pegar» no pega las coordenadas | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
-| 3 | Vuelo › Aproximación a planeta: la gravedad sale «—» en la nave | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
-| 4 | Vuelo › Aproximación a planeta: el destino fijado se queda en «Cuerpo sin indicar» | Adder (captura de Specter A.G.) | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
-| 5 | Colonización › Dónde comprar no encuentra ninguna estación (juego en otro idioma) | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
-| 6 | Nombre de las construcciones: el prefijo «Orbital Construction Site:» solo se quitaba en inglés | Revisión de idiomas | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
+| 1 | Estación › Ingenieros mezcla los de naves y los de a pie, y parece que no están todos en grado 5 | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Publicado |
+| 2 | Vuelo › Aproximación a planeta: el botón «Pegar» no pega las coordenadas | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Publicado |
+| 3 | Vuelo › Aproximación a planeta: la gravedad sale «—» en la nave | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Publicado |
+| 4 | Vuelo › Aproximación a planeta: el destino fijado se queda en «Cuerpo sin indicar» | Adder (captura de Specter A.G.) | 0.7.0-beta.1 | 0.7.0-beta.2 | Publicado |
+| 5 | Colonización › Dónde comprar no encuentra ninguna estación (juego en otro idioma) | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Publicado |
+| 6 | Nombre de las construcciones: el prefijo «Orbital Construction Site:» solo se quitaba en inglés | Revisión de idiomas | 0.7.0-beta.1 | 0.7.0-beta.2 | Publicado |
 
 ## Detalle
 
