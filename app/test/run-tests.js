@@ -579,6 +579,18 @@ test('recetas de nave: materiales por grado, tope del ingeniero y materiales del
   assert.deepStrictEqual(s.materials, { iron: 7, chemicalprocessors: 2, nickel: 2 });
 });
 
+test('colonización: costes de referencia por tipo de construcción (SrvSurvey)', () => {
+  const cc = require('../../core/colcosts');
+  const l = cc.costList();
+  assert.strictEqual(l.length, 55);
+  for (const b of l) { assert.ok(b.cargo.length > 0, b.en); assert.notStrictEqual(b.name, '', b.en); assert.ok(['orbital', 'surface'].includes(b.location), b.en); }
+  const cor = l.find((b) => b.en === 'Coriolis Starport');
+  assert.deepStrictEqual([cor.name, cor.tier, cor.cargo[0].name, cor.cargo[0].t], ['Puerto estelar Coriolis', 2, 'Steel', 14076]);
+  assert.strictEqual(cor.total, cor.cargo.reduce((a, x) => a + x.t, 0));
+  assert.strictEqual(cc.esName('Bio Settlement - Large'), 'Asentamiento biológico grande');
+  assert.strictEqual(cc.tripsFor(53723, 1148), 47);
+});
+
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
   const pads = require('../../core/pads');
   // comprobadas en el juego (Coriolis): 9 a las 8, 25 a las 12, 27 a la 1

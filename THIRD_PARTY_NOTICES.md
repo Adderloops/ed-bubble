@@ -54,3 +54,7 @@ Los retratos de `app/renderer/engineers/` son imágenes del juego Elite Dangerou
 `core/shipblueprints.js` recoge las recetas de ingeniería de nave (materiales de cada grado) y los efectos experimentales de cada módulo, tomados de coriolis-data (EDCD, https://github.com/EDCD/coriolis-data). Según su licencia, los datos y sus archivos JSON son propiedad intelectual de Frontier Developments plc y están sujetos a sus términos (https://www.frontierstore.net/terms-and-conditions/); el código de Coriolis está bajo licencia MIT y no se usa aquí. Los nombres internos de los materiales vienen de EDCD FDevIDs (material.csv).
 
 Las recetas que coriolis-data no trae (anti-guardián de Ram Tah para los módulos guardianes y las recetas nuevas de nave, muchas solo para módulos «Merc») se transcribieron a mano de Inara (https://inara.cz/elite/blueprints/) el 24-11-2026, leyendo sus páginas desde el navegador del usuario. Inara es una base de datos no oficial de Elite Dangerous; los datos son del juego, de Frontier Developments.
+
+## Costes de construcción de colonización (SrvSurvey / Raven Colonial)
+
+`core/data/colonization-costs.json` es una copia sin cambios de `SrvSurvey/colonization-costs2.json` del proyecto SrvSurvey (https://github.com/njthomson/SrvSurvey), del autor de Raven Colonial (https://ravencolonial.com), publicado bajo la GNU General Public License v3.0. Se usa en `core/colcosts.js` para planificar construcciones. Las cantidades son datos del juego, de Frontier Developments.

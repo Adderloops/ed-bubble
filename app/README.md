@@ -76,6 +76,10 @@ Sección del grupo Viaje (Odyssey):
 - Ranuras: cada traje y arma muestra cuántas ranuras de mejora ocupa de las que da su grado (una por grado a partir de G2).
 - Mejoras de ingeniero: pestaña «Mejoras» junto a Taquilla y Mochila (o tocando el traje o un arma del equipo). Lista las mejoras que aún no lleva esa pieza, con lo que te falta, y al tocar una muestra sus materiales y los ingenieros que la montan. Las mejoras de arma por tipo (alcance, daño en la cabeza, precisión sin apuntar) usan la variante del arma: cinética (Kinematic), láser (Takada) o plasma (Manticore). El acceso a cada ingeniero sale del evento `EngineerProgress` del diario: en Odyssey «Invited» ya da acceso. Si no tienes acceso, dice qué pide para desbloquearlo. Datos en `core/odymods.js`.
 
+## Colonización · planificar
+
+Botón «Planificar» en Colonización (y pantalla por defecto si aún no tienes construcciones): los 55 tipos de construcción (orbitales y de superficie) con su nivel, el total de toneladas y los viajes con tu bodega, y al elegir uno, la lista de mercancías con sus toneladas. Son cantidades de referencia: el juego puede pedir algo más o algo menos, y el puerto primario cuesta más; en cuanto la construcción existe, la app usa lo que dice el juego. Datos: `core/data/colonization-costs.json`, de SrvSurvey (autor de Raven Colonial), GPLv3.
+
 ## Ingenieros
 
 Sección del grupo Comandante, con dos pestañas:

@@ -492,6 +492,8 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('ed:bodies', () => bodyInfo);
   // recetas de ingeniería de nave (datos fijos; el renderer las pide una vez)
+  // mercancías por tipo de construcción de colonización (datos fijos de SrvSurvey / Raven Colonial)
+  ipcMain.handle('ed:colcosts', () => require('../core/colcosts').costList());
   ipcMain.handle('ed:recipes', () => { const b = require('../core/shipblueprints'); return { mats: b.MATS, blueprints: b.BLUEPRINTS, specials: b.SPECIALS, modules: b.MODULE_RECIPES }; });
   ipcMain.handle('ed:here', () => hereInfo);
   // Minería (Skull Mining)
