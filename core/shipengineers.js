@@ -4,7 +4,7 @@
  * que salían bloqueados, cómo se desbloquean. Transcrito a mano de la ficha de ingenieros de Odyssey
  * Materials Helper del usuario; son datos del juego (Frontier Developments).
  */
-const CATS = {"H": "Armas", "U": "Utilidades", "C": "Núcleo", "O": "Opcionales"};
+const CATS = {"H": "Anclajes", "U": "Apoyo", "C": "Internos principales", "O": "Internos opcionales"};
 const MODULES = {
   "Abrasion Blaster": { cat: 'H', es: "Desintegrador abrasivo" },
   "Beam Laser": { cat: 'H', es: "Láser de haz" },

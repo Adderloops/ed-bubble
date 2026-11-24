@@ -1856,8 +1856,8 @@ function screenEstacion(s, v) {
 /* ---------- Equipo: tu nave, naves y módulos ---------- */
 const PAD = { 1: 'S', 2: 'M', 3: 'L' };
 const CORE_SLOTS = [['PowerPlant', 'Planta de energía'], ['MainEngines', 'Propulsores'], ['FrameShiftDrive', 'Motor FSD'], ['LifeSupport', 'Soporte vital'], ['PowerDistributor', 'Distribuidor'], ['Radar', 'Sensores'], ['FuelTank', 'Tanque de combustible'], ['Armour', 'Blindaje']];
-const HP_SIZE = { Huge: 'enorme', Large: 'grande', Medium: 'mediana', Small: 'pequeña' };
-const CAT_ES = { standard: 'Núcleo', internal: 'Opcionales', hardpoint: 'Armas', utility: 'Utilidades' };
+const HP_SIZE = { Huge: 'enorme', Large: 'grande', Medium: 'mediano', Small: 'pequeño' };
+const CAT_ES = { standard: 'Internos principales', internal: 'Internos opcionales', hardpoint: 'Anclajes', utility: 'Apoyo' };
 const STAT_ES = { mass: 'Masa t', power: 'Energía MW', cost: 'Precio', integrity: 'Integridad', optmass: 'Masa óptima', maxfuel: 'Comb./salto', pgen: 'Genera MW', cargo: 'Carga t', damage: 'Daño', range: 'Alcance m', rate: 'Ritmo', regen: 'Regen.', proberadius: 'Radio sonda', fuel: 'Combustible t', ammo: 'Munición', clip: 'Cargador', shieldboost: 'Escudo +', hullboost: 'Casco +', hullreinforcement: 'Refuerzo', passengers: 'Pasajeros', bins: 'Celdas', boot: 'Arranque s' };
 const KEY_STATS = ['optmass', 'maxfuel', 'pgen', 'cargo', 'fuel', 'damage', 'range', 'rate', 'regen', 'shieldboost', 'hullreinforcement', 'passengers', 'ammo', 'proberadius'];
 function loadShipData() {
@@ -1884,9 +1884,9 @@ function slotName(slot) {
   const core = CORE_SLOTS.find(([k]) => k === slot);
   if (core) return core[1];
   let m = /^(Huge|Large|Medium|Small)Hardpoint(\d+)$/.exec(slot);
-  if (m) return `Arma ${HP_SIZE[m[1]]} ${m[2]}`;
+  if (m) return `Anclaje ${HP_SIZE[m[1]]} ${m[2]}`;
   m = /^TinyHardpoint(\d+)$/.exec(slot);
-  if (m) return `Utilidad ${m[1]}`;
+  if (m) return `Apoyo ${m[1]}`;
   m = /^Slot(\d+)_Size(\d+)$/.exec(slot);
   if (m) return `Interno ${Number(m[1])} · clase ${m[2]}`;
   if (/^Military/.test(slot)) return 'Militar';
@@ -1948,7 +1948,7 @@ function eqMine(s, D) {
     const pg = Math.min(ui.eqPages[key] || 0, pages - 1); ui.eqPages[key] = pg;
     return `<section class="pn card" style="min-height:0;overflow:hidden"><span class="ti" style="font-size:16px">${title}</span><div style="display:flex;flex-direction:column;gap:4px">${list.slice(pg * PER, (pg + 1) * PER).map(row).join('') || '<div class="empty">—</div>'}</div>${pages > 1 ? `<span style="display:flex;justify-content:flex-end;margin-top:auto">${pager2('eq' + key, pg, pages)}</span>` : ''}</section>`;
   };
-  return `${hero}<div style="flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-height:0">${col('Núcleo', core, 'core')}${col('Armas y utilidades', hard, 'hard')}${col('Internos opcionales', opt, 'opt')}</div>`;
+  return `${hero}<div style="flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-height:0">${col('Internos principales', core, 'core')}${col('Anclajes y apoyo', hard, 'hard')}${col('Internos opcionales', opt, 'opt')}</div>`;
 }
 const SHIP_PAGE = 20;
 function eqShips(D) {
@@ -1977,7 +1977,7 @@ function eqMods(D) {
   const pages = Math.max(1, Math.ceil(names.length / GRP_PAGE));
   ui.eqGrpPage = Math.min(ui.eqGrpPage, pages - 1);
   const sel = groups[ui.eqGrp] ? ui.eqGrp : names[0];
-  const catTabs = `<div style="display:flex;gap:6px">${cats.map((c) => `<button type="button" class="tab small ${ui.eqCat === c ? 'on' : ''}" data-eqcat="${c}">${CAT_ES[c]}</button>`).join('')}</div>`;
+  const catTabs = `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">${cats.map((c) => `<button type="button" class="tab small ${ui.eqCat === c ? 'on' : ''}" data-eqcat="${c}" style="white-space:nowrap">${CAT_ES[c]}</button>`).join('')}</div>`;
   const rows = names.slice(ui.eqGrpPage * GRP_PAGE, (ui.eqGrpPage + 1) * GRP_PAGE).map((n) => `<button type="button" class="in plan-row ${n === sel ? 'sel' : ''}" data-eqgrp="${esc(n)}" style="grid-template-columns:minmax(0,1fr) 70px">
       <span style="display:flex;flex-direction:column;min-width:0;text-align:left"><span class="va nowrap">${esc(modNameEs(D, n))}</span>${modNameEs(D, n) !== n ? `<span class="eb dim" style="font-size:10px">${esc(n)}</span>` : ''}</span><span class="num soft" style="text-align:right">${groups[n].length}</span></button>`).join('');
   let table = '<div class="empty">Elige un módulo.</div>';
@@ -2001,7 +2001,7 @@ function eqMods(D) {
 /* ---------- Ingenieros (naves y a pie) ---------- */
 // Retratos recortados de la ficha de ingenieros (los que el usuario tiene a la vista); el resto, iniciales.
 const PORTRAITS = new Set(['baltanos', 'bill-turner', 'broo-tarquin', 'colonel-bris-dekker', 'didi-vatermann', 'domino-green', 'elvira-martuuk', 'felicity-farseer', 'hera-tani', 'hero-ferrari', 'jude-navarro', 'juri-ishmaak', 'kit-fowler', 'lei-cheung', 'liz-ryder', 'lori-jameson', 'marco-qwent', 'petra-olmanova', 'professor-palin', 'ram-tah', 'rosa-dayette', 'selene-jean', 'the-dweller', 'the-sarge', 'tiana-fortune', 'tod-the-blaster-mcquinn', 'uma-laszlo', 'wellington-beck', 'yarden-bond', 'zacariah-nemo']);
-const ENG_CATS = [['H', 'Armas'], ['U', 'Utilidades'], ['C', 'Núcleo'], ['O', 'Opcionales']];
+const ENG_CATS = [['H', 'Anclajes'], ['U', 'Apoyo'], ['C', 'Internos principales'], ['O', 'Internos opcionales']];
 const ENG_PAGE = 15;
 function portrait(e, size) {
   if (PORTRAITS.has(e.slug)) return `<img class="eng-pic" src="engineers/${e.slug}.jpg" alt="" style="width:${size}px;height:${size}px">`;
@@ -2056,7 +2056,7 @@ function screenIngenieros(s, v) {
   const tabs = `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
     <button type="button" class="tab ${kind === 'ship' ? 'on' : ''}" data-engkind="ship">Naves · ${E.ship.length}</button>
     <button type="button" class="tab ${kind === 'suit' ? 'on' : ''}" data-engkind="suit">A pie · ${E.suit.length}</button>
-    ${kind === 'ship' ? `<span style="width:16px"></span><button type="button" class="tab small ${!ui.engCat ? 'on' : ''}" data-engcat="">Todos</button>${ENG_CATS.map(([k, t]) => `<button type="button" class="tab small ${ui.engCat === k ? 'on' : ''}" data-engcat="${k}">${t}</button>`).join('')}` : ''}
+    ${kind === 'ship' ? `<span style="width:16px"></span><button type="button" class="tab small ${!ui.engCat ? 'on' : ''}" data-engcat="">Todo</button>${ENG_CATS.map(([k, t]) => `<button type="button" class="tab small ${ui.engCat === k ? 'on' : ''}" data-engcat="${k}">${t}</button>`).join('')}` : ''}
   </div>`;
   const chips = kind === 'ship' && ui.engCat ? `<div style="display:flex;gap:6px;flex-wrap:wrap">${(E.modules[ui.engCat] || []).map((m) => `<button type="button" class="tab small ${ui.engModule === m.key ? 'on' : ''}" data-engmodule="${esc(m.key)}">${esc(m.name)}</button>`).join('')}</div>` : '';
   let list = kind === 'ship' ? E.ship.slice() : E.suit.slice();

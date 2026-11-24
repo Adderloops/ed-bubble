@@ -92,9 +92,9 @@ No muestra pips, grupo de fuego ni arma seleccionada. Salto automático a Combat
 
 Sección del grupo Nave, con tres pestañas:
 
-- Tu nave: la nave actual (del evento `Loadout`) con salto máximo, carga, casco, reembolso y cuántos módulos llevan ingeniería, y sus módulos por grupo (núcleo, armas y utilidades, internos opcionales) con clase, nombre y la receta de ingeniería con grado y experimental.
+- Tu nave: la nave actual (del evento `Loadout`) con salto máximo, carga, casco, reembolso y cuántos módulos llevan ingeniería, y sus módulos por grupo (internos principales, anclajes y apoyo, internos opcionales) con clase, nombre y la receta de ingeniería con grado y experimental.
 - Naves: las naves del juego con fabricante, plataforma, precio, velocidad, escudo y blindaje base, masa, masslock y su reparto de ranuras.
-- Módulos: por categoría (núcleo, opcionales, armas, utilidades), cada módulo con sus variantes por clase y grado: masa, energía, precio y sus valores clave (masa óptima, combustible por salto, generación, carga, daño, alcance…).
+- Módulos: por categoría (internos principales, internos opcionales, anclajes, apoyo), cada módulo con sus variantes por clase y grado: masa, energía, precio y sus valores clave (masa óptima, combustible por salto, generación, carga, daño, alcance…).
 
 Datos en `core/data/shipdata.json`: lista de naves y módulos de EDCD FDevIDs (shipyard.csv, outfitting.csv) con las características de coriolis-data. Las fichas de la Lynx Highliner y la Anaconda Mk II salen de Inara (el masslock de la Anaconda Mk II no está; Inara da 0) Inara no publica la masa ni la energía de los módulos: de los Mk II recientes (cabinas, hangares, bodega 6D) solo está su precio, sacado de su lista de equipamiento; el resto sale con «—». Ocultos por no estar disponibles en el juego: FSD normal de clase 8 (precio 0 en Inara), escáneres de descubrimiento antiguos y el controlador 1I.
 
@@ -106,7 +106,7 @@ Botón «Planificar» en Colonización (y pantalla por defecto si aún no tienes
 
 Sección del grupo Comandante, con dos pestañas:
 
-- Naves (25 ingenieros): filtra por categoría (armas, utilidades, núcleo, opcionales) y por módulo para ver quién lo mejora y hasta qué grado, ordenados por grado y por acceso. La ficha de cada uno muestra su retrato, sitio y sistema (con botón para copiarlo), si pide permiso o está en Colonia, tu grado con él y qué le falta para desbloquearlo. El estado sale de `EngineerProgress` (en naves, «Invited» aún pide el contrato inicial).
+- Naves (25 ingenieros): filtra por categoría (anclajes, apoyo, internos principales, internos opcionales, con los nombres del juego en español) y por módulo para ver quién lo mejora y hasta qué grado, ordenados por grado y por acceso. La ficha de cada uno muestra su retrato, sitio y sistema (con botón para copiarlo), si pide permiso o está en Colonia, tu grado con él y qué le falta para desbloquearlo. El estado sale de `EngineerProgress` (en naves, «Invited» aún pide el contrato inicial).
 - A pie (13 ingenieros): lo mismo con las mejoras de traje y arma que montan.
 
 - Recetas de nave: en la ficha de un ingeniero de naves, toca un módulo para ver sus recetas (por ejemplo, FSD «Increased range») con los materiales de cada grado hasta el tope de ese ingeniero, y sus efectos experimentales. Cada material muestra lo que tienes y lo que pide; los grados que aún no puedes pedirle (por tu grado con él) salen atenuados. Tus materiales salen del diario (`Materials` al empezar la partida, y luego recogidas, descartes, intercambios, síntesis, trabajos de ingeniero y recompensas de misión). Recetas en `core/shipblueprints.js`: las de coriolis-data y, para lo que no trae (módulos guardianes, refuerzo de módulos, láser de minería, lanzamisiles de enzimas, desintegrador abrasivo y las recetas nuevas, muchas solo para módulos «Merc»), las de Inara. «Merc Coin» y los materiales thargoid no salen en el diario: se muestran con su cantidad pero sin la tuya.
