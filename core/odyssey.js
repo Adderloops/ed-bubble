@@ -12,14 +12,14 @@
  * Créditos: trajes 0,6 / 2,25 / 4,5 / 7,5 M; armas 0,5 / 1,875 / 3,75 M y G5 sin dato.
  */
 
-const QTY = { 2: [1, 2], 3: [2, 5], 4: [4, 9], 5: [5, 12] }; // [comunes, propios]
+const QTY = { 2: [1, 2], 3: [2, 5], 4: [4, 9], 5: [5, 12] }; // [comunes, propios] — materiales y cantidades comprobados con Odyssey Materials Helper (3 trajes, 11 armas)
 const SUIT_CR = { 2: 600000, 3: 2250000, 4: 4500000, 5: 7500000 };
 const WEAPON_CR = { 2: 500000, 3: 1875000, 4: 3750000, 5: null };
 
 const SUIT_MATS = {
   common: ['suitschematic', 'healthmonitor', 'manufacturinginstructions'],
   tacticalsuit: ['titaniumplating', 'graphene'], // Dominator
-  utilitysuit: ['carbonfibreplating', 'graphene'], // Maverick (comprobado con Odyssey Materials Helper)
+  utilitysuit: ['carbonfibreplating', 'graphene'], // Maverick
   explorationsuit: ['aerogel', 'graphene'], // Artemis
 };
 const WEAPON_MATS = {

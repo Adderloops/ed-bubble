@@ -498,6 +498,14 @@ test('a pie: materiales para subir de grado (trajes por modelo, armas por fabric
   const tot = {};
   for (let g = 1; g < 5; g++) for (const m of o.nextUpgrade('suit', 'utilitysuit_class1', g, locker).materials) tot[m.key] = (tot[m.key] || 0) + m.need;
   assert.deepStrictEqual(tot, { suitschematic: 12, healthmonitor: 12, manufacturinginstructions: 12, carbonfibreplating: 28, graphene: 28 });
+  // armas G1 → G5 (comprobado en Odyssey Materials Helper con las 11 armas): 12 de cada común y 28 de cada propio
+  const sum = (key) => { const t = {}; for (let g = 1; g < 5; g++) for (const m of o.nextUpgrade('weapon', key, g, locker).materials) t[m.key] = (t[m.key] || 0) + m.need; return t; };
+  for (const k of ['wpn_m_assaultrifle_kinetic_fauto', 'wpn_m_submachinegun_kinetic_fauto', 'wpn_s_pistol_kinetic_sauto', 'wpn_m_launcher_rocket_sauto'])
+    assert.deepStrictEqual(sum(k), { weaponschematic: 12, compressionliquefiedgas: 12, manufacturinginstructions: 12, tungstencarbide: 28, weaponcomponent: 28 }, k);
+  for (const k of ['wpn_m_sniper_plasma_charged', 'wpn_m_shotgun_plasma_doublebarrel', 'wpn_m_assaultrifle_plasma_fauto', 'wpn_s_pistol_plasma_charged'])
+    assert.deepStrictEqual(sum(k), { weaponschematic: 12, ionisedgas: 12, manufacturinginstructions: 12, chemicalsuperbase: 28, microelectrode: 28 }, k);
+  for (const k of ['wpn_m_assaultrifle_laser_fauto', 'wpn_m_submachinegun_laser_fauto', 'wpn_s_pistol_laser_sauto'])
+    assert.deepStrictEqual(sum(k), { weaponschematic: 12, ionisedgas: 12, manufacturinginstructions: 12, microelectrode: 28, opticalfibre: 28 }, k);
 });
 
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
