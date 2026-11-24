@@ -852,7 +852,7 @@ const ageText = (n) => (n == null ? '—' : n < 1 ? 'hoy' : n === 1 ? 'ayer' : n
 function marketQuery(res, c) {
   const large = ui.mkFilter.large != null ? ui.mkFilter.large : LARGE_SHIPS.has(String((ui.snap && ui.snap.state.ship.type) || '').toLowerCase());
   const minSupply = Math.min(res.remaining, c.capacity || res.remaining) || 1;
-  return { commodity: res.name, minSupply, largePad: large, key: `${res.name}|${minSupply}|${large}` };
+  return { commodity: res.name, symbol: res.key, minSupply, largePad: large, key: `${res.key || res.name}|${minSupply}|${large}` };
 }
 
 async function loadMarkets(q) {

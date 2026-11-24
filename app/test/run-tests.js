@@ -398,6 +398,14 @@ test('destino en superficie: completa el cuerpo al llegar si se fijó sin él', 
   assert.strictEqual(geo.adoptBody({ ...t, body: 'Y' }, { status: { bodyName: 'X 1 a' }, location: {} }), null); // no cambia uno ya puesto
 });
 
+test('mercancías: nombre en inglés para Spansh desde el símbolo interno (juego en otro idioma)', () => {
+  const { englishName } = require('../../core/commodities');
+  assert.strictEqual(englishName('$steel_name;'), 'Steel');
+  assert.strictEqual(englishName('cmmcomposite'), 'CMM Composite');
+  assert.strictEqual(englishName('$LiquidOxygen_name;'), 'Liquid oxygen');
+  assert.strictEqual(englishName('Acero'), null);
+});
+
 test('plataformas: mapa de puertos estelares (línea, profundidad, tamaño) y comprobadas para la Dodec', () => {
   const pads = require('../../core/pads');
   // comprobadas en el juego (Coriolis): 9 a las 8, 25 a las 12, 27 a la 1

@@ -17,6 +17,7 @@ const { KeySender } = require('../core/keysender');
 const spansh = require('../core/spansh');
 const { plotRoute } = require('../core/plot');
 const geo = require('../core/geo');
+const commodities = require('../core/commodities');
 
 // Registro de incidencias: %APPDATA%\\ed-bubble-app\\ed-bubble.log (máx. ~1 MB)
 const LOG_FILE = () => path.join(app.getPath('userData'), 'ed-bubble.log');
@@ -289,7 +290,9 @@ app.whenReady().then(() => {
     const here = last && last.state.location.system;
     if (!here) return { ok: false, error: 'Sin sistema actual (abre el juego)' };
     try {
-      const list = await spansh.markets({ commodity: String((q && q.commodity) || '').slice(0, 80), reference: here, minSupply: Number(q && q.minSupply) || 1, largePad: !!(q && q.largePad) });
+      // Spansh solo entiende los nombres en inglés: se traduce desde el símbolo interno
+      const commodity = commodities.englishName(q && q.symbol) || String((q && q.commodity) || '').slice(0, 80);
+      const list = await spansh.markets({ commodity, reference: here, minSupply: Number(q && q.minSupply) || 1, largePad: !!(q && q.largePad) });
       return { ok: true, list, reference: here };
     } catch (e) { return { ok: false, error: e.message }; }
   });

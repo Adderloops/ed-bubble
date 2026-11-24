@@ -13,6 +13,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 2 | Vuelo › Aproximación a planeta: el botón «Pegar» no pega las coordenadas | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
 | 3 | Vuelo › Aproximación a planeta: la gravedad sale «—» en la nave | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
 | 4 | Vuelo › Aproximación a planeta: el destino fijado se queda en «Cuerpo sin indicar» | Adder (captura de Specter A.G.) | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
+| 5 | Colonización › Dónde comprar no encuentra ninguna estación (juego en otro idioma) | Specter A.G. | 0.7.0-beta.1 | 0.7.0-beta.2 | Corregido |
 
 ## Detalle
 
@@ -63,3 +64,12 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 - **Corrección:** si el destino no tiene cuerpo, se completa solo con el primero al que llegas: el `BodyName` de `Status.json` o el cuerpo de `ApproachBody`. Se guarda en `surface-target.json` y se anota en `ed-bubble.log`. Un destino que ya tiene cuerpo no se cambia.
 - **Comprobado:** prueba unitaria y prueba de la app completa: un destino guardado sin cuerpo pasa a tener el cuerpo de la aproximación, también en el archivo.
 - **Archivos:** `core/geo.js`, `app/main.js`, `app/test/run-tests.js`.
+
+### 5 · «Dónde comprar» no encuentra estaciones
+
+- **Informado por:** Specter A.G. (23-11-2026). En Colonización, la búsqueda de dónde comprar material no daba ninguna estación; Raven Colonial sí las encontraba.
+- **Encontrado en:** 0.7.0-beta.1 · **Corregido en:** 0.7.0-beta.2
+- **Causa:** la app buscaba en Spansh con el nombre de la mercancía tal como lo escribe el juego en su idioma (`Name_Localised`), y Spansh solo entiende los nombres en inglés. Con el juego en inglés funcionaba; en español no. Comprobado contra Spansh: «Acero» da 0 estaciones y «Steel» da más de 10.000. No era un problema de Spansh frente a EDSM.
+- **Corrección:** la búsqueda usa el símbolo interno de la mercancía (`$steel_name;`), que no depende del idioma, y lo traduce a su nombre en inglés con la tabla de EDCD/FDevIDs (270 mercancías, en `core/commodities.js`). En pantalla se sigue viendo el nombre en el idioma del juego. Si una mercancía no está en la tabla, se usa el nombre de antes.
+- **Comprobado:** prueba unitaria (símbolos → «Steel», «CMM Composite», «Liquid oxygen») y nombres comprobados contra Spansh con resultados.
+- **Archivos:** `core/commodities.js` (nuevo), `app/main.js`, `app/renderer/app.js`, `app/test/run-tests.js`, `THIRD_PARTY_NOTICES.md`.
