@@ -24,6 +24,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 13 | Vuelo › Plataformas: en las estaciones Dodec, el esquema de la plataforma de atraque a veces no es correcto | Adder | 0.7.0-beta.3 | — | Abierto |
 | 14 | Con el instalador, los paneles se descuadran (botones cortados, como las pestañas de Colonización) | Specter A.G. (captura vía Adder) | 0.7.0-beta.1 | 0.7.0-beta.4 | Corregido |
 | 15 | Combate › Tu nave: el casco marcaba 100 % con la nave al 53 % | Adder (captura del juego) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido (limitación del juego) |
+| 16 | Minería › Sitios de la flota: «Usar la conexión de Skull Mining (EDMC)» no encuentra la URL ni la clave | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
 
 ## Detalle
 
@@ -183,4 +184,11 @@ Revisado todo lo que la app toma del Journal y de los archivos del juego:
 - **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** 0.7.0-beta.4 (en lo que se puede)
 - **Qué pasaba:** la app mostraba el casco como si fuera el actual.
 - **Causa:** el juego no informa del casco de tu nave mientras vuelas: ni `Status.json` lo trae ni el diario escribió ningún `HullDamage` en ese combate (solo `UnderAttack` y `ShieldState`). El dato sale de `Loadout` (al cargar la partida, atracar o equipar). Además, la app tomaba como tuyo el `HullDamage` de tu caza si lo pilotabas tú (`Fighter: true`). Por decisión de Adder, en Combate se han quitado el escudo y el casco de tu nave (el juego ya los enseña al momento); en Equipo el casco sale como «último dato». El casco del caza ya no se mezcla, y las reparaciones del casco (`Repair` / `RepairAll`) lo ponen al 100 %.
+
+### 16 · No encuentra la conexión de Skull Mining en EDMC
+
+- **Informado por:** Adder (25-11-2026), con captura.
+- **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** 0.7.0-beta.4
+- **Qué pasaba:** al pulsar «Usar la conexión de Skull Mining (EDMC)» salía «No encuentro la URL o la clave en los ajustes de Skull Mining en EDMC», aunque el plugin estaba configurado.
+- **Causa:** la app buscaba los ajustes en el registro de Windows, donde los guardaba EDMC 5. EDMC 6 los pasó a `%LOCALAPPDATA%\EDMarketConnector\config.toml` (sección `[settings]`, claves `skullmining_url` y `skullmining_token`). Ahora se lee primero ese archivo y, si no existe, el registro.
 

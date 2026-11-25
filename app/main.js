@@ -170,14 +170,36 @@ function mineView(snap) {
   };
 }
 
-/** Copia la URL y la clave de la flota desde la configuración de EDMC (registro de Windows). */
+/**
+ * Lee un ajuste de texto de [settings] en el config.toml de EDMC (EDMC 6 guarda ahí la
+ * configuración; antes iba en el registro de Windows).
+ */
+function tomlSetting(text, name) {
+  const sec = String(text).split(/^\s*\[/m).find((b) => /^settings\]/.test(b));
+  if (!sec) return '';
+  const m = sec.match(new RegExp(`^\\s*${name}\\s*=\\s*(?:"((?:[^"\\\\]|\\\\.)*)"|'([^']*)')`, 'm'));
+  if (!m) return '';
+  if (m[2] != null) return m[2];
+  try { return JSON.parse(`"${m[1]}"`); } catch (e) { return m[1]; }
+}
+
+/** Copia la URL y la clave de la flota desde la configuración de EDMC (config.toml o, en versiones antiguas, el registro). */
 function readEdmcSkull() {
-  if (process.platform !== 'win32') return { ok: false, error: 'Solo en Windows' };
+  if (process.platform !== 'win32' && !process.env.ED_BUBBLE_EDMC_CONFIG) return { ok: false, error: 'Solo en Windows' };
+  // EDMC 6 y posteriores: %LOCALAPPDATA%\EDMarketConnector\config.toml
+  const tomlFile = process.env.ED_BUBBLE_EDMC_CONFIG || path.join(process.env.LOCALAPPDATA || path.join(require('os').homedir(), 'AppData', 'Local'), 'EDMarketConnector', 'config.toml');
+  try {
+    const text = fs.readFileSync(tomlFile, 'utf8');
+    const url = tomlSetting(text, 'skullmining_url').trim(); const token = tomlSetting(text, 'skullmining_token').trim();
+    if (url && token) return { ok: true, url, token };
+  } catch (e) { /* sin config.toml: EDMC antiguo */ }
+  if (process.platform !== 'win32') return { ok: false, error: 'No encuentro la URL o la clave en los ajustes de Skull Mining en EDMC.' };
+  // EDMC 5: registro de Windows
   const { execFileSync } = require('child_process');
   const get = (name) => {
     try {
       const out = execFileSync('reg', ['query', 'HKCU\\Software\\Marginal\\EDMarketConnector', '/v', name], { encoding: 'utf8', windowsHide: true });
-      const m = out.match(new RegExp(`${name}\\s+REG_\\w+\\s+(.+)`));
+      const m = out.match(new RegExp(`${name}\\s+REG_\\w+\\s+(.+)`, 'i'));
       return m ? m[1].trim() : '';
     } catch (e) { return ''; }
   };
