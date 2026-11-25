@@ -182,6 +182,8 @@ No está firmado: la primera vez Windows SmartScreen avisa («Windows protegió 
 
 ## Pendiente
 
+- Usar `core/data/materials.json` (146 materiales con nombre en español, grado y máximo que se puede llevar): mostrar los nombres de los materiales en español en las recetas de Ingenieros y avisar de cuánto cabe de cada uno. Falta el símbolo del diario de 9 materiales thargoides recientes (marcados «verificar»).
+
 - Masa, energía y demás datos de los módulos Mk II recientes (cabinas de pasajeros MkII, Mk II Vessel Hangar, Large Planetary Vehicle Hangar y su Mk II, Mk II Cargo Rack 6D): Inara solo da el precio. Fuentes posibles: la pantalla de Equipamiento del juego o EDSY. Añadirlos a `core/data/shipdata.json`.
 
 - Traducción de la interfaz a inglés, francés, italiano y alemán (ahora solo español; en Ajustes › Idioma sale «English · pronto»).

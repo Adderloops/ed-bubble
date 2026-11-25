@@ -67,3 +67,7 @@ Las recetas que coriolis-data no trae (anti-guardián de Ram Tah para los módul
 
 ED BUBBLE lee y escribe builds en SLEF (Ship Loadout Exchange Format, formato público de Inara: https://inara.cz/elite/inara-impexp-slef/) y crea los enlaces de importación de Coriolis (`https://coriolis.io/import?data=`) y EDSY (`https://edsy.org/#/I=`), que llevan el evento `Loadout` del diario en JSON comprimido con gzip y en base64. Es el mismo formato que usa EDMarketConnector para esos enlaces; no se usa código de Coriolis, EDSY ni EDMC. Las tiendas que venden cada módulo y sus precios salen de la búsqueda de estaciones de Spansh (https://spansh.co.uk).
 
+## Materiales de ingeniería (español y máximos)
+
+`core/data/materials.json`: los 146 materiales de ingeniería de nave (en bruto, fabricados y codificados, también guardianes y thargoides) con su nombre en español del juego, categoría, grado y cuánto se puede llevar como máximo. Nombres en español y máximos transcritos a mano de capturas del juego de Adder (25-11-2026); símbolos y nombres en inglés de EDCD FDevIDs (material.csv). Nueve materiales thargoides recientes no están todavía en FDevIDs y van marcados para verificar su símbolo.
+

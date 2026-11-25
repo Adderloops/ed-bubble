@@ -1,0 +1,1474 @@
+{
+ "_nota": "Materiales de ingeniería de nave: nombre en el juego en español, categoría, grado y máximo que se puede llevar. Nombres en español y máximos transcritos de capturas del juego de Adder (25-11-2026); símbolos y nombres en inglés de EDCD FDevIDs (material.csv). Los marcados con «verificar» no están aún en FDevIDs: falta su símbolo del diario.",
+ "materials": {
+  "carbon": {
+   "symbol": "Carbon",
+   "en": "Carbon",
+   "es": "Carbono",
+   "type": "Raw",
+   "category": "Raw 1",
+   "categoryEs": "Elemento 1",
+   "grade": 1,
+   "max": 300
+  },
+  "vanadium": {
+   "symbol": "Vanadium",
+   "en": "Vanadium",
+   "es": "Vanadio",
+   "type": "Raw",
+   "category": "Raw 1",
+   "categoryEs": "Elemento 1",
+   "grade": 2,
+   "max": 250
+  },
+  "niobium": {
+   "symbol": "Niobium",
+   "en": "Niobium",
+   "es": "Niobio",
+   "type": "Raw",
+   "category": "Raw 1",
+   "categoryEs": "Elemento 1",
+   "grade": 3,
+   "max": 200
+  },
+  "yttrium": {
+   "symbol": "Yttrium",
+   "en": "Yttrium",
+   "es": "Ytrio",
+   "type": "Raw",
+   "category": "Raw 1",
+   "categoryEs": "Elemento 1",
+   "grade": 4,
+   "max": 150
+  },
+  "phosphorus": {
+   "symbol": "Phosphorus",
+   "en": "Phosphorus",
+   "es": "Fósforo",
+   "type": "Raw",
+   "category": "Raw 2",
+   "categoryEs": "Elemento 2",
+   "grade": 1,
+   "max": 300
+  },
+  "chromium": {
+   "symbol": "Chromium",
+   "en": "Chromium",
+   "es": "Cromo",
+   "type": "Raw",
+   "category": "Raw 2",
+   "categoryEs": "Elemento 2",
+   "grade": 2,
+   "max": 250
+  },
+  "molybdenum": {
+   "symbol": "Molybdenum",
+   "en": "Molybdenum",
+   "es": "Molibdeno",
+   "type": "Raw",
+   "category": "Raw 2",
+   "categoryEs": "Elemento 2",
+   "grade": 3,
+   "max": 200
+  },
+  "technetium": {
+   "symbol": "Technetium",
+   "en": "Technetium",
+   "es": "Tecnecio",
+   "type": "Raw",
+   "category": "Raw 2",
+   "categoryEs": "Elemento 2",
+   "grade": 4,
+   "max": 150
+  },
+  "sulphur": {
+   "symbol": "Sulphur",
+   "en": "Sulphur",
+   "es": "Azufre",
+   "type": "Raw",
+   "category": "Raw 3",
+   "categoryEs": "Elemento 3",
+   "grade": 1,
+   "max": 300
+  },
+  "manganese": {
+   "symbol": "Manganese",
+   "en": "Manganese",
+   "es": "Manganeso",
+   "type": "Raw",
+   "category": "Raw 3",
+   "categoryEs": "Elemento 3",
+   "grade": 2,
+   "max": 250
+  },
+  "cadmium": {
+   "symbol": "Cadmium",
+   "en": "Cadmium",
+   "es": "Cadmio",
+   "type": "Raw",
+   "category": "Raw 3",
+   "categoryEs": "Elemento 3",
+   "grade": 3,
+   "max": 200
+  },
+  "ruthenium": {
+   "symbol": "Ruthenium",
+   "en": "Ruthenium",
+   "es": "Rutenio",
+   "type": "Raw",
+   "category": "Raw 3",
+   "categoryEs": "Elemento 3",
+   "grade": 4,
+   "max": 150
+  },
+  "iron": {
+   "symbol": "Iron",
+   "en": "Iron",
+   "es": "Hierro",
+   "type": "Raw",
+   "category": "Raw 4",
+   "categoryEs": "Elemento 4",
+   "grade": 1,
+   "max": 300
+  },
+  "zinc": {
+   "symbol": "Zinc",
+   "en": "Zinc",
+   "es": "Zinc",
+   "type": "Raw",
+   "category": "Raw 4",
+   "categoryEs": "Elemento 4",
+   "grade": 2,
+   "max": 250
+  },
+  "tin": {
+   "symbol": "Tin",
+   "en": "Tin",
+   "es": "Estaño",
+   "type": "Raw",
+   "category": "Raw 4",
+   "categoryEs": "Elemento 4",
+   "grade": 3,
+   "max": 200
+  },
+  "selenium": {
+   "symbol": "Selenium",
+   "en": "Selenium",
+   "es": "Selenio",
+   "type": "Raw",
+   "category": "Raw 4",
+   "categoryEs": "Elemento 4",
+   "grade": 4,
+   "max": 150
+  },
+  "nickel": {
+   "symbol": "Nickel",
+   "en": "Nickel",
+   "es": "Níquel",
+   "type": "Raw",
+   "category": "Raw 5",
+   "categoryEs": "Elemento 5",
+   "grade": 1,
+   "max": 300
+  },
+  "germanium": {
+   "symbol": "Germanium",
+   "en": "Germanium",
+   "es": "Germanio",
+   "type": "Raw",
+   "category": "Raw 5",
+   "categoryEs": "Elemento 5",
+   "grade": 2,
+   "max": 250
+  },
+  "tungsten": {
+   "symbol": "Tungsten",
+   "en": "Tungsten",
+   "es": "Tungsteno",
+   "type": "Raw",
+   "category": "Raw 5",
+   "categoryEs": "Elemento 5",
+   "grade": 3,
+   "max": 200
+  },
+  "tellurium": {
+   "symbol": "Tellurium",
+   "en": "Tellurium",
+   "es": "Teluro",
+   "type": "Raw",
+   "category": "Raw 5",
+   "categoryEs": "Elemento 5",
+   "grade": 4,
+   "max": 150
+  },
+  "rhenium": {
+   "symbol": "Rhenium",
+   "en": "Rhenium",
+   "es": "Renio",
+   "type": "Raw",
+   "category": "Raw 6",
+   "categoryEs": "Elemento 6",
+   "grade": 1,
+   "max": 300
+  },
+  "arsenic": {
+   "symbol": "Arsenic",
+   "en": "Arsenic",
+   "es": "Arsénico",
+   "type": "Raw",
+   "category": "Raw 6",
+   "categoryEs": "Elemento 6",
+   "grade": 2,
+   "max": 250
+  },
+  "mercury": {
+   "symbol": "Mercury",
+   "en": "Mercury",
+   "es": "Mercurio",
+   "type": "Raw",
+   "category": "Raw 6",
+   "categoryEs": "Elemento 6",
+   "grade": 3,
+   "max": 200
+  },
+  "polonium": {
+   "symbol": "Polonium",
+   "en": "Polonium",
+   "es": "Polonio",
+   "type": "Raw",
+   "category": "Raw 6",
+   "categoryEs": "Elemento 6",
+   "grade": 4,
+   "max": 150
+  },
+  "lead": {
+   "symbol": "Lead",
+   "en": "Lead",
+   "es": "Plomo",
+   "type": "Raw",
+   "category": "Raw 7",
+   "categoryEs": "Elemento 7",
+   "grade": 1,
+   "max": 300
+  },
+  "zirconium": {
+   "symbol": "Zirconium",
+   "en": "Zirconium",
+   "es": "Circonio",
+   "type": "Raw",
+   "category": "Raw 7",
+   "categoryEs": "Elemento 7",
+   "grade": 2,
+   "max": 250
+  },
+  "boron": {
+   "symbol": "Boron",
+   "en": "Boron",
+   "es": "Boro",
+   "type": "Raw",
+   "category": "Raw 7",
+   "categoryEs": "Elemento 7",
+   "grade": 3,
+   "max": 200
+  },
+  "antimony": {
+   "symbol": "Antimony",
+   "en": "Antimony",
+   "es": "Antimonio",
+   "type": "Raw",
+   "category": "Raw 7",
+   "categoryEs": "Elemento 7",
+   "grade": 4,
+   "max": 150
+  },
+  "scrambledemissiondata": {
+   "symbol": "ScrambledEmissionData",
+   "en": "Exceptional Scrambled Emission Data",
+   "es": "Datos de transmisiones codificadas excepcionales",
+   "type": "Encoded",
+   "category": "Emission Data",
+   "categoryEs": "Datos de emisión",
+   "grade": 1,
+   "max": 300
+  },
+  "archivedemissiondata": {
+   "symbol": "ArchivedEmissionData",
+   "en": "Irregular Emission Data",
+   "es": "Datos de emisión irregulares",
+   "type": "Encoded",
+   "category": "Emission Data",
+   "categoryEs": "Datos de emisión",
+   "grade": 2,
+   "max": 250
+  },
+  "emissiondata": {
+   "symbol": "EmissionData",
+   "en": "Unexpected Emission Data",
+   "es": "Datos de emisión inesperados",
+   "type": "Encoded",
+   "category": "Emission Data",
+   "categoryEs": "Datos de emisión",
+   "grade": 3,
+   "max": 200
+  },
+  "decodedemissiondata": {
+   "symbol": "DecodedEmissionData",
+   "en": "Decoded Emission Data",
+   "es": "Datos de emisión descodificados",
+   "type": "Encoded",
+   "category": "Emission Data",
+   "categoryEs": "Datos de emisión",
+   "grade": 4,
+   "max": 150
+  },
+  "compactemissionsdata": {
+   "symbol": "CompactEmissionsData",
+   "en": "Abnormal Compact Emissions Data",
+   "es": "Compresión de datos de transmisiones anormal",
+   "type": "Encoded",
+   "category": "Emission Data",
+   "categoryEs": "Datos de emisión",
+   "grade": 5,
+   "max": 100
+  },
+  "disruptedwakeechoes": {
+   "symbol": "DisruptedWakeEchoes",
+   "en": "Atypical Disrupted Wake Echoes",
+   "es": "Ecos de estelas interrumpidas atípicos",
+   "type": "Encoded",
+   "category": "Wake Scans",
+   "categoryEs": "Escáneres de estela",
+   "grade": 1,
+   "max": 300
+  },
+  "fsdtelemetry": {
+   "symbol": "FSDTelemetry",
+   "en": "Anomalous FSD Telemetry",
+   "es": "Telemetría de MDD anómala",
+   "type": "Encoded",
+   "category": "Wake Scans",
+   "categoryEs": "Escáneres de estela",
+   "grade": 2,
+   "max": 250
+  },
+  "wakesolutions": {
+   "symbol": "WakeSolutions",
+   "en": "Strange Wake Solutions",
+   "es": "Extrañas soluciones de estelas",
+   "type": "Encoded",
+   "category": "Wake Scans",
+   "categoryEs": "Escáneres de estela",
+   "grade": 3,
+   "max": 200
+  },
+  "hyperspacetrajectories": {
+   "symbol": "HyperspaceTrajectories",
+   "en": "Eccentric Hyperspace Trajectories",
+   "es": "Trayectorias de hiperespacio excéntricas",
+   "type": "Encoded",
+   "category": "Wake Scans",
+   "categoryEs": "Escáneres de estela",
+   "grade": 4,
+   "max": 150
+  },
+  "dataminedwake": {
+   "symbol": "DataminedWake",
+   "en": "Datamined Wake Exceptions",
+   "es": "Excepciones en análisis de estelas",
+   "type": "Encoded",
+   "category": "Wake Scans",
+   "categoryEs": "Escáneres de estela",
+   "grade": 5,
+   "max": 100
+  },
+  "shieldcyclerecordings": {
+   "symbol": "ShieldCycleRecordings",
+   "en": "Distorted Shield Cycle Recordings",
+   "es": "Registros de ciclo de escudo distorsionados",
+   "type": "Encoded",
+   "category": "Shield Data",
+   "categoryEs": "Datos de escudos",
+   "grade": 1,
+   "max": 300
+  },
+  "shieldsoakanalysis": {
+   "symbol": "ShieldSoakAnalysis",
+   "en": "Inconsistent Shield Soak Analysis",
+   "es": "Análisis de absorción de escudos inconsistente",
+   "type": "Encoded",
+   "category": "Shield Data",
+   "categoryEs": "Datos de escudos",
+   "grade": 2,
+   "max": 250
+  },
+  "shielddensityreports": {
+   "symbol": "ShieldDensityReports",
+   "en": "Untypical Shield Scans ",
+   "es": "Escáner de escudos atípico",
+   "type": "Encoded",
+   "category": "Shield Data",
+   "categoryEs": "Datos de escudos",
+   "grade": 3,
+   "max": 200
+  },
+  "shieldpatternanalysis": {
+   "symbol": "ShieldPatternAnalysis",
+   "en": "Aberrant Shield Pattern Analysis",
+   "es": "Análisis de patrones de escudo aberrantes",
+   "type": "Encoded",
+   "category": "Shield Data",
+   "categoryEs": "Datos de escudos",
+   "grade": 4,
+   "max": 150
+  },
+  "shieldfrequencydata": {
+   "symbol": "ShieldFrequencyData",
+   "en": "Peculiar Shield Frequency Data",
+   "es": "Datos de frecuencias de escudo peculiares",
+   "type": "Encoded",
+   "category": "Shield Data",
+   "categoryEs": "Datos de escudos",
+   "grade": 5,
+   "max": 100
+  },
+  "encryptedfiles": {
+   "symbol": "EncryptedFiles",
+   "en": "Unusual Encrypted Files",
+   "es": "Ficheros encriptados inusuales",
+   "type": "Encoded",
+   "category": "Encryption Files",
+   "categoryEs": "Ficheros encriptados",
+   "grade": 1,
+   "max": 300
+  },
+  "encryptioncodes": {
+   "symbol": "EncryptionCodes",
+   "en": "Tagged Encryption Codes",
+   "es": "Códigos de encriptación marcados",
+   "type": "Encoded",
+   "category": "Encryption Files",
+   "categoryEs": "Ficheros encriptados",
+   "grade": 2,
+   "max": 250
+  },
+  "symmetrickeys": {
+   "symbol": "SymmetricKeys",
+   "en": "Open Symmetric Keys",
+   "es": "Claves simétricas abiertas",
+   "type": "Encoded",
+   "category": "Encryption Files",
+   "categoryEs": "Ficheros encriptados",
+   "grade": 3,
+   "max": 200
+  },
+  "encryptionarchives": {
+   "symbol": "EncryptionArchives",
+   "en": "Atypical Encryption Archives",
+   "es": "Archivos encriptados atípicos",
+   "type": "Encoded",
+   "category": "Encryption Files",
+   "categoryEs": "Ficheros encriptados",
+   "grade": 4,
+   "max": 150
+  },
+  "adaptiveencryptors": {
+   "symbol": "AdaptiveEncryptors",
+   "en": "Adaptive Encryptors Capture",
+   "es": "Captura de encriptadores adaptativos",
+   "type": "Encoded",
+   "category": "Encryption Files",
+   "categoryEs": "Ficheros encriptados",
+   "grade": 5,
+   "max": 100
+  },
+  "bulkscandata": {
+   "symbol": "BulkScanData",
+   "en": "Anomalous Bulk Scan Data",
+   "es": "Datos de escáner en bruto anómalos",
+   "type": "Encoded",
+   "category": "Data Archives",
+   "categoryEs": "Archivos de datos",
+   "grade": 1,
+   "max": 300
+  },
+  "scanarchives": {
+   "symbol": "ScanArchives",
+   "en": "Unidentified Scan Archives",
+   "es": "Archivos de escáner no identificados",
+   "type": "Encoded",
+   "category": "Data Archives",
+   "categoryEs": "Archivos de datos",
+   "grade": 2,
+   "max": 250
+  },
+  "scandatabanks": {
+   "symbol": "ScanDatabanks",
+   "en": "Classified Scan Databanks",
+   "es": "Datos de escáner clasificados",
+   "type": "Encoded",
+   "category": "Data Archives",
+   "categoryEs": "Archivos de datos",
+   "grade": 3,
+   "max": 200
+  },
+  "encodedscandata": {
+   "symbol": "EncodedScanData",
+   "en": "Divergent Scan Data",
+   "es": "Datos de escáner divergentes",
+   "type": "Encoded",
+   "category": "Data Archives",
+   "categoryEs": "Archivos de datos",
+   "grade": 4,
+   "max": 150
+  },
+  "classifiedscandata": {
+   "symbol": "ClassifiedScanData",
+   "en": "Classified Scan Fragment",
+   "es": "Fragmento de escáner clasificado",
+   "type": "Encoded",
+   "category": "Data Archives",
+   "categoryEs": "Archivos de datos",
+   "grade": 5,
+   "max": 100
+  },
+  "legacyfirmware": {
+   "symbol": "LegacyFirmware",
+   "en": "Specialised Legacy Firmware",
+   "es": "Firmware heredado especializado",
+   "type": "Encoded",
+   "category": "Encoded Firmware",
+   "categoryEs": "Firmware codificado",
+   "grade": 1,
+   "max": 300
+  },
+  "consumerfirmware": {
+   "symbol": "ConsumerFirmware",
+   "en": "Modified Consumer Firmware",
+   "es": "Firmware de consumo modificado",
+   "type": "Encoded",
+   "category": "Encoded Firmware",
+   "categoryEs": "Firmware codificado",
+   "grade": 2,
+   "max": 250
+  },
+  "industrialfirmware": {
+   "symbol": "IndustrialFirmware",
+   "en": "Cracked Industrial Firmware",
+   "es": "Firmware industrial pirateado",
+   "type": "Encoded",
+   "category": "Encoded Firmware",
+   "categoryEs": "Firmware codificado",
+   "grade": 3,
+   "max": 200
+  },
+  "securityfirmware": {
+   "symbol": "SecurityFirmware",
+   "en": "Security Firmware Patch",
+   "es": "Parche de firmware de seguridad",
+   "type": "Encoded",
+   "category": "Encoded Firmware",
+   "categoryEs": "Firmware codificado",
+   "grade": 4,
+   "max": 150
+  },
+  "embeddedfirmware": {
+   "symbol": "EmbeddedFirmware",
+   "en": "Modified Embedded Firmware",
+   "es": "Firmware integrado modificado",
+   "type": "Encoded",
+   "category": "Encoded Firmware",
+   "categoryEs": "Firmware codificado",
+   "grade": 5,
+   "max": 100
+  },
+  "chemicalstorageunits": {
+   "symbol": "ChemicalStorageUnits",
+   "en": "Chemical Storage Units",
+   "es": "Unidades de almacenamiento químico",
+   "type": "Manufactured",
+   "category": "Chemical",
+   "categoryEs": "Químico",
+   "grade": 1,
+   "max": 300
+  },
+  "chemicalprocessors": {
+   "symbol": "ChemicalProcessors",
+   "en": "Chemical Processors",
+   "es": "Procesadores químicos",
+   "type": "Manufactured",
+   "category": "Chemical",
+   "categoryEs": "Químico",
+   "grade": 2,
+   "max": 250
+  },
+  "chemicaldistillery": {
+   "symbol": "ChemicalDistillery",
+   "en": "Chemical Distillery",
+   "es": "Destilería química",
+   "type": "Manufactured",
+   "category": "Chemical",
+   "categoryEs": "Químico",
+   "grade": 3,
+   "max": 200
+  },
+  "chemicalmanipulators": {
+   "symbol": "ChemicalManipulators",
+   "en": "Chemical Manipulators",
+   "es": "Manipuladores químicos",
+   "type": "Manufactured",
+   "category": "Chemical",
+   "categoryEs": "Químico",
+   "grade": 4,
+   "max": 150
+  },
+  "pharmaceuticalisolators": {
+   "symbol": "PharmaceuticalIsolators",
+   "en": "Pharmaceutical Isolators",
+   "es": "Aislantes farmacéuticos",
+   "type": "Manufactured",
+   "category": "Chemical",
+   "categoryEs": "Químico",
+   "grade": 5,
+   "max": 100
+  },
+  "temperedalloys": {
+   "symbol": "TemperedAlloys",
+   "en": "Tempered Alloys",
+   "es": "Aleaciones templadas",
+   "type": "Manufactured",
+   "category": "Thermic",
+   "categoryEs": "Térmico",
+   "grade": 1,
+   "max": 300
+  },
+  "heatresistantceramics": {
+   "symbol": "HeatResistantCeramics",
+   "en": "Heat Resistant Ceramics",
+   "es": "Cerámicas resistentes al calor",
+   "type": "Manufactured",
+   "category": "Thermic",
+   "categoryEs": "Térmico",
+   "grade": 2,
+   "max": 250
+  },
+  "precipitatedalloys": {
+   "symbol": "PrecipitatedAlloys",
+   "en": "Precipitated Alloys",
+   "es": "Aleaciones de precipitación",
+   "type": "Manufactured",
+   "category": "Thermic",
+   "categoryEs": "Térmico",
+   "grade": 3,
+   "max": 200
+  },
+  "thermicalloys": {
+   "symbol": "ThermicAlloys",
+   "en": "Thermic Alloys",
+   "es": "Aleaciones térmicas",
+   "type": "Manufactured",
+   "category": "Thermic",
+   "categoryEs": "Térmico",
+   "grade": 4,
+   "max": 150
+  },
+  "militarygradealloys": {
+   "symbol": "MilitaryGradeAlloys",
+   "en": "Military Grade Alloys",
+   "es": "Aleaciones de grado militar",
+   "type": "Manufactured",
+   "category": "Thermic",
+   "categoryEs": "Térmico",
+   "grade": 5,
+   "max": 100
+  },
+  "heatconductionwiring": {
+   "symbol": "HeatConductionWiring",
+   "en": "Heat Conduction Wiring",
+   "es": "Cableado de conducción calorífica",
+   "type": "Manufactured",
+   "category": "Heat",
+   "categoryEs": "Calor",
+   "grade": 1,
+   "max": 300
+  },
+  "heatdispersionplate": {
+   "symbol": "HeatDispersionPlate",
+   "en": "Heat Dispersion Plate",
+   "es": "Placa de dispersión de calor",
+   "type": "Manufactured",
+   "category": "Heat",
+   "categoryEs": "Calor",
+   "grade": 2,
+   "max": 250
+  },
+  "heatexchangers": {
+   "symbol": "HeatExchangers",
+   "en": "Heat Exchangers",
+   "es": "Intercambiadores de calor",
+   "type": "Manufactured",
+   "category": "Heat",
+   "categoryEs": "Calor",
+   "grade": 3,
+   "max": 200
+  },
+  "heatvanes": {
+   "symbol": "HeatVanes",
+   "en": "Heat Vanes",
+   "es": "Palas térmicas",
+   "type": "Manufactured",
+   "category": "Heat",
+   "categoryEs": "Calor",
+   "grade": 4,
+   "max": 150
+  },
+  "protoheatradiators": {
+   "symbol": "ProtoHeatRadiators",
+   "en": "Proto Heat Radiators",
+   "es": "Protorradiadores térmicos",
+   "type": "Manufactured",
+   "category": "Heat",
+   "categoryEs": "Calor",
+   "grade": 5,
+   "max": 100
+  },
+  "basicconductors": {
+   "symbol": "BasicConductors",
+   "en": "Basic Conductors",
+   "es": "Conductores básicos",
+   "type": "Manufactured",
+   "category": "Conductive",
+   "categoryEs": "Conductivo",
+   "grade": 1,
+   "max": 300
+  },
+  "conductivecomponents": {
+   "symbol": "ConductiveComponents",
+   "en": "Conductive Components",
+   "es": "Componentes conductivos",
+   "type": "Manufactured",
+   "category": "Conductive",
+   "categoryEs": "Conductivo",
+   "grade": 2,
+   "max": 250
+  },
+  "conductiveceramics": {
+   "symbol": "ConductiveCeramics",
+   "en": "Conductive Ceramics",
+   "es": "Cerámicas conductivas",
+   "type": "Manufactured",
+   "category": "Conductive",
+   "categoryEs": "Conductivo",
+   "grade": 3,
+   "max": 200
+  },
+  "conductivepolymers": {
+   "symbol": "ConductivePolymers",
+   "en": "Conductive Polymers",
+   "es": "Polímeros conductivos",
+   "type": "Manufactured",
+   "category": "Conductive",
+   "categoryEs": "Conductivo",
+   "grade": 4,
+   "max": 150
+  },
+  "biotechconductors": {
+   "symbol": "BiotechConductors",
+   "en": "Biotech Conductors",
+   "es": "Conductores biotecnológicos",
+   "type": "Manufactured",
+   "category": "Conductive",
+   "categoryEs": "Conductivo",
+   "grade": 5,
+   "max": 100
+  },
+  "mechanicalscrap": {
+   "symbol": "MechanicalScrap",
+   "en": "Mechanical Scrap",
+   "es": "Chatarra mecánica",
+   "type": "Manufactured",
+   "category": "Mechanical Components",
+   "categoryEs": "Componentes mecánicos",
+   "grade": 1,
+   "max": 300
+  },
+  "mechanicalequipment": {
+   "symbol": "MechanicalEquipment",
+   "en": "Mechanical Equipment",
+   "es": "Equipamiento mecánico",
+   "type": "Manufactured",
+   "category": "Mechanical Components",
+   "categoryEs": "Componentes mecánicos",
+   "grade": 2,
+   "max": 250
+  },
+  "mechanicalcomponents": {
+   "symbol": "MechanicalComponents",
+   "en": "Mechanical Components",
+   "es": "Componentes mecánicos",
+   "type": "Manufactured",
+   "category": "Mechanical Components",
+   "categoryEs": "Componentes mecánicos",
+   "grade": 3,
+   "max": 200
+  },
+  "configurablecomponents": {
+   "symbol": "ConfigurableComponents",
+   "en": "Configurable Components",
+   "es": "Componentes configurables",
+   "type": "Manufactured",
+   "category": "Mechanical Components",
+   "categoryEs": "Componentes mecánicos",
+   "grade": 4,
+   "max": 150
+  },
+  "improvisedcomponents": {
+   "symbol": "ImprovisedComponents",
+   "en": "Improvised Components",
+   "es": "Componentes improvisados",
+   "type": "Manufactured",
+   "category": "Mechanical Components",
+   "categoryEs": "Componentes mecánicos",
+   "grade": 5,
+   "max": 100
+  },
+  "gridresistors": {
+   "symbol": "GridResistors",
+   "en": "Grid Resistors",
+   "es": "Red resistiva",
+   "type": "Manufactured",
+   "category": "Capacitors",
+   "categoryEs": "Capacitadores",
+   "grade": 1,
+   "max": 300
+  },
+  "hybridcapacitors": {
+   "symbol": "HybridCapacitors",
+   "en": "Hybrid Capacitors",
+   "es": "Capacitadores híbridos",
+   "type": "Manufactured",
+   "category": "Capacitors",
+   "categoryEs": "Capacitadores",
+   "grade": 2,
+   "max": 250
+  },
+  "electrochemicalarrays": {
+   "symbol": "ElectrochemicalArrays",
+   "en": "Electrochemical Arrays",
+   "es": "Matriz electroquímica",
+   "type": "Manufactured",
+   "category": "Capacitors",
+   "categoryEs": "Capacitadores",
+   "grade": 3,
+   "max": 200
+  },
+  "polymercapacitors": {
+   "symbol": "PolymerCapacitors",
+   "en": "Polymer Capacitors",
+   "es": "Capacitadores de polímeros",
+   "type": "Manufactured",
+   "category": "Capacitors",
+   "categoryEs": "Capacitadores",
+   "grade": 4,
+   "max": 150
+  },
+  "militarysupercapacitors": {
+   "symbol": "MilitarySupercapacitors",
+   "en": "Military Supercapacitors",
+   "es": "Supercapacitadores militares",
+   "type": "Manufactured",
+   "category": "Capacitors",
+   "categoryEs": "Capacitadores",
+   "grade": 5,
+   "max": 100
+  },
+  "wornshieldemitters": {
+   "symbol": "WornShieldEmitters",
+   "en": "Worn Shield Emitters",
+   "es": "Emisor de escudos desgastado",
+   "type": "Manufactured",
+   "category": "Shielding",
+   "categoryEs": "Escudos",
+   "grade": 1,
+   "max": 300
+  },
+  "shieldemitters": {
+   "symbol": "ShieldEmitters",
+   "en": "Shield Emitters",
+   "es": "Emisor de escudos",
+   "type": "Manufactured",
+   "category": "Shielding",
+   "categoryEs": "Escudos",
+   "grade": 2,
+   "max": 250
+  },
+  "shieldingsensors": {
+   "symbol": "ShieldingSensors",
+   "en": "Shielding Sensors",
+   "es": "Sensores de escudo",
+   "type": "Manufactured",
+   "category": "Shielding",
+   "categoryEs": "Escudos",
+   "grade": 3,
+   "max": 200
+  },
+  "compoundshielding": {
+   "symbol": "CompoundShielding",
+   "en": "Compound Shielding",
+   "es": "Escudos compuestos",
+   "type": "Manufactured",
+   "category": "Shielding",
+   "categoryEs": "Escudos",
+   "grade": 4,
+   "max": 150
+  },
+  "imperialshielding": {
+   "symbol": "ImperialShielding",
+   "en": "Imperial Shielding",
+   "es": "Escudos imperiales",
+   "type": "Manufactured",
+   "category": "Shielding",
+   "categoryEs": "Escudos",
+   "grade": 5,
+   "max": 100
+  },
+  "compactcomposites": {
+   "symbol": "CompactComposites",
+   "en": "Compact Composites",
+   "es": "Compuestos compactos",
+   "type": "Manufactured",
+   "category": "Composite",
+   "categoryEs": "Compuestos",
+   "grade": 1,
+   "max": 300
+  },
+  "filamentcomposites": {
+   "symbol": "FilamentComposites",
+   "en": "Filament Composites",
+   "es": "Compuestos de filamentos",
+   "type": "Manufactured",
+   "category": "Composite",
+   "categoryEs": "Compuestos",
+   "grade": 2,
+   "max": 250
+  },
+  "highdensitycomposites": {
+   "symbol": "HighDensityComposites",
+   "en": "High Density Composites",
+   "es": "Compuestos de alta densidad",
+   "type": "Manufactured",
+   "category": "Composite",
+   "categoryEs": "Compuestos",
+   "grade": 3,
+   "max": 200
+  },
+  "fedproprietarycomposites": {
+   "symbol": "FedProprietaryComposites",
+   "en": "Proprietary Composites",
+   "es": "Compuestos con patente",
+   "type": "Manufactured",
+   "category": "Composite",
+   "categoryEs": "Compuestos",
+   "grade": 4,
+   "max": 150
+  },
+  "fedcorecomposites": {
+   "symbol": "FedCoreComposites",
+   "en": "Core Dynamics Composites",
+   "es": "Compuestos de Core Dynamics",
+   "type": "Manufactured",
+   "category": "Composite",
+   "categoryEs": "Compuestos",
+   "grade": 5,
+   "max": 100
+  },
+  "crystalshards": {
+   "symbol": "CrystalShards",
+   "en": "Crystal Shards",
+   "es": "Piedras de cristal",
+   "type": "Manufactured",
+   "category": "Crystals",
+   "categoryEs": "Cristales",
+   "grade": 1,
+   "max": 300
+  },
+  "uncutfocuscrystals": {
+   "symbol": "UncutFocusCrystals",
+   "en": "Flawed Focus Crystals",
+   "es": "Cristales de convergencia imperfectos",
+   "type": "Manufactured",
+   "category": "Crystals",
+   "categoryEs": "Cristales",
+   "grade": 2,
+   "max": 250
+  },
+  "focuscrystals": {
+   "symbol": "FocusCrystals",
+   "en": "Focus Crystals",
+   "es": "Cristales de enfoque",
+   "type": "Manufactured",
+   "category": "Crystals",
+   "categoryEs": "Cristales",
+   "grade": 3,
+   "max": 200
+  },
+  "refinedfocuscrystals": {
+   "symbol": "RefinedFocusCrystals",
+   "en": "Refined Focus Crystals",
+   "es": "Cristales de enfoque refinados",
+   "type": "Manufactured",
+   "category": "Crystals",
+   "categoryEs": "Cristales",
+   "grade": 4,
+   "max": 150
+  },
+  "exquisitefocuscrystals": {
+   "symbol": "ExquisiteFocusCrystals",
+   "en": "Exquisite Focus Crystals",
+   "es": "Cristales de enfoque exquisitos",
+   "type": "Manufactured",
+   "category": "Crystals",
+   "categoryEs": "Cristales",
+   "grade": 5,
+   "max": 100
+  },
+  "salvagedalloys": {
+   "symbol": "SalvagedAlloys",
+   "en": "Salvaged Alloys",
+   "es": "Aleaciones recuperadas",
+   "type": "Manufactured",
+   "category": "Alloys",
+   "categoryEs": "Aleaciones",
+   "grade": 1,
+   "max": 300
+  },
+  "galvanisingalloys": {
+   "symbol": "GalvanisingAlloys",
+   "en": "Galvanising Alloys",
+   "es": "Aleaciones galvanizadas",
+   "type": "Manufactured",
+   "category": "Alloys",
+   "categoryEs": "Aleaciones",
+   "grade": 2,
+   "max": 250
+  },
+  "phasealloys": {
+   "symbol": "PhaseAlloys",
+   "en": "Phase Alloys",
+   "es": "Aleaciones de fase",
+   "type": "Manufactured",
+   "category": "Alloys",
+   "categoryEs": "Aleaciones",
+   "grade": 3,
+   "max": 200
+  },
+  "protolightalloys": {
+   "symbol": "ProtoLightAlloys",
+   "en": "Proto Light Alloys",
+   "es": "Protoaleaciones ligeras",
+   "type": "Manufactured",
+   "category": "Alloys",
+   "categoryEs": "Aleaciones",
+   "grade": 4,
+   "max": 150
+  },
+  "protoradiolicalloys": {
+   "symbol": "ProtoRadiolicAlloys",
+   "en": "Proto Radiolic Alloys",
+   "es": "Aleaciones protorradiadas",
+   "type": "Manufactured",
+   "category": "Alloys",
+   "categoryEs": "Aleaciones",
+   "grade": 5,
+   "max": 100
+  },
+  "ancienthistoricaldata": {
+   "symbol": "AncientHistoricalData",
+   "en": "Pattern Gamma Obelisk Data",
+   "es": "Datos de obelisco de patrón gamma",
+   "type": "Encoded",
+   "category": "Guardian",
+   "categoryEs": "Guardián",
+   "grade": 4,
+   "max": 150
+  },
+  "ancientculturaldata": {
+   "symbol": "AncientCulturalData",
+   "en": "Pattern Beta Obelisk Data",
+   "es": "Datos de obelisco de patrón beta",
+   "type": "Encoded",
+   "category": "Guardian",
+   "categoryEs": "Guardián",
+   "grade": 4,
+   "max": 150
+  },
+  "ancientbiologicaldata": {
+   "symbol": "AncientBiologicalData",
+   "en": "Pattern Alpha Obelisk Data",
+   "es": "Datos de obelisco de patrón alfa",
+   "type": "Encoded",
+   "category": "Guardian",
+   "categoryEs": "Guardián",
+   "grade": 4,
+   "max": 150
+  },
+  "ancientlanguagedata": {
+   "symbol": "AncientLanguageData",
+   "en": "Pattern Delta Obelisk Data",
+   "es": "Datos de obelisco de patrón delta",
+   "type": "Encoded",
+   "category": "Guardian",
+   "categoryEs": "Guardián",
+   "grade": 4,
+   "max": 150
+  },
+  "ancienttechnologicaldata": {
+   "symbol": "AncientTechnologicalData",
+   "en": "Pattern Epsilon Obelisk Data",
+   "es": "Datos de obelisco de patrón epsilon",
+   "type": "Encoded",
+   "category": "Guardian",
+   "categoryEs": "Guardián",
+   "grade": 4,
+   "max": 150
+  },
+  "guardian_moduleblueprint": {
+   "symbol": "Guardian_ModuleBlueprint",
+   "en": "Guardian Module Blueprint Segment",
+   "es": "Segmento de plano de módulo de guardián",
+   "type": "Encoded",
+   "category": "Guardian",
+   "categoryEs": "Guardián",
+   "grade": 4,
+   "max": 150
+  },
+  "guardian_vesselblueprint": {
+   "symbol": "Guardian_VesselBlueprint",
+   "en": "Guardian Vessel Blueprint Segment",
+   "es": "Segmento de plano de nave de guardián",
+   "type": "Encoded",
+   "category": "Guardian",
+   "categoryEs": "Guardián",
+   "grade": 5,
+   "max": 100
+  },
+  "guardian_weaponblueprint": {
+   "symbol": "Guardian_WeaponBlueprint",
+   "en": "Guardian Weapon Blueprint Segment",
+   "es": "Segmento de plano de armamento de guardián",
+   "type": "Encoded",
+   "category": "Guardian",
+   "categoryEs": "Guardián",
+   "grade": 4,
+   "max": 150
+  },
+  "tg_structuraldata": {
+   "symbol": "TG_StructuralData",
+   "en": "Thargoid Structural Data",
+   "es": "Datos estructurales Thargoides",
+   "type": "Encoded",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 2,
+   "max": 250
+  },
+  "pendiente_thargoid_interdiction_telemetry": {
+   "symbol": null,
+   "en": "Thargoid Interdiction Telemetry",
+   "es": "Telemetría de Interdicción Thargoide",
+   "type": "Encoded",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 3,
+   "max": 200,
+   "verificar": true
+  },
+  "pendiente_massive_energy_surge_analytics": {
+   "symbol": null,
+   "en": "Massive Energy Surge Analytics",
+   "es": "Análisis de Sobrecarga de Energía Masiva (Thargoide)",
+   "type": "Encoded",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 3,
+   "max": 200,
+   "verificar": true
+  },
+  "tg_shipflightdata": {
+   "symbol": "TG_ShipFlightData",
+   "en": "Ship Flight Data",
+   "es": "Datos de vuelos de nave",
+   "type": "Encoded",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 3,
+   "max": 200
+  },
+  "tg_compositiondata": {
+   "symbol": "TG_CompositionData",
+   "en": "Thargoid Material Composition Data",
+   "es": "Datos de composición material Thargoide",
+   "type": "Encoded",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 3,
+   "max": 200
+  },
+  "unknownshipsignature": {
+   "symbol": "UnknownShipSignature",
+   "en": "Thargoid Ship Signature",
+   "es": "Firma térmica de nave Thargoide",
+   "type": "Encoded",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 3,
+   "max": 200
+  },
+  "tg_shipsystemsdata": {
+   "symbol": "TG_ShipSystemsData",
+   "en": "Ship Systems Data",
+   "es": "Datos de sistemas de nave",
+   "type": "Encoded",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 4,
+   "max": 150
+  },
+  "tg_residuedata": {
+   "symbol": "TG_ResidueData",
+   "en": "Thargoid Residue Data",
+   "es": "Datos residuales Thargoides",
+   "type": "Encoded",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 4,
+   "max": 150
+  },
+  "unknownwakedata": {
+   "symbol": "UnknownWakeData",
+   "en": "Thargoid Wake Data",
+   "es": "Datos de estela Thargoide",
+   "type": "Encoded",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 4,
+   "max": 150
+  },
+  "guardian_powercell": {
+   "symbol": "Guardian_PowerCell",
+   "en": "Guardian Power Cell",
+   "es": "Célula de energía de guardián",
+   "type": "Manufactured",
+   "category": "Guardian",
+   "categoryEs": "Guardián",
+   "grade": 1,
+   "max": 300
+  },
+  "guardian_sentinel_wreckagecomponents": {
+   "symbol": "Guardian_Sentinel_WreckageComponents",
+   "en": "Guardian Sentinel Wreckage Components",
+   "es": "Restos de accidentes de centinela guardián",
+   "type": "Manufactured",
+   "category": "Guardian",
+   "categoryEs": "Guardián",
+   "grade": 1,
+   "max": 300
+  },
+  "guardian_powerconduit": {
+   "symbol": "Guardian_PowerConduit",
+   "en": "Guardian Power Conduit",
+   "es": "Conducto de energía de guardián",
+   "type": "Manufactured",
+   "category": "Guardian",
+   "categoryEs": "Guardián",
+   "grade": 2,
+   "max": 250
+  },
+  "guardian_sentinel_weaponparts": {
+   "symbol": "Guardian_Sentinel_WeaponParts",
+   "en": "Guardian Sentinel Weapon Parts",
+   "es": "Piezas de armamento de centinela guardián",
+   "type": "Manufactured",
+   "category": "Guardian",
+   "categoryEs": "Guardián",
+   "grade": 3,
+   "max": 200
+  },
+  "guardian_techcomponent": {
+   "symbol": "Guardian_TechComponent",
+   "en": "Guardian Technology Component",
+   "es": "Componente tecnológico de guardián",
+   "type": "Manufactured",
+   "category": "Guardian",
+   "categoryEs": "Guardián",
+   "grade": 3,
+   "max": 200
+  },
+  "pendiente_hardened_surface_fragments": {
+   "symbol": null,
+   "en": "Hardened Surface Fragments",
+   "es": "Fragmentos de superficie endurecida",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 1,
+   "max": 300,
+   "verificar": true
+  },
+  "pendiente_caustic_shard": {
+   "symbol": null,
+   "en": "Caustic Shard",
+   "es": "Fragmento cáustico",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 2,
+   "max": 250,
+   "verificar": true
+  },
+  "unknowncarapace": {
+   "symbol": "UnknownCarapace",
+   "en": "Thargoid Carapace",
+   "es": "Caparazón Thargoide",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 2,
+   "max": 250
+  },
+  "pendiente_tactical_core_chip": {
+   "symbol": null,
+   "en": "Tactical Core Chip",
+   "es": "Chip de núcleo táctico",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 5,
+   "max": 100,
+   "verificar": true
+  },
+  "tg_biomechanicalconduits": {
+   "symbol": "TG_BioMechanicalConduits",
+   "en": "Bio-Mechanical Conduits",
+   "es": "Conductos biomecánicos",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 3,
+   "max": 200
+  },
+  "pendiente_corrosive_mechanisms": {
+   "symbol": null,
+   "en": "Corrosive Mechanisms",
+   "es": "Mecanismos corrosivos",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 3,
+   "max": 200,
+   "verificar": true
+  },
+  "unknownenergycell": {
+   "symbol": "UnknownEnergyCell",
+   "en": "Thargoid Energy Cell",
+   "es": "Célula de energía Thargoide",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 3,
+   "max": 200
+  },
+  "pendiente_phasing_membrane_residue": {
+   "symbol": null,
+   "en": "Phasing Membrane Residue",
+   "es": "Residuo de membrana fásica",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 3,
+   "max": 200,
+   "verificar": true
+  },
+  "tg_wreckagecomponents": {
+   "symbol": "TG_WreckageComponents",
+   "en": "Wreckage Components",
+   "es": "Restos de accidentes",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 3,
+   "max": 200
+  },
+  "pendiente_caustic_crystal": {
+   "symbol": null,
+   "en": "Caustic Crystal",
+   "es": "Cristal cáustico",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 4,
+   "max": 150,
+   "verificar": true
+  },
+  "unknowntechnologycomponents": {
+   "symbol": "UnknownTechnologyComponents",
+   "en": "Thargoid Technological Components",
+   "es": "Componentes tecnológicos Thargoides",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 4,
+   "max": 150
+  },
+  "tg_weaponparts": {
+   "symbol": "TG_WeaponParts",
+   "en": "Weapon Parts",
+   "es": "Piezas de armamento",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 4,
+   "max": 150
+  },
+  "tg_propulsionelement": {
+   "symbol": "TG_PropulsionElement",
+   "en": "Propulsion Elements",
+   "es": "Elementos de propulsión",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 5,
+   "max": 100
+  },
+  "unknownenergysource": {
+   "symbol": "UnknownEnergySource",
+   "en": "Sensor Fragment",
+   "es": "Fragmento de sensor",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 5,
+   "max": 100
+  },
+  "unknownorganiccircuitry": {
+   "symbol": "UnknownOrganicCircuitry",
+   "en": "Thargoid Organic Circuitry",
+   "es": "Circuitería orgánica Thargoide",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 5,
+   "max": 100
+  },
+  "pendiente_heat_exposure_specimen": {
+   "symbol": null,
+   "en": "Heat Exposure Specimen",
+   "es": "Espécimen de exposición térmica",
+   "type": "Manufactured",
+   "category": "Thargoid",
+   "categoryEs": "Thargoide",
+   "grade": 5,
+   "max": 100,
+   "verificar": true
+  }
+ }
+}
