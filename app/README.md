@@ -80,7 +80,7 @@ Sección del grupo Viaje (Odyssey):
 
 Sección del grupo Nave, con tres columnas (datos de `core/combat.js`):
 
-- **Objetivo**: la nave fijada (`ShipTargeted`) con piloto, rango de combate, facción, estado legal (en cian si puedes atacarla sin delito, en ámbar si está limpia), recompensa, escudo, casco y el subsistema apuntado. **Tu nave**: escudos, casco, tu estado legal y si tu caza está fuera.
+- **Objetivo**: la nave fijada (`ShipTargeted`) con piloto, rango de combate, facción, estado legal (en cian si puedes atacarla sin delito, en ámbar si está limpia), recompensa, escudo, casco y el subsistema apuntado. Debajo, tu estado legal. El escudo y el casco de tu nave no se muestran: el juego los enseña al momento y el diario no los da al día (el casco solo al cargar, atracar o equipar).
 - **Zona**: al caer en una zona de conflicto (con su intensidad), de extracción o en una baliza, cuenta las bajas y los créditos de esa zona y, con el primer bono, por quién luchas y contra quién. Debajo, los totales de la sesión de juego y las últimas bajas (la nave de un bono sale del último objetivo de esa facción).
 - **Por cobrar**: bonos de combate y recompensas pendientes por facción. Se descuentan al cobrar (`RedeemVoucher`; en un Interstellar Factors se cobra todo) y se pierden al morir. Se reconstruyen desde los diarios recientes, así que incluyen lo que hiciste antes de abrir la app.
 - **Masacres**: progreso de cada misión de masacre. Cada baja cuenta para la primera misión sin terminar de cada facción emisora, como en el juego, y se marca «entrégala» al completarse. Arriba, las bajas que faltan para la pila más larga.

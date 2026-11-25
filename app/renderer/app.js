@@ -1670,16 +1670,10 @@ function screenCombate(s, v) {
       ${t.subsystem ? `<div class="in" style="display:flex;justify-content:space-between;padding:8px 12px"><span class="eb">Subsistema · ${esc(t.subsystem)}</span><span class="num">${t.subHealth != null ? `${nf(t.subHealth)} %` : '—'}</span></div>` : ''}
       <span class="eb dim" style="font-size:10px;margin-top:auto">${t.stage >= 3 ? 'Escaneo completo' : `Escaneo ${t.stage}/3`} · ${agoText(t.at)}</span>`;
   }
-  const hull = s.ship.hull;
-  const shieldsUp = f.areShieldsUp;
-  const own = `<section class="pn card">
-      <span class="ti" style="font-size:16px">Tu nave</span>
-      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
-        ${stat('Escudos', shieldsUp === false ? 'Caídos' : shieldsUp ? 'Activos' : '—', shieldsUp === false ? 'red' : 'cyan')}
-        ${stat(`Casco · ${s.ship.hullAt ? `dato de las ${hhmm(s.ship.hullAt)}` : 'último dato'}`, hull != null ? `${nf(hull * 100)} %` : '—', hull != null && hull < 0.5 ? 'red' : '')}
-        ${stat('Estado legal', s.cmdr.legalState === 'Clean' ? 'Limpio' : or(s.cmdr.legalState), s.cmdr.legalState && s.cmdr.legalState !== 'Clean' ? 'amber' : '')}
-      </div>
-      <span class="note">El juego no informa del casco de tu nave durante el combate: el dato es de la última vez que lo escribió (al cargar la partida, atracar o equipar). Míralo en el panel de la nave.</span>
+  // Escudo y casco de tu nave no se muestran: el juego los enseña al momento y el diario no los da al día.
+  const legal = s.cmdr.legalState;
+  const own = `<section class="pn card" style="gap:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="eb">Tu estado legal</span><span class="va ${legal && legal !== 'Clean' ? 'amber' : ''}" style="font-size:18px">${esc(legal === 'Clean' ? 'Limpio' : or(legal))}</span></div>
       <span class="nowrap" style="display:block;overflow:hidden">${feedbackLine()}</span>
     </section>`;
   const left = `<aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">
