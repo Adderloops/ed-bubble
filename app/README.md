@@ -87,7 +87,7 @@ Sección del grupo Nave, con tres columnas (datos de `core/combat.js`):
 - **Conflictos**: guerras, guerras civiles y elecciones del sistema, con lo que está en juego y los días ganados de cada bando.
 
 - **Botones** (pulsan las teclas de tu preset; necesitan tecla de **teclado** asignada en el juego):
-  - **Fijar planta de energía** (grande, resaltado): pulsa «Siguiente subsistema» (`CycleNextSubsystem`) y lee en el diario (`ShipTargeted`, que el juego escribe al cambiar de subsistema) cuál queda fijado, hasta llegar a la planta o dar la vuelta entera. Necesita un objetivo escaneado del todo.
+  - **Fijar planta de energía** (grande, resaltado): la misma secuencia que el botón de la página Combate de Touch Portal: 6 pulsaciones de «Subsistema anterior» (`CyclePreviousSubsystem`), porque el juego no tiene tecla directa para la planta.
   - **Obj. compañero 1/2/3**: fija al compañero de ala (`TargetWingman0/1/2`) y su objetivo (`SelectTargetsTarget`).
   - **Caza**: atacar mi objetivo, atacar a discreción, defenderme, alto el fuego, mantener posición, seguirme, volver a la nave y abrir órdenes (`Order…` y `OpenOrders`). El caza se lanza desde el panel de funciones del juego (no hay tecla para eso).
 

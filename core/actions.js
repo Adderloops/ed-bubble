@@ -28,9 +28,9 @@ const ACTIONS = {
   nextsys:     { label: 'Siguiente sistema de la ruta', steps: [press('TargetNextRouteSystem')] },
   // Macro de la página Vuelo de Touch Portal: panel izquierdo → pestaña de
   // contactos → solicitar atraque.
-  // Combate. «Fijar planta de energía» no es una tecla del juego: app/main.js pulsa «siguiente
-  // subsistema» y lee en el diario (ShipTargeted) qué subsistema queda fijado, hasta llegar a la planta.
-  powerplant:  { label: 'Fijar planta de energía', steps: [press('CycleNextSubsystem')], loop: 'powerplant' },
+  // Combate. «Fijar planta de energía»: como el botón de la página Combate de Touch Portal,
+  // 6 pulsaciones de «subsistema anterior» (en el juego no hay tecla directa para la planta).
+  powerplant:  { label: 'Fijar planta de energía', steps: [press('CyclePreviousSubsystem'), wait(40), press('CyclePreviousSubsystem'), wait(40), press('CyclePreviousSubsystem'), wait(40), press('CyclePreviousSubsystem'), wait(40), press('CyclePreviousSubsystem'), wait(40), press('CyclePreviousSubsystem')] },
   wing1:       { label: 'Objetivo del compañero 1', steps: [press('TargetWingman0'), wait(250), press('SelectTargetsTarget')] },
   wing2:       { label: 'Objetivo del compañero 2', steps: [press('TargetWingman1'), wait(250), press('SelectTargetsTarget')] },
   wing3:       { label: 'Objetivo del compañero 3', steps: [press('TargetWingman2'), wait(250), press('SelectTargetsTarget')] },
@@ -55,14 +55,14 @@ const BIND_NAMES = {
   DeployHeatSink: 'Disipador de calor', ToggleButtonUpInput: 'Modo silencioso', EjectAllCargo: 'Expulsar toda la carga',
   TargetNextRouteSystem: 'Siguiente sistema de la ruta', FocusLeftPanel: 'Panel izquierdo', CyclePreviousPanel: 'Pestaña anterior',
   UI_Up: 'Interfaz: arriba', UI_Right: 'Interfaz: derecha', UI_Select: 'Interfaz: seleccionar', UI_Back: 'Interfaz: atrás',
-  CycleNextSubsystem: 'Siguiente subsistema', TargetWingman0: 'Compañero 1', TargetWingman1: 'Compañero 2', TargetWingman2: 'Compañero 3', SelectTargetsTarget: 'Objetivo del compañero',
+  CyclePreviousSubsystem: 'Subsistema anterior', TargetWingman0: 'Compañero 1', TargetWingman1: 'Compañero 2', TargetWingman2: 'Compañero 3', SelectTargetsTarget: 'Objetivo del compañero',
   OpenOrders: 'Órdenes del caza', OrderDefensiveBehaviour: 'Caza: defender', OrderAggressiveBehaviour: 'Caza: agresivo', OrderFocusTarget: 'Caza: atacar mi objetivo',
   OrderHoldFire: 'Caza: alto el fuego', OrderHoldPosition: 'Caza: mantener posición', OrderFollow: 'Caza: seguirme', OrderRequestDock: 'Caza: volver a la nave',
   GalaxyMapOpen: 'Mapa galáctico', CamZoomIn: 'Cámara: acercar', CamZoomOut: 'Cámara: alejar',
 };
 const CHECK_GROUPS = [
   { name: 'Vuelo', binds: ['LandingGearToggle', 'ToggleFlightAssist', 'DeployHardpointToggle', 'ShipSpotLightToggle', 'ToggleCargoScoop', 'NightVisionToggle', 'DeployHeatSink', 'ToggleButtonUpInput', 'EjectAllCargo', 'TargetNextRouteSystem', 'FocusLeftPanel', 'CyclePreviousPanel', 'UI_Right', 'UI_Select'] },
-  { name: 'Combate', binds: ['CycleNextSubsystem', 'TargetWingman0', 'TargetWingman1', 'TargetWingman2', 'SelectTargetsTarget'] },
+  { name: 'Combate', binds: ['CyclePreviousSubsystem', 'TargetWingman0', 'TargetWingman1', 'TargetWingman2', 'SelectTargetsTarget'] },
   { name: 'Caza', binds: ['OpenOrders', 'OrderDefensiveBehaviour', 'OrderAggressiveBehaviour', 'OrderFocusTarget', 'OrderHoldFire', 'OrderHoldPosition', 'OrderFollow', 'OrderRequestDock'] },
   { name: 'Trazar ruta', binds: require('./plot').NEEDED },
 ];
@@ -109,7 +109,7 @@ function describe(binds) {
     out[id] = {
       label: a.label,
       confirm: !!a.confirm,
-      macro: needed.length > 1 || !!a.loop,
+      macro: needed.length > 1,
       key: needed.length > 1 ? 'macro' : bindLabel(first),
       available: !!binds && missing.length === 0,
       missing,

@@ -725,9 +725,10 @@ test('combate: salto con el armamento desplegado en modo combate y botones de co
   assert.notStrictEqual(derive.flightMode(s).section, 'combate', 'en modo análisis (minería) no');
   const acts = require('../../core/actions');
   for (const id of ['powerplant', 'wing1', 'wing2', 'wing3', 'f_orders', 'f_defend', 'f_attack', 'f_focus', 'f_hold', 'f_pos', 'f_follow', 'f_dock']) assert.ok(acts.ACTIONS[id], id);
-  const binds = { CycleNextSubsystem: { key: 'Key_Y', modifiers: [] }, OrderFocusTarget: { key: 'Key_Numpad_3', modifiers: [] } };
+  const binds = { CyclePreviousSubsystem: { key: 'Key_SemiColon', modifiers: [] }, OrderFocusTarget: { key: 'Key_Numpad_3', modifiers: [] } };
   const d = acts.describe(binds);
   assert.strictEqual(d.powerplant.available, true); assert.strictEqual(d.f_focus.available, true); assert.strictEqual(d.wing1.available, false);
+  assert.strictEqual(acts.ACTIONS.powerplant.steps.filter((x) => x.press === 'CyclePreviousSubsystem').length, 6, 'como en Touch Portal');
   // la planta se reconoce por el símbolo del subsistema en ShipTargeted
   model.applyEvent(s, ev('ShipTargeted', { TargetLocked: true, Ship: 'vulture', ScanStage: 3, Subsystem: '$int_powerplant_size4_class3_name;', Subsystem_Localised: 'Power Plant' }));
   assert.ok(/powerplant/.test(s.combat.target.subSym)); assert.strictEqual(s.combat.target.seq, 1);

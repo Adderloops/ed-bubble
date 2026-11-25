@@ -332,11 +332,6 @@ const ERRORS = {
   'no-binds': 'No he podido leer tus controles',
   'no-key': 'Esa acción no tiene tecla de teclado en tu preset',
   timeout: 'El ayudante de teclas no responde',
-  'no-target': 'Fija antes una nave como objetivo',
-  'not-scanned': 'Espera a que termine el escaneo del objetivo',
-  'target-lost': 'Se ha perdido el objetivo',
-  'no-powerplant': 'Ese objetivo no tiene planta de energía que fijar',
-  'no-journal': 'El diario no confirma el subsistema: inténtalo otra vez',
   'helper-exited': 'El ayudante de teclas se ha cerrado; reintenta',
 };
 
