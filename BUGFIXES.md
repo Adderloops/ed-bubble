@@ -21,6 +21,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 10 | Equipo › Naves: la lista no deja ver todas las naves (el paginador queda fuera del panel) | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
 | 11 | Equipo › Tu nave: no salían las ranuras vacías, y algunas ranuras y recetas salían con el nombre interno («MEDIUMMININGHARDPOINT1», «LIMPETCONTROLLER01», «CARGORACKS6C1 EXTENDED») | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
 | 12 | Equipo: 22 módulos normales salían con el nombre de su versión Merc («Extended Cargo Rack», «Long Range Detailed Surface Scanner», «Far-Reaching Abrasion Blaster»…) y algunos sin precio | Revisión al hacer la lista de deseos | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
+| 13 | Vuelo › Plataformas: en las estaciones Dodec, el esquema de la plataforma de atraque a veces no es correcto | Adder | 0.7.0-beta.3 | — | Abierto |
 
 ## Detalle
 
@@ -159,4 +160,11 @@ Revisado todo lo que la app toma del Journal y de los archivos del juego:
 - **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** 0.7.0-beta.4
 - **Qué pasaba:** en Tu nave, la bodega normal de clase 6 salía como «Extended Cargo Rack», el escáner de superficie como «Long Range Detailed Surface Scanner», etc.
 - **Causa:** en la lista de EDCD FDevIDs, los módulos Merc (preingenierizados) comparten símbolo con el módulo normal, y al montar `shipdata.json` la fila Merc pisó a la normal en 22 módulos (con precio 0 en algunos). Se ha restaurado el nombre, la categoría y el precio normal de esos 22.
+
+### 13 · Esquema de atraque erróneo en las Dodec
+
+- **Informado por:** Adder (25-11-2026).
+- **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** pendiente.
+- **Qué pasa:** en las estaciones Dodec, el gráfico que muestra dónde está la plataforma asignada a veces la sitúa mal.
+- **Por hacer:** revisar la distribución de plataformas de las Dodec con capturas del juego (número de plataforma, tamaño y posición) y corregir el esquema. Anotado para el futuro.
 
