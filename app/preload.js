@@ -46,4 +46,9 @@ contextBridge.exposeInMainWorld('edbubble', {
   bindsFolder: () => ipcRenderer.invoke('ed:binds-folder'),
   openData: () => ipcRenderer.invoke('ed:open-data'),
   open: (site, name, address) => ipcRenderer.invoke('ed:open', { site, name, address }),
+  builds: () => ipcRenderer.invoke('ed:builds'),
+  buildImport: () => ipcRenderer.invoke('ed:build-import'),
+  buildDelete: (id) => ipcRenderer.invoke('ed:build-delete', id),
+  shipExport: (kind) => ipcRenderer.invoke('ed:ship-export', kind),
+  buySearch: (item) => ipcRenderer.invoke('ed:buy-search', item),
 });

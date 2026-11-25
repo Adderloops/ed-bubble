@@ -244,6 +244,7 @@ function view(state) {
     dockPad,
     mode: flightMode(state),
     combat: require('./combat').view(state),
+    shipLayout: state.ship && state.ship.type ? require('./builds').layout(state.ship.type, state.ship.modules) : null,
     alerts: alerts(state),
     fuel: fuel(state),
     route: routeView(state),

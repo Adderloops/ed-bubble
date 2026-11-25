@@ -62,3 +62,8 @@ Las recetas que coriolis-data no trae (anti-guardián de Ram Tah para los módul
 ## Naves y módulos
 
 `core/data/shipdata.json` combina la lista de naves y módulos de EDCD FDevIDs (shipyard.csv y outfitting.csv, https://github.com/EDCD/FDevIDs) con las características de naves y módulos de coriolis-data (https://github.com/EDCD/coriolis-data). Según la licencia de coriolis-data, sus datos son propiedad de Frontier Developments plc y están sujetos a sus términos; no se usa código de Coriolis.
+
+## Builds: SLEF, Coriolis y EDSY
+
+ED BUBBLE lee y escribe builds en SLEF (Ship Loadout Exchange Format, formato público de Inara: https://inara.cz/elite/inara-impexp-slef/) y crea los enlaces de importación de Coriolis (`https://coriolis.io/import?data=`) y EDSY (`https://edsy.org/#/I=`), que llevan el evento `Loadout` del diario en JSON comprimido con gzip y en base64. Es el mismo formato que usa EDMarketConnector para esos enlaces; no se usa código de Coriolis, EDSY ni EDMC. Las tiendas que venden cada módulo y sus precios salen de la búsqueda de estaciones de Spansh (https://spansh.co.uk).
+

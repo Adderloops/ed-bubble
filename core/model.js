@@ -189,6 +189,11 @@ const HANDLERS = {
         eng: m.Engineering ? { bp: m.Engineering.BlueprintName || null, level: m.Engineering.Level ?? null, quality: m.Engineering.Quality ?? null, engineer: m.Engineering.Engineer || null, exp: m.Engineering.ExperimentalEffect || null, expName: m.Engineering.ExperimentalEffect_Localised || null } : null,
       }));
       S.shipValue = e.HullValue != null ? { hull: e.HullValue, modules: e.ModulesValue ?? null } : (S.shipValue || null);
+      // para exportar a Coriolis o EDSY, y para comparar builds con cada nave de tu flota
+      S.loadout = { timestamp: e.timestamp, event: 'Loadout', Ship: e.Ship, ShipID: e.ShipID, ShipName: e.ShipName, ShipIdent: e.ShipIdent, HullValue: e.HullValue, ModulesValue: e.ModulesValue, HullHealth: e.HullHealth, UnladenMass: e.UnladenMass, CargoCapacity: e.CargoCapacity, MaxJumpRange: e.MaxJumpRange, FuelCapacity: e.FuelCapacity, Rebuy: e.Rebuy, Modules: e.Modules };
+      if (!state.fleet) state.fleet = {};
+      const fk = String(e.Ship || '').toLowerCase(); const prev = state.fleet[fk];
+      if (!prev || !prev.at || !e.timestamp || e.timestamp >= prev.at) state.fleet[fk] = { name: e.ShipName || null, ident: e.ShipIdent || null, at: e.timestamp || null, modules: S.modules };
     }
   },
   Location(state, e) {

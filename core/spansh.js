@@ -179,4 +179,48 @@ function body(id64) {
   });
 }
 
-module.exports = { body, bodyId64, markets, setFetch, suggest, system, normalise, stationKind, padSize };
+
+/**
+ * Estaciones que venden un módulo (por su símbolo del juego), de la más cercana a la más lejana.
+ * info: { name, cls, rating, base } de core/builds.moduleInfo. Devuelve el precio de cada
+ * estación y el descuento sobre el precio normal (Powerplay, estado de la facción…).
+ */
+function outfitting({ item, info, reference }) {
+  const sym = String(item || '').toLowerCase();
+  if (!sym || !info || !reference) return Promise.resolve([]);
+  return cached(`o:${sym}|${reference}`, async () => {
+    const f = { name: [info.name] };
+    if (info.cls != null) f.class = [String(info.cls)];
+    if (info.rating) f.rating = [String(info.rating)];
+    const d = await getJson('https://spansh.co.uk/api/stations/search', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filters: { modules: [f] }, sort: [{ distance: { direction: 'asc' } }], reference_system: reference, size: 100, page: 0 }),
+    });
+    const out = [];
+    const found = (d.results || []).map((r) => [r, (r.modules || []).find((x) => String(x.ed_symbol || '').toLowerCase() === sym)]).filter(([, m]) => m);
+    // precio normal: el de los datos; si no lo hay (blindajes, módulos nuevos), el más repetido
+    let base = info.base || null;
+    if (!base) {
+      const n = {}; for (const [, m] of found) if (m.price) n[m.price] = (n[m.price] || 0) + 1;
+      const top = Object.entries(n).sort((a, b) => b[1] - a[1])[0];
+      base = top ? Number(top[0]) : null;
+    }
+    for (const [r, m] of found) {
+      const kind = stationKind(r.type, r.name);
+      const price = m.price ?? null;
+      const disc = price && base ? Math.round((1 - price / base) * 100) : null;
+      out.push({
+        station: r.name, system: r.system_name, type: r.type || null, ...kind,
+        carrier: /carrier/i.test(r.type || ''), planetary: !!r.is_planetary || kind.surface,
+        distance: r.distance ?? null, ls: r.distance_to_arrival ?? null, pad: padSize(r),
+        price, discount: disc != null && disc >= 1 ? disc : 0,
+        power: r.system_controlling_power || null, powerState: r.system_power_state || null,
+        state: r.state || null, faction: r.controlling_minor_faction || null,
+        base, updatedAt: r.outfitting_updated_at || r.updated_at || null,
+      });
+    }
+    return out;
+  });
+}
+
+module.exports = { body, bodyId64, markets, outfitting, setFetch, suggest, system, normalise, stationKind, padSize };

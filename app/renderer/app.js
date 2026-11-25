@@ -30,7 +30,7 @@ const ui = {
   engKind: 'ship', engCat: null, engModule: null, engPage: 0, engOpen: null, // pantalla Ingenieros
   recipes: null, engRecipe: null, engBp: null, engExp: false, // recetas de ingeniería de nave
   colMode: null, colCosts: null, planLoc: 'all', planPage: 0, planSel: null, // Colonización: planificar por tipo
-  shipData: null, eqTab: 'mine', eqShipPage: 0, eqShip: null, eqCat: 'standard', eqGrpPage: 0, eqGrp: null, eqPages: {}, // Equipo: tu nave, naves y módulos
+  shipData: null, builds: null, buildSel: null, buildDel: null, wishSel: null, buy: null, buyDist: 0, buySort: 'dist', buyLarge: false, eqMsg: null, eqTab: 'mine', eqShipPage: 0, eqShip: null, eqCat: 'standard', eqGrpPage: 0, eqGrp: null, eqPages: {}, // Equipo: tu nave, naves y módulos
   skull: null, mineTab: null, sitesPage: 0, prospPage: 0, skullMsg: null, // minería
   coordText: '', coordMsg: null, // coordenadas en planeta: texto escrito y aviso
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
@@ -1853,13 +1853,10 @@ function screenEstacion(s, v) {
   </div>`;
 }
 
-/* ---------- Equipo: tu nave, naves y módulos ---------- */
+/* ---------- Equipo: tu nave, builds y lista de deseos ---------- */
 const PAD = { 1: 'S', 2: 'M', 3: 'L' };
 const CORE_SLOTS = [['PowerPlant', 'Planta de energía'], ['MainEngines', 'Propulsores'], ['FrameShiftDrive', 'Motor FSD'], ['LifeSupport', 'Soporte vital'], ['PowerDistributor', 'Distribuidor'], ['Radar', 'Sensores'], ['FuelTank', 'Tanque de combustible'], ['Armour', 'Blindaje']];
 const HP_SIZE = { Huge: 'enorme', Large: 'grande', Medium: 'mediano', Small: 'pequeño' };
-const CAT_ES = { standard: 'Internos principales', internal: 'Internos opcionales', hardpoint: 'Anclajes', utility: 'Apoyo' };
-const STAT_ES = { mass: 'Masa t', power: 'Energía MW', cost: 'Precio', integrity: 'Integridad', optmass: 'Masa óptima', maxfuel: 'Comb./salto', pgen: 'Genera MW', cargo: 'Carga t', damage: 'Daño', range: 'Alcance m', rate: 'Ritmo', regen: 'Regen.', proberadius: 'Radio sonda', fuel: 'Combustible t', ammo: 'Munición', clip: 'Cargador', shieldboost: 'Escudo +', hullboost: 'Casco +', hullreinforcement: 'Refuerzo', passengers: 'Pasajeros', bins: 'Celdas', boot: 'Arranque s' };
-const KEY_STATS = ['optmass', 'maxfuel', 'pgen', 'cargo', 'fuel', 'damage', 'range', 'rate', 'regen', 'shieldboost', 'hullreinforcement', 'passengers', 'ammo', 'proberadius'];
 function loadShipData() {
   if (ui.shipData || !window.edbubble || !window.edbubble.shipData) return;
   ui.shipData = 'loading';
@@ -1876,126 +1873,199 @@ function modLabel(D, item) {
 function engLine(e) {
   if (!e || !e.bp) return '';
   const R = ui.recipes && ui.recipes !== 'loading' ? ui.recipes : null;
-  const bp = R && R.blueprints[e.bp] ? R.blueprints[e.bp].name : e.bp.replace(/_/g, ' ');
+  const bp = R && R.blueprints[e.bp] ? R.blueprints[e.bp].name : e.bp.replace(/^[^_]*_/, '').replace(/([a-z])([A-Z])/g, '$1 $2');
   const ex = e.exp ? (R && R.specials[e.exp] ? R.specials[e.exp].name : (e.expName || e.exp)) : '';
   return `<span class="eb cyan" style="font-size:10px">${esc(bp)} G${esc(e.level ?? '?')}${ex ? ` · ${esc(ex)}` : ''}</span>`;
 }
 function slotName(slot) {
   const core = CORE_SLOTS.find(([k]) => k === slot);
   if (core) return core[1];
-  let m = /^(Huge|Large|Medium|Small)Hardpoint(\d+)$/.exec(slot);
-  if (m) return `Anclaje ${HP_SIZE[m[1]]} ${m[2]}`;
+  let m = /^(Huge|Large|Medium|Small)(Mining)?Hardpoint(\d+)$/.exec(slot);
+  if (m) return `Anclaje ${m[2] ? 'minero ' : ''}${HP_SIZE[m[1]]} ${m[3]}`;
   m = /^TinyHardpoint(\d+)$/.exec(slot);
   if (m) return `Apoyo ${m[1]}`;
   m = /^Slot(\d+)_Size(\d+)$/.exec(slot);
   if (m) return `Interno ${Number(m[1])} · clase ${m[2]}`;
-  if (/^Military/.test(slot)) return 'Militar';
+  m = /^Military0?(\d+)$/.exec(slot);
+  if (m) return `Militar ${m[1]}`;
+  m = /^LimpetController0?(\d+)$/.exec(slot);
+  if (m) return 'Control de drones';
+  m = /^FighterBay0?(\d+)$/.exec(slot);
+  if (m) return 'Hangar';
+  if (slot === 'Armour') return 'Blindaje';
   if (slot === 'PlanetaryApproachSuite') return 'Aproximación planetaria';
   m = /^Cargo(\d+)$/.exec(slot);
   if (m) return `Bodega fija ${Number(m[1])}`;
   return slot;
 }
-function shipStats(sh) {
-  const p = sh.spec || {};
-  if (!sh.spec) return '<span class="eb amber">Sin ficha todavía: es una nave reciente que no está en los datos abiertos</span>';
-  return `<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
-    ${stat('Plataforma', PAD[p.class] || '—')}${stat('Precio', p.retailCost ? `${nf(p.retailCost / 1e6, 2)} M cr` : '—')}${stat('Velocidad', p.speed ? `${nf(p.speed)} / ${nf(p.boost)}` : '—')}${stat('Tripulación', p.crew ?? '—')}
-    ${stat('Escudo base', p.baseShieldStrength != null ? nf(p.baseShieldStrength) : '—')}${stat('Blindaje base', p.baseArmour != null ? nf(p.baseArmour) : '—')}${stat('Masa casco', p.hullMass != null ? `${nf(p.hullMass)} t` : '—')}${stat('Masslock', p.masslock ?? '—')}
-  </div>`;
-}
-function slotLayout(sh) {
-  if (!sh.slots) return '';
-  const sz = (x) => (typeof x === 'number' ? x : x.cl);
-  const hp = sh.slots.hardpoints.filter((x) => sz(x) > 0); const ut = sh.slots.hardpoints.filter((x) => sz(x) === 0).length;
-  const hpTxt = [4, 3, 2, 1].map((k) => { const n = hp.filter((x) => sz(x) === k).length; return n ? `${n} ${{ 4: 'enorme', 3: 'grande', 2: 'mediano', 1: 'pequeño' }[k]}${n > 1 ? 's' : ''}` : ''; }).filter(Boolean).join(' · ');
-  const std = sh.slots.standard; const names = ['Planta', 'Propulsores', 'FSD', 'Soporte vital', 'Distribuidor', 'Sensores', 'Tanque'];
-  return `<div style="display:flex;flex-direction:column;gap:6px">
-    <span class="eb dim">Internos principales</span><span style="font-size:13px;line-height:1.4">${std.map((c, i) => `${names[i] || '?'} ${c}`).join(' · ')}</span>
-    <span class="eb dim">Anclajes y apoyo</span><span style="font-size:13px">${hpTxt ? `Anclajes: ${hpTxt}` : 'Sin anclajes'} · ${ut} de apoyo</span>
-    <span class="eb dim">Internos opcionales</span><span style="font-size:13px;line-height:1.4">${sh.slots.internal.map((x) => (typeof x === 'number' ? x : `${x.cl} (${{ Military: 'militar', PlanetaryApproachSuite: 'aprox. planetaria', Passenger: 'pasajeros', Storage: 'almacén' }[x.name] || x.name})`)).join(' · ')}</span>
-  </div>`;
-}
+const IMPORT_TIP = 'Copia la build y pulsa aquí: se lee del portapapeles.&#10;EDSY: Export › SLEF › copiar el texto.&#10;Coriolis: Export › SLEF › copiar el texto.&#10;Inara: en la ficha de tu nave, exportar en SLEF.&#10;También sirven los enlaces de importación de EDSY («edsy.org/#/I=…») y de Coriolis («coriolis.io/import?data=…»), y un evento Loadout del diario.&#10;Los enlaces cortos de Coriolis («coriolis.io/outfit/…?code=…») no se pueden leer.';
 function screenEquipo(s, v) {
-  loadShipData();
+  loadShipData(); loadBuilds();
   const D = ui.shipData && ui.shipData !== 'loading' ? ui.shipData : null;
-  const tabs = `<section class="pn card" style="gap:10px"><div style="display:flex;gap:8px;align-items:center">${[['mine', 'Tu nave'], ['ships', 'Naves'], ['mods', 'Módulos']].map(([k, t]) => `<button type="button" class="tab ${ui.eqTab === k ? 'on' : ''}" data-eqtab="${k}">${t}</button>`).join('')}
-    <span class="eb dim" style="margin-left:auto">Datos: coriolis-data y EDCD FDevIDs</span></div></section>`;
+  const tab = ['mine', 'builds', 'wish'].includes(ui.eqTab) ? ui.eqTab : 'mine';
+  const nB = (ui.builds || []).length;
+  const right = tab === 'mine'
+    ? `<span style="margin-left:auto;display:flex;gap:8px;align-items:center"><span class="eb dim">Exportar</span>
+        <button type="button" class="tab small" data-shipexp="coriolis" title="Abre tu nave actual, con su ingeniería, en coriolis.io (en tu navegador)">Abrir en Coriolis</button><button type="button" class="tab small" data-shipexp="edsy" title="Abre tu nave actual, con su ingeniería, en edsy.org (en tu navegador)">Abrir en EDSY</button><button type="button" class="tab small" data-shipexp="slef" title="Copia tu nave en formato SLEF al portapapeles, para pegarla en Inara, EDSY o Coriolis">Copiar SLEF</button></span>`
+    : `<span style="margin-left:auto;display:flex;gap:8px;align-items:center"><button type="button" class="tab small on" data-bimport="1" title="${IMPORT_TIP}">Importar build</button></span>`;
+  const msg = ui.eqMsg ? `<span class="eb ${ui.eqMsg.ok ? 'cyan' : 'red'}" style="font-size:11px">${esc(ui.eqMsg.text)}</span>` : '';
+  const tabs = `<section class="pn card" style="gap:8px"><div style="display:flex;gap:8px;align-items:center">${[['mine', 'Tu nave'], ['builds', `Builds${nB ? ` · ${nB}` : ''}`], ['wish', 'Lista de deseos']].map(([k, t]) => `<button type="button" class="tab ${tab === k ? 'on' : ''}" data-eqtab="${k}">${t}</button>`).join('')}${right}</div>${msg}</section>`;
   if (!D) return `<div style="display:flex;flex-direction:column;gap:12px;height:100%">${tabs}<section class="pn card"><div class="empty">Cargando datos de naves…</div></section></div>`;
-  let body;
-  if (ui.eqTab === 'ships') body = eqShips(D);
-  else if (ui.eqTab === 'mods') body = eqMods(D);
-  else body = eqMine(s, D);
+  const body = tab === 'builds' ? eqBuilds(s, D) : tab === 'wish' ? eqWish(s, D) : eqMine(s, v, D);
   return `<div style="display:flex;flex-direction:column;gap:12px;min-height:0;height:100%">${tabs}${body}</div>`;
 }
-function eqMine(s, D) {
+function loadBuilds() {
+  if (ui.builds || ui.buildsLoading || !window.edbubble || !window.edbubble.builds) return;
+  ui.buildsLoading = true;
+  window.edbubble.builds().then((b) => { ui.builds = b || []; ui.buildsLoading = false; render(); }).catch(() => { ui.builds = []; ui.buildsLoading = false; });
+}
+function bdPager(key, page, pages) {
+  return pages > 1 ? `<span style="display:flex;align-items:center;gap:6px"><button type="button" class="pg" data-bdpg="${key}" data-d="-1" ${page === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${page + 1}/${pages}</span><button type="button" class="pg" data-bdpg="${key}" data-d="1" ${page >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
+}
+function bdPage(key, list, per) {
+  const pages = Math.max(1, Math.ceil(list.length / per)); const k = `bd_${key}`;
+  ui[k] = Math.min(ui[k] || 0, pages - 1);
+  return { items: list.slice(ui[k] * per, ui[k] * per + per), pager: bdPager(key, ui[k], pages) };
+}
+function modRow(D, slot, m, size) {
+  if (!m) return `<div class="in eq-mod" style="opacity:.55"><span class="eb dim" style="font-size:10px">${esc(slotName(slot))}${size != null && !/^Slot/.test(slot) && /Hardpoint|Slot|Military|Cargo/.test(slot) ? '' : ''}</span><span class="nowrap soft" style="font-size:15px;font-style:italic">Vacío</span></div>`;
+  const l = modLabel(D, m.item);
+  return `<div class="in eq-mod ${m.on === false ? 'off' : ''}"><span class="eb dim" style="font-size:10px">${esc(slotName(slot))}${m.on === false ? ' · apagado' : ''}</span><span class="va nowrap" style="font-size:15px" title="${esc(l.sub)}">${esc(l.text)}</span>${engLine(m.eng)}</div>`;
+}
+function eqMine(s, v, D) {
   const S = s.ship || {};
   const sh = D.ships[String(S.type || '').toLowerCase()] || null;
+  const L = v.shipLayout;
+  if (!S.type || !L || !(S.modules || []).length) return '<section class="pn card"><div class="empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">Sin datos de tu nave</span><span style="font-size:14px">El juego los escribe al empezar la partida y al cambiar de nave o de módulos.</span></div></section>';
   const mods = S.modules || [];
-  if (!S.type || !mods.length) return '<section class="pn card"><div class="empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">Sin datos de tu nave</span><span style="font-size:14px">El juego los escribe al empezar la partida y al cambiar de nave o de módulos.</span></div></section>';
-  const row = (m) => { const l = modLabel(D, m.item); return `<div class="in eq-mod ${m.on ? '' : 'off'}"><span class="eb dim" style="font-size:10px">${esc(slotName(m.slot))}${m.on ? '' : ' · apagado'}</span><span class="va nowrap" style="font-size:15px" title="${esc(l.sub)}">${esc(l.text)}</span>${engLine(m.eng)}</div>`; };
-  const core = CORE_SLOTS.map(([k]) => mods.find((m) => m.slot === k)).filter(Boolean);
-  const hard = mods.filter((m) => /Hardpoint/.test(m.slot));
-  const opt = mods.filter((m) => !CORE_SLOTS.some(([k]) => k === m.slot) && !/Hardpoint/.test(m.slot));
   const engN = mods.filter((m) => m.eng && m.eng.bp).length;
+  const free = [...L.core, ...L.hard, ...L.opt].filter((x) => !x.module).length;
   const hero = `<section class="pn card" style="gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px">
-        <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span class="eb">${esc(sh ? sh.n : S.typeLocalised || S.type)}${S.ident ? ` · ${esc(S.ident)}` : ''}${sh && sh.spec ? ` · ${esc(sh.spec.manufacturer)}` : ''}</span><span class="ti nowrap" style="font-size:30px">${esc(S.name || sh?.n || '—')}</span></span>
-        <div style="display:grid;grid-template-columns:repeat(5,auto);gap:8px">${stat('Salto máx.', S.maxJumpRange ? `${nf(S.maxJumpRange, 2)} ly` : '—', 'cyan')}${stat('Carga', S.cargoCapacity != null ? `${nf(S.cargoCapacity)} t` : '—')}${stat('Casco', S.hull != null ? `${nf(S.hull * 100, 0)} %` : '—')}${stat('Reembolso', S.rebuy ? `${nf(S.rebuy)} cr` : '—')}${stat('Ingeniería', `${engN} / ${mods.length}`)}</div>
+        <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span class="eb">${esc(sh ? sh.n : S.typeLocalised || S.type)}${S.ident ? ` · ${esc(S.ident)}` : ''}${sh && sh.spec ? ` · ${esc(sh.spec.manufacturer)}` : ''}</span><span class="ti nowrap" style="font-size:30px">${esc(or(S.name, sh ? sh.n : S.type))}</span></span>
+        <div style="display:grid;grid-template-columns:repeat(6,auto);gap:8px">${stat('Salto máx.', S.maxJumpRange ? `${nf(S.maxJumpRange, 2)} ly` : '—', 'cyan')}${stat('Carga', S.cargoCapacity != null ? `${nf(S.cargoCapacity)} t` : '—')}${stat('Casco', S.hull != null ? `${nf(S.hull * 100)} %` : '—')}${stat('Reembolso', S.rebuy != null ? `${nf(S.rebuy)} cr` : '—')}${stat('Ingeniería', `${engN} / ${mods.length}`)}${stat('Ranuras libres', nf(free), free ? 'amber' : '')}</div>
       </div></section>`;
   const PER = 13;
   const col = (title, list, key) => {
-    const pages = Math.max(1, Math.ceil(list.length / PER));
-    const pg = Math.min(ui.eqPages[key] || 0, pages - 1); ui.eqPages[key] = pg;
-    return `<section class="pn card" style="min-height:0;overflow:hidden"><span class="ti" style="font-size:16px">${title}</span><div style="display:flex;flex-direction:column;gap:4px">${list.slice(pg * PER, (pg + 1) * PER).map(row).join('') || '<div class="empty">—</div>'}</div>${pages > 1 ? `<span style="display:flex;justify-content:flex-end;margin-top:auto">${pager2('eq' + key, pg, pages)}</span>` : ''}</section>`;
+    const { items, pager } = bdPage(`mine_${key}`, list, PER);
+    return `<section class="pn card" style="min-height:0;overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">${title}</span>${pager}</div><div style="display:flex;flex-direction:column;gap:4px">${items.map((x) => modRow(D, x.slot, x.module, x.size)).join('') || '<div class="empty">—</div>'}</div></section>`;
   };
-  return `${hero}<div style="flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-height:0">${col('Internos principales', core, 'core')}${col('Anclajes y apoyo', hard, 'hard')}${col('Internos opcionales', opt, 'opt')}</div>`;
+  return `${hero}<div style="flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-height:0">${col('Internos principales', L.core, 'core')}${col('Anclajes y apoyo', L.hard, 'hard')}${col('Internos opcionales', L.opt, 'opt')}</div>`;
 }
-const SHIP_PAGE = 14;
-function eqShips(D) {
-  const list = Object.entries(D.ships).map(([k, v]) => ({ k, ...v })).sort((a, b) => a.n.localeCompare(b.n));
-  const pages = Math.max(1, Math.ceil(list.length / SHIP_PAGE));
-  ui.eqShipPage = Math.min(ui.eqShipPage, pages - 1);
-  const sel = list.find((x) => x.k === ui.eqShip) || list[0];
-  const rows = list.slice(ui.eqShipPage * SHIP_PAGE, (ui.eqShipPage + 1) * SHIP_PAGE).map((x) => `<button type="button" class="in plan-row ${x.k === sel.k ? 'sel' : ''}" data-eqship="${esc(x.k)}">
-      <span style="display:flex;flex-direction:column;min-width:0;text-align:left"><span class="va nowrap" style="font-size:16px">${esc(x.n)}</span><span class="eb dim" style="font-size:10px">${esc(x.spec ? x.spec.manufacturer : 'Sin ficha')}</span></span>
-      <span class="num soft" style="text-align:right">${x.spec ? PAD[x.spec.class] || '—' : '—'}</span>
-      <span class="num soft" style="text-align:right">${x.spec && x.spec.retailCost ? `${nf(x.spec.retailCost / 1e6, 1)} M` : '—'}</span></button>`).join('');
-  return `<div style="flex:1;display:grid;grid-template-columns:minmax(0,1fr) 640px;gap:12px;min-height:0">
-    <section class="pn card" style="min-height:0;overflow:hidden"><div class="plan-row head"><span class="eb">Nave</span><span class="eb" style="text-align:right">Plataforma</span><span class="eb" style="text-align:right">Precio</span></div>
-      <div style="display:flex;flex-direction:column;gap:4px">${rows}</div><span style="display:flex;justify-content:flex-end;margin-top:auto">${pager2('eqship', ui.eqShipPage, pages)}</span></section>
-    <section class="pn card" style="min-height:0;overflow:hidden"><span class="ti" style="font-size:24px">${esc(sel.n)}</span><span class="eb dim">${esc(sel.spec ? sel.spec.manufacturer : '')}${sel.spec && sel.spec.source === 'inara' ? ' · ficha de Inara' : ''}</span>${shipStats(sel)}${slotLayout(sel)}</section></div>`;
+const fmtDate = (iso) => (iso ? `${String(iso).slice(8, 10)}-${String(iso).slice(5, 7)}-${String(iso).slice(0, 4)}` : '—');
+/** Cambios de la build que ya has hecho en tu nave de ese tipo (se mira en vivo). */
+function wishDone(s, b, it) {
+  const f = (s.fleet || {})[b.ship];
+  const h = f && (f.modules || []).find((m) => m.slot && m.slot.toLowerCase() === it.slot.toLowerCase());
+  if (it.kind === 'remove') return !!f && (!h || !h.item);
+  if (!h || h.item !== it.item) return false;
+  if (it.kind === 'eng') return !!(h.eng && h.eng.bp === it.eng.bp && (h.eng.level || 0) >= (it.eng.level || 0) && (!it.eng.exp || h.eng.exp === it.eng.exp));
+  return true;
 }
-const GRP_PAGE = 14;
-function eqMods(D) {
-  const cats = ['standard', 'internal', 'hardpoint', 'utility'];
-  const groups = {};
-  for (const [k, m] of Object.entries(D.modules)) {
-    if (m.c !== ui.eqCat || m.sh || m.x || /_free$|_default$/.test(k)) continue; // m.x: retirado o no disponible en el juego
-    (groups[m.n] = groups[m.n] || []).push({ k, ...m });
-  }
-  const names = Object.keys(groups).sort((a, b) => modNameEs(D, a).localeCompare(modNameEs(D, b), 'es'));
-  const pages = Math.max(1, Math.ceil(names.length / GRP_PAGE));
-  ui.eqGrpPage = Math.min(ui.eqGrpPage, pages - 1);
-  const sel = groups[ui.eqGrp] ? ui.eqGrp : names[0];
-  const catTabs = `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">${cats.map((c) => `<button type="button" class="tab small ${ui.eqCat === c ? 'on' : ''}" data-eqcat="${c}" style="white-space:nowrap">${CAT_ES[c]}</button>`).join('')}</div>`;
-  const rows = names.slice(ui.eqGrpPage * GRP_PAGE, (ui.eqGrpPage + 1) * GRP_PAGE).map((n) => `<button type="button" class="in plan-row ${n === sel ? 'sel' : ''}" data-eqgrp="${esc(n)}" style="grid-template-columns:minmax(0,1fr) 70px">
-      <span style="display:flex;flex-direction:column;min-width:0;text-align:left"><span class="va nowrap">${esc(modNameEs(D, n))}</span>${modNameEs(D, n) !== n ? `<span class="eb dim" style="font-size:10px">${esc(n)}</span>` : ''}</span><span class="num soft" style="text-align:right">${groups[n].length}</span></button>`).join('');
-  let table = '<div class="empty">Elige un módulo.</div>';
+function buildSel() { const list = ui.builds || []; return list.find((b) => b.id === ui.buildSel) || list[0] || null; }
+function eqBuilds(s, D) {
+  const list = ui.builds || [];
+  if (!list.length) return `<section class="pn card" style="flex:1"><div class="empty" style="flex-direction:column;gap:10px"><span class="va" style="font-size:20px;color:var(--soft)">Aún no has importado ninguna build</span><span style="font-size:14px;max-width:720px;text-align:center">En EDSY (Export › SLEF) o Coriolis (Export › SLEF) copia el texto, o copia un enlace de importación, y pulsa «Importar build». ED BUBBLE la compara con tu nave del mismo tipo y crea su lista de deseos. Se guarda hasta que la borres.</span><button type="button" class="tab on" data-bimport="1" title="${IMPORT_TIP}">Importar build</button></div></section>`;
+  const sel = buildSel();
+  const { items, pager } = bdPage('builds', list, 8);
+  const rows = items.map((b) => {
+    const pend = (b.wish || []).filter((it) => !wishDone(s, b, it)).length;
+    return `<button type="button" class="in plan-row ${sel && b.id === sel.id ? 'sel' : ''}" data-buildsel="${esc(b.id)}" style="grid-template-columns:minmax(0,1fr) 120px">
+      <span style="display:flex;flex-direction:column;min-width:0;text-align:left"><span class="va nowrap" style="font-size:16px">${esc(or(b.name, b.shipName))}</span><span class="eb dim nowrap" style="font-size:10px">${esc(b.shipName)} · ${esc(or(b.app, 'Importada'))} · ${fmtDate(b.at)}</span></span>
+      <span class="num ${pend ? 'amber' : 'cyan'}" style="text-align:right">${pend ? `${nf(pend)} cambios` : 'Hecha'}</span></button>`;
+  }).join('');
+  let detail = '';
   if (sel) {
-    const vars = groups[sel].slice().sort((a, b) => (Number(b.cl) || 0) - (Number(a.cl) || 0) || String(a.r).localeCompare(String(b.r)) || String(a.m || '').localeCompare(String(b.m || '')));
-    const extra = KEY_STATS.filter((f) => vars.some((x) => x.s && x.s[f] != null)).slice(0, 3);
-    const cols = ['mass', 'power', 'cost', ...extra];
-    const fmtV = (f, val) => (val == null ? '—' : f === 'cost' ? `${nf(val)}` : nf(val, Math.abs(val) < 10 && val % 1 ? 2 : 0));
-    const MAX = 30;
-    table = `<span class="ti" style="font-size:20px">${esc(modNameEs(D, sel))}</span>
-      <div class="eq-table" style="grid-template-columns:90px repeat(${cols.length},minmax(0,1fr))"><span class="eb">Clase</span>${cols.map((f) => `<span class="eb" style="text-align:right">${STAT_ES[f] || f}</span>`).join('')}
-      ${vars.slice(0, MAX).map((x) => `<span class="num">${esc(`${x.cl}${x.r}`)}${x.m ? ` <span class="soft" style="font-size:11px">${esc({ Fixed: 'F', Gimballed: 'C', Turreted: 'T' }[x.m] || '')}</span>` : ''}</span>${cols.map((f) => `<span class="num soft" style="text-align:right">${x.s ? fmtV(f, x.s[f]) : '—'}</span>`).join('')}`).join('')}</div>
-      ${vars.length > MAX ? `<span class="eb dim">Y ${vars.length - MAX} variantes más</span>` : ''}
-      ${vars.some((x) => !x.s || x.src) ? '<span class="eb dim" style="font-size:10px">— = sin datos todavía (módulo reciente; de algunos solo se sabe el precio, de Inara)</span>' : ''}`;
+    const L = sel.modules || [];
+    const grp = { core: [], hard: [], opt: [] };
+    for (const m of L) grp[/Hardpoint/.test(m.slot) ? 'hard' : (m.slot === 'Armour' || CORE_SLOTS.some(([k]) => k === m.slot)) ? 'core' : 'opt'].push(m);
+    const { items: mods, pager: mp } = bdPage('bmods', [...grp.core, ...grp.hard, ...grp.opt], 24);
+    const confirm = ui.buildDel === sel.id;
+    detail = `<section class="pn card" style="min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px"><span style="display:flex;flex-direction:column;min-width:0"><span class="eb">${esc(sel.shipName)} · ${esc(or(sel.app, 'Importada'))}</span><span class="ti nowrap" style="font-size:24px">${esc(or(sel.name, sel.shipName))}</span>
+        <span class="soft" style="font-size:13px">${sel.against ? `Comparada con tu ${esc(sel.shipName)}${sel.against.name ? ` «${esc(sel.against.name)}»` : ''}` : `No tienes una ${esc(sel.shipName)}: la lista de deseos es la build entera`}</span></span>
+        <span style="display:flex;gap:6px">${confirm ? `<button type="button" class="tab small" data-bdel="${esc(sel.id)}" style="border-color:var(--red,#ff4b4b);color:var(--red,#ff4b4b)">Sí, borrar</button><button type="button" class="tab small" data-bdelno="1">No</button>` : `<button type="button" class="tab small" data-eqtab="wish">Lista de deseos</button><button type="button" class="tab small" data-bdelask="${esc(sel.id)}">Borrar</button>`}</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="eb">Módulos de la build · ${nf(L.length)}</span>${mp}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px">${mods.map((m) => modRow(D, m.slot, m, null)).join('')}</div>
+    </section>`;
   }
-  return `<div style="flex:1;display:grid;grid-template-columns:420px minmax(0,1fr);gap:12px;min-height:0">
-    <section class="pn card" style="min-height:0;overflow:hidden">${catTabs}<div style="display:flex;flex-direction:column;gap:4px">${rows}</div><span style="display:flex;justify-content:flex-end;margin-top:auto">${pager2('eqgrp', ui.eqGrpPage, pages)}</span></section>
-    <section class="pn card" style="min-height:0;overflow:hidden">${table}</section></div>`;
+  return `<div style="flex:1;display:grid;grid-template-columns:minmax(0,0.8fr) minmax(0,1.2fr);gap:12px;min-height:0">
+    <section class="pn card" style="min-height:0;overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Builds guardadas</span>${pager}</div><div style="display:flex;flex-direction:column;gap:4px">${rows}</div>
+      <span class="note" style="margin-top:auto">Se guardan en tu equipo hasta que las borres. La comparación es con la última vez que el diario vio tu nave de ese tipo.</span></section>
+    ${detail}</div>`;
+}
+const WISH_KIND = { buy: ['Cambiar', 'amber'], add: ['Montar', 'amber'], remove: ['Quitar', 'soft'], eng: ['Ingeniería', 'cyan'] };
+function eqWish(s, D) {
+  const list = ui.builds || [];
+  if (!list.length) return eqBuilds(s, D);
+  const sel = buildSel();
+  const idx = list.indexOf(sel);
+  const nav = `<div style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-buildstep="-1" ${idx <= 0 ? 'disabled' : ''}>‹</button><span style="display:flex;flex-direction:column;min-width:0;flex:1"><span class="va nowrap" style="font-size:16px">${esc(or(sel.name, sel.shipName))}</span><span class="eb dim nowrap" style="font-size:10px">${esc(sel.shipName)} · build ${idx + 1} de ${list.length}</span></span><button type="button" class="pg" data-buildstep="1" ${idx >= list.length - 1 ? 'disabled' : ''}>›</button></div>`;
+  const wish = (sel.wish || []).map((it, i) => ({ ...it, i, done: wishDone(s, sel, it) }));
+  const pend = wish.filter((x) => !x.done);
+  const order = [...pend, ...wish.filter((x) => x.done)];
+  const { items, pager } = bdPage('wish', order, 11);
+  const cur = order.find((x) => x.i === ui.wishSel) || pend[0] || null;
+  const total = pend.filter((x) => x.kind === 'buy' || x.kind === 'add').reduce((a, x) => a + ((D.modules[x.item] && D.modules[x.item].s && D.modules[x.item].s.cost) || 0), 0);
+  const rows = items.map((x) => {
+    const [kt, kc] = WISH_KIND[x.kind] || ['', ''];
+    const to = x.item ? modLabel(D, x.item).text : 'Dejar vacía';
+    const from = x.from ? modLabel(D, x.from).text : 'Vacía';
+    return `<button type="button" class="in plan-row ${cur && x.i === cur.i ? 'sel' : ''}" data-wishsel="${x.i}" style="grid-template-columns:minmax(0,1fr) 92px;${x.done ? 'opacity:.5' : ''}">
+      <span style="display:flex;flex-direction:column;min-width:0;text-align:left"><span class="va nowrap" style="font-size:15px">${x.done ? '✓ ' : ''}${esc(x.kind === 'eng' ? to : to)}</span><span class="eb dim nowrap" style="font-size:10px">${esc(slotName(x.slot))} · ${x.kind === 'eng' ? esc(engText(x.eng)) : `ahora: ${esc(from)}`}</span></span>
+      <span class="eb ${x.done ? 'cyan' : kc}" style="text-align:right">${x.done ? 'Hecho' : kt}</span></button>`;
+  }).join('') || '<span class="soft" style="font-size:14px">Tu nave ya es igual que esta build.</span>';
+  const left = `<section class="pn card" style="min-height:0;overflow:hidden">${nav}
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${stat('Pendientes', nf(pend.length), pend.length ? 'amber' : 'cyan')}${stat('Hechos', nf(wish.length - pend.length))}${stat('Precio normal', total ? fmtCr(total) : '—')}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="eb">Lo que cambia</span>${pager}</div>
+      <div style="display:flex;flex-direction:column;gap:4px">${rows}</div></section>`;
+  return `<div style="flex:1;display:grid;grid-template-columns:minmax(0,0.9fr) minmax(0,1.1fr);gap:12px;min-height:0">${left}${wishBuy(s, D, sel, cur)}</div>`;
+}
+function engText(e) {
+  if (!e || !e.bp) return '';
+  const R = ui.recipes && ui.recipes !== 'loading' ? ui.recipes : null;
+  const bp = R && R.blueprints[e.bp] ? R.blueprints[e.bp].name : String(e.bp).replace(/^[^_]*_/, '').replace(/([a-z])([A-Z])/g, '$1 $2');
+  const ex = e.exp ? (R && R.specials[e.exp] ? R.specials[e.exp].name : e.exp) : '';
+  return `${bp} G${e.level ?? '?'}${ex ? ` · ${ex}` : ''}`;
+}
+const BUY_DIST = [[0, 'Todas'], [20, '20 ly'], [50, '50 ly'], [100, '100 ly']];
+function wishBuy(s, D, b, it) {
+  const box = (inner) => `<section class="pn card" style="min-height:0;overflow:hidden">${inner}</section>`;
+  if (!it) return box('<div class="empty">Elige un cambio de la lista.</div>');
+  const to = it.item ? modLabel(D, it.item) : null;
+  const head = `<span class="eb">${esc(slotName(it.slot))}</span><span class="ti nowrap" style="font-size:22px">${esc(to ? to.text : 'Dejar la ranura vacía')}</span>${to && to.sub ? `<span class="eb dim">${esc(to.sub)}</span>` : ''}`;
+  if (it.kind === 'remove') return box(`${head}<span class="soft" style="font-size:15px">La build no lleva nada en esta ranura: puedes venderlo o guardarlo en el almacén de módulos.</span>`);
+  const eng = it.eng && it.eng.bp ? `<div class="in" style="display:flex;flex-direction:column;gap:2px;padding:8px 12px"><span class="eb">Ingeniería de la build</span><span class="cyan">${esc(engText(it.eng))}</span>${it.kind === 'eng' && it.fromEng ? `<span class="eb dim" style="font-size:10px">Ahora: ${esc(engText(it.fromEng))}</span>` : ''}</div>` : '';
+  if (it.kind === 'eng') return box(`${head}${eng}<span class="note">Ya tienes el módulo: solo falta la ingeniería. En Ingenieros puedes ver quién la hace y qué materiales pide.</span><button type="button" class="tab small" data-goto="ingenieros" style="align-self:flex-start">Ir a Ingenieros</button>`);
+  // dónde comprar
+  const q = ui.buy || {};
+  if (q.item !== it.item && !q.loading) {
+    ui.buy = { item: it.item, loading: true };
+    if (window.edbubble && window.edbubble.buySearch) window.edbubble.buySearch(it.item).then((r) => { if (ui.buy && ui.buy.item === it.item) { ui.buy = { item: it.item, ...r }; render(); } }).catch((e) => { ui.buy = { item: it.item, ok: false, error: e.message }; render(); });
+  }
+  const B = ui.buy || {};
+  const dist = ui.buyDist ?? 0; const sort = ui.buySort || 'dist'; const large = !!ui.buyLarge;
+  const filt = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      ${BUY_DIST.map(([d, t]) => `<button type="button" class="tab small ${dist === d ? 'on' : ''}" data-buydist="${d}">${t}</button>`).join('')}
+      <span style="width:8px"></span><button type="button" class="tab small ${sort === 'dist' ? 'on' : ''}" data-buysort="dist">Más cerca</button><button type="button" class="tab small ${sort === 'price' ? 'on' : ''}" data-buysort="price">Más barato</button>
+      <span style="width:8px"></span><button type="button" class="tab small ${large ? 'on' : ''}" data-buylarge="1">Plataforma L</button></div>`;
+  let list;
+  if (B.loading) list = '<div class="empty">Buscando en Spansh…</div>';
+  else if (B.ok === false) list = `<div class="empty" style="color:var(--amber)">${esc(B.error || 'No se pudo buscar.')}</div>`;
+  else {
+    let r = (B.results || []).filter((x) => (!dist || (x.distance ?? 0) <= dist) && (!large || x.pad === 'L'));
+    r = r.slice().sort(sort === 'price' ? (a, c) => (a.price ?? 9e15) - (c.price ?? 9e15) || (a.distance ?? 0) - (c.distance ?? 0) : (a, c) => (a.distance ?? 0) - (c.distance ?? 0));
+    const { items, pager } = bdPage('buy', r, 7);
+    const best = r.reduce((m, x) => Math.max(m, x.discount || 0), 0);
+    list = `<div style="display:flex;justify-content:space-between;align-items:center"><span class="eb">${nf(r.length)} estaciones${B.ref ? ` · desde ${esc(B.ref)}` : ''}${best ? ` · <span class="cyan">hasta −${best} %</span>` : ''}</span>${pager}</div>
+      <div style="display:flex;flex-direction:column;gap:4px">${items.map((x) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) 120px 150px;gap:10px;align-items:center;padding:6px 12px">
+        <span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap">${esc(x.station)} <span class="soft" style="font-size:12px">· ${esc(x.pad || '?')}${x.carrier ? ' · carrier' : x.planetary ? ' · superficie' : ''}</span></span><span class="eb dim nowrap" style="font-size:10px">${esc(x.system)}${x.ls != null ? ` · ${nf(x.ls)} ls` : ''}${x.power ? ` · ${esc(x.power)}${x.powerState ? ` (${esc(x.powerState)})` : ''}` : ''}</span></span>
+        <span class="num soft" style="text-align:right">${x.distance != null ? `${nf(x.distance, 1)} ly` : '—'}</span>
+        <span style="display:flex;flex-direction:column;align-items:flex-end"><span class="num ${x.discount ? 'cyan' : ''}">${x.price != null ? fmtCr(x.price) : '—'}</span>${x.discount ? `<span class="eb cyan" style="font-size:10px">−${x.discount} %${x.power ? ' · Powerplay' : ''}</span>` : ''}</span></div>`).join('') || '<span class="soft" style="font-size:14px">Ninguna estación con estos filtros entre las 100 más cercanas que lo venden.</span>'}</div>`;
+  }
+  const base = B.results && B.results[0] ? B.results[0].base : (D.modules[it.item] && D.modules[it.item].s ? D.modules[it.item].s.cost : null);
+  return box(`${head}<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Precio normal', base ? fmtCr(base) : '—')}${stat('Ahora en la ranura', it.from ? modLabel(D, it.from).text : 'Vacía')}</div>${eng}${filt}${list}
+    <span class="note" style="margin-top:auto">Datos de Spansh (las 100 estaciones más cercanas que lo venden). El descuento compara con el precio normal; si el sistema tiene potencia, suele ser de Powerplay.</span>`);
 }
 
 /* ---------- Ingenieros (naves y a pie) ---------- */
@@ -2556,10 +2626,35 @@ document.addEventListener('pointerdown', (ev) => {
   if (go) { ev.preventDefault(); goSection(go.dataset.goto); render(); return; }
   const mt = ev.target.closest('[data-mat]');
   if (mt) { ev.preventDefault(); ui.colSel = mt.dataset.mat; ui.colAside = 'buy'; ui.mk.page = 0; ui.mk.pick = null; render(); return; }
+  const bdB = ev.target.closest('button[data-bdpg], button[data-buildsel], button[data-buildstep], button[data-wishsel], button[data-bdelask], button[data-bdelno], button[data-bdel], button[data-buydist], button[data-buysort], button[data-buylarge], button[data-bimport], button[data-shipexp]');
+  if (bdB && !bdB.disabled) {
+    ev.preventDefault(); const d = bdB.dataset;
+    if (d.bdpg) { const k = `bd_${d.bdpg}`; ui[k] = Math.max(0, (ui[k] || 0) + Number(d.d)); }
+    else if (d.buildsel) { ui.buildSel = d.buildsel; ui.buildDel = null; ui.wishSel = null; ui.bd_bmods = 0; ui.bd_wish = 0; }
+    else if (d.buildstep) { const L = ui.builds || []; const i = Math.max(0, Math.min(L.length - 1, L.indexOf(buildSel()) + Number(d.buildstep))); ui.buildSel = L[i] ? L[i].id : null; ui.wishSel = null; ui.bd_wish = 0; }
+    else if (d.wishsel) { ui.wishSel = Number(d.wishsel); ui.bd_buy = 0; }
+    else if (d.bdelask) ui.buildDel = d.bdelask;
+    else if (d.bdelno) ui.buildDel = null;
+    else if (d.bdel) { const id = d.bdel; ui.builds = (ui.builds || []).filter((b) => b.id !== id); ui.buildDel = null; ui.buildSel = null; if (window.edbubble.buildDelete) window.edbubble.buildDelete(id); }
+    else if (d.buydist) { ui.buyDist = Number(d.buydist); ui.bd_buy = 0; }
+    else if (d.buysort) { ui.buySort = d.buysort; ui.bd_buy = 0; }
+    else if (d.buylarge) { ui.buyLarge = !ui.buyLarge; ui.bd_buy = 0; }
+    else if (d.bimport) {
+      ui.eqMsg = { ok: true, text: 'Leyendo el portapapeles…' };
+      window.edbubble.buildImport().then((r) => {
+        if (r && r.ok) { ui.builds = [r.build, ...(ui.builds || [])]; ui.buildSel = r.build.id; ui.wishSel = null; ui.bd_builds = 0; ui.eqTab = 'wish'; ui.eqMsg = { ok: true, text: `Build importada: ${r.build.shipName}${r.build.name ? ` «${r.build.name}»` : ''} · ${(r.build.wish || []).length} cambios respecto a tu nave` }; }
+        else ui.eqMsg = { ok: false, text: (r && r.error) || 'No se pudo importar.' };
+        render();
+      });
+    } else if (d.shipexp) {
+      window.edbubble.shipExport(d.shipexp).then((r) => { ui.eqMsg = r && r.ok ? { ok: true, text: r.copied ? 'SLEF copiado: pégalo en Inara, EDSY o Coriolis.' : `Abierto en ${d.shipexp === 'edsy' ? 'EDSY' : 'Coriolis'}, en tu navegador.` } : { ok: false, text: (r && r.error) || 'No se pudo exportar.' }; render(); });
+    }
+    render(); return;
+  }
   const eqBtn = ev.target.closest('[data-eqtab], [data-eqship], [data-eqcat], [data-eqgrp]');
   if (eqBtn) {
     ev.preventDefault(); const d = eqBtn.dataset;
-    if (d.eqtab) ui.eqTab = d.eqtab;
+    if (d.eqtab) { ui.eqTab = d.eqtab; ui.eqMsg = null; }
     else if (d.eqship) ui.eqShip = d.eqship;
     else if (d.eqcat) { ui.eqCat = d.eqcat; ui.eqGrpPage = 0; ui.eqGrp = null; }
     else ui.eqGrp = d.eqgrp;

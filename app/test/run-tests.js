@@ -688,6 +688,35 @@ test('combate: objetivo, zona de conflicto, bonos por cobrar, masacres y salto a
   assert.strictEqual(combat.view(s).conflicts[0].type, 'Guerra civil');
 });
 
+test('builds: ranuras de la nave, exportar/importar (EDSY, Coriolis, SLEF) y lista de deseos', () => {
+  const B = require('../../core/builds');
+  const slots = B.slotsFor('lakonminer').map((x) => x.slot);
+  assert.ok(slots.includes('LargeMiningHardpoint1') && slots.includes('MediumHardpoint3') && slots.includes('LimpetController01') && slots.includes('FighterBay01') && slots.includes('Slot10_Size1'));
+  const pan = B.slotsFor('panthermkii').map((x) => x.slot);
+  assert.ok(pan.includes('Cargo01') && pan.includes('Cargo02') && pan.includes('Slot02_Size7'));
+  const mine = [{ slot: 'Armour', item: 'lakonminer_armour_grade1' }, { slot: 'MediumMiningHardpoint1', item: 'hpt_mining_seismchrgwarhd_fixed_medium' }, { slot: 'Slot06_Size4', item: 'int_shieldgenerator_size4_class5', eng: { bp: 'ShieldGenerator_Optimised', level: 5 } }, { slot: 'TinyHardpoint2', item: 'hpt_plasmapointdefence_turret_tiny' }];
+  const lay = B.layout('lakonminer', mine);
+  assert.strictEqual(lay.hard.find((x) => x.slot === 'LargeMiningHardpoint1').module, null, 'ranura vacía');
+  const L = { event: 'Loadout', Ship: 'LakonMiner', ShipName: 'Ideal', Modules: [
+    { Slot: 'Armour', Item: 'LakonMiner_Armour_Grade1' }, { Slot: 'MediumMiningHardpoint1', Item: 'hpt_mining_seismchrgwarhd_fixed_medium' },
+    { Slot: 'LargeMiningHardpoint1', Item: 'hpt_miningtoolv2_fixed_large' }, { Slot: 'Slot06_Size4', Item: 'int_shieldgenerator_size4_class5_strong' },
+    { Slot: 'PaintJob', Item: 'paintjob_x' }] };
+  for (const kind of ['edsy', 'coriolis']) {
+    const url = B.exportUrl(kind, L);
+    assert.ok(url.startsWith(kind === 'edsy' ? 'https://edsy.org/#/I=' : 'https://coriolis.io/import?data='));
+    const b = B.parse(url);
+    assert.strictEqual(b.ship, 'lakonminer'); assert.strictEqual(b.modules.length, 4, 'sin la pintura');
+  }
+  const b = B.parse(B.toSlef(L, 'x'));
+  assert.strictEqual(b.app, 'ED BUBBLE'); assert.strictEqual(b.name, 'Ideal');
+  const d = B.diff(b, mine);
+  assert.deepStrictEqual(d.map((x) => [x.slot, x.kind]), [['LargeMiningHardpoint1', 'add'], ['TinyHardpoint2', 'remove'], ['Slot06_Size4', 'buy']]);
+  assert.strictEqual(B.itemDone(d[0], [...mine, { slot: 'LargeMiningHardpoint1', item: 'hpt_miningtoolv2_fixed_large' }]), true);
+  assert.throws(() => B.parse('https://coriolis.io/outfit/mamba?code=A0p'), /código propio/);
+  assert.throws(() => B.parse('hola'), /SLEF/);
+  assert.strictEqual(B.moduleInfo('int_cargorack_size6_class1').name, 'Cargo Rack', 'no la versión Merc');
+});
+
 (async () => {
   for (const [name, fn] of asyncTests) {
     try { await fn(); ok += 1; console.log(`  OK  ${name}`); } catch (e) { fail += 1; console.log(`  FALLA  ${name}\n        ${e.message}`); }

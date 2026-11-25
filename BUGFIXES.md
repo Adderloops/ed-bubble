@@ -19,6 +19,8 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 8 | Estación › Ingenieros: los de a pie con estado «Invited» no contaban como desbloqueados (en Odyssey ya dan acceso) | Adder (captura del juego) | 0.7.0-beta.2 | 0.7.0-beta.3 | Publicado |
 | 9 | A pie › Taquilla: los botones Bienes, Componentes, Datos y Consumibles se salen del panel | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
 | 10 | Equipo › Naves: la lista no deja ver todas las naves (el paginador queda fuera del panel) | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
+| 11 | Equipo › Tu nave: no salían las ranuras vacías, y algunas ranuras y recetas salían con el nombre interno («MEDIUMMININGHARDPOINT1», «LIMPETCONTROLLER01», «CARGORACKS6C1 EXTENDED») | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
+| 12 | Equipo: 22 módulos normales salían con el nombre de su versión Merc («Extended Cargo Rack», «Long Range Detailed Surface Scanner», «Far-Reaching Abrasion Blaster»…) y algunos sin precio | Revisión al hacer la lista de deseos | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
 
 ## Detalle
 
@@ -143,3 +145,18 @@ Revisado todo lo que la app toma del Journal y de los archivos del juego:
 - **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** 0.7.0-beta.4
 - **Qué pasaba:** la lista mostraba 17 naves (de la Adder a la Dolphin) y no había forma de ver el resto.
 - **Causa:** cada página tenía 20 naves y no cabían en el panel: las últimas filas y los botones ‹ › para pasar de página quedaban cortados por debajo. Ahora son 14 por página (4 páginas) y los botones se ven. Se ha comprobado con un recorrido automático que ninguna otra lista de la app se sale de su panel.
+
+### 11 · Tu nave: faltan las ranuras vacías y hay nombres internos
+
+- **Informado por:** Adder (25-11-2026), con captura de su Type-11 Prospector.
+- **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** 0.7.0-beta.4
+- **Qué pasaba:** solo salían las ranuras con módulo, y las ranuras mineras, el control de drones, el hangar y algunas recetas salían con el nombre interno del juego.
+- **Causa:** el evento `Loadout` solo trae las ranuras ocupadas. Ahora la app genera todas las ranuras de cada nave (con los nombres del juego) y marca las vacías; las ranuras especiales tienen nombre en español («Anclaje minero mediano 1», «Control de drones», «Hangar», «Militar 1») y las recetas sin traducción se muestran legibles («Extended»).
+
+### 12 · Módulos con el nombre de su versión Merc
+
+- **Encontrado por:** revisión (25-11-2026), al preparar la lista de deseos.
+- **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** 0.7.0-beta.4
+- **Qué pasaba:** en Tu nave, la bodega normal de clase 6 salía como «Extended Cargo Rack», el escáner de superficie como «Long Range Detailed Surface Scanner», etc.
+- **Causa:** en la lista de EDCD FDevIDs, los módulos Merc (preingenierizados) comparten símbolo con el módulo normal, y al montar `shipdata.json` la fila Merc pisó a la normal en 22 módulos (con precio 0 en algunos). Se ha restaurado el nombre, la categoría y el precio normal de esos 22.
+

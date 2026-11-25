@@ -348,8 +348,15 @@ app.whenReady().then(() => {
     spansh.setFetch(async (url) => new Response(fs.readFileSync(path.join(dir, /field_values/.test(url) ? 'suggest.json' : /stations\/search/.test(url) ? 'markets.json' : /api\/body\//.test(url) ? 'body.json' : 'search.json'))));
   }
   engine = new Engine({ folder: process.env.ED_JOURNAL_FOLDER || undefined });
+  // Flota: los módulos de cada nave que has usado (para comparar builds), guardados entre sesiones
+  // porque el historial que se lee al arrancar solo cubre los últimos diarios
+  const FLEET_FILE = path.join(app.getPath('userData'), 'fleet.json');
+  try { engine.state.fleet = JSON.parse(fs.readFileSync(FLEET_FILE, 'utf8')) || {}; } catch (e) { /* aún no hay */ }
+  let fleetSaved = JSON.stringify(engine.state.fleet || {});
   engine.on('update', (snap) => {
     last = snap;
+    const fj = JSON.stringify(snap.state.fleet || {});
+    if (fj !== fleetSaved) { fleetSaved = fj; try { fs.writeFileSync(FLEET_FILE, fj); } catch (e) { /* no se guarda */ } }
     snap.view.mine = mineView(snap);
     if (win && !win.isDestroyed()) win.webContents.send('ed:update', snap);
     lookFuelStops(snap);
@@ -499,6 +506,42 @@ app.whenReady().then(() => {
     const es = {};
     for (const [en, v] of Object.entries(require('../core/shipengineers').MODULES)) es[norm(en)] = v.es;
     return { ships: d.ships, modules: d.modules, es };
+  });
+  // Builds importadas y su lista de deseos: se guardan en builds.json hasta que el usuario las borre
+  const builds = require('../core/builds');
+  const BUILDS_FILE = path.join(app.getPath('userData'), 'builds.json');
+  const readBuilds = () => { try { const b = JSON.parse(fs.readFileSync(BUILDS_FILE, 'utf8')); return Array.isArray(b) ? b : []; } catch (e) { return []; } };
+  const writeBuilds = (b) => { try { fs.writeFileSync(BUILDS_FILE, JSON.stringify(b)); } catch (e) { logLine(`[builds] no se pudo guardar: ${e.message}`); } };
+  ipcMain.handle('ed:builds', () => readBuilds());
+  ipcMain.handle('ed:build-import', async () => {
+    const text = String((await clipboard.readText()) || '').slice(0, 2000000);
+    try {
+      const b = builds.parse(text);
+      const st = engine.snapshot().state;
+      const mine = (st.fleet || {})[b.ship];
+      const wish = builds.diff(b, mine ? mine.modules : []);
+      const item = { id: `b${Date.now().toString(36)}`, at: new Date().toISOString(), ...b, against: mine ? { name: mine.name, ident: mine.ident } : null, wish };
+      const list = readBuilds(); list.unshift(item); writeBuilds(list.slice(0, 50));
+      return { ok: true, build: item };
+    } catch (e) { return { ok: false, error: e.message }; }
+  });
+  ipcMain.handle('ed:build-delete', (_e, id) => { writeBuilds(readBuilds().filter((b) => b.id !== id)); return true; });
+  ipcMain.handle('ed:ship-export', async (_e, kind) => {
+    const L = engine.snapshot().state.ship.loadout;
+    if (!L) return { ok: false, error: 'El diario aún no ha escrito los módulos de tu nave.' };
+    if (kind === 'slef') { await clipboard.writeText(builds.toSlef(L, require('./package.json').version)); return { ok: true, copied: true }; }
+    const url = builds.exportUrl(kind, L);
+    if (!url) return { ok: false, error: 'No se pudo crear el enlace.' };
+    shell.openExternal(url);
+    return { ok: true };
+  });
+  ipcMain.handle('ed:buy-search', async (_e, item) => {
+    const info = builds.moduleInfo(item);
+    const st = engine.snapshot().state;
+    const ref = st.location && st.location.system;
+    if (!info) return { ok: false, error: 'No conozco ese módulo.' };
+    if (!ref) return { ok: false, error: 'Aún no sé en qué sistema estás.' };
+    try { return { ok: true, ref, info, results: await spansh.outfitting({ item: String(item).toLowerCase(), info, reference: ref }) }; } catch (e) { return { ok: false, error: e.message }; }
   });
   // mercancías por tipo de construcción de colonización (datos fijos de SrvSurvey / Raven Colonial)
   ipcMain.handle('ed:colcosts', () => require('../core/colcosts').costList());
