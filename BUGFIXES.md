@@ -25,6 +25,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 14 | Con el instalador, los paneles se descuadran (botones cortados, como las pestañas de Colonización) | Specter A.G. (captura vía Adder) | 0.7.0-beta.1 | 0.7.0-beta.4 | Corregido |
 | 15 | Combate › Tu nave: el casco marcaba 100 % con la nave al 53 % | Adder (captura del juego) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido (limitación del juego) |
 | 16 | Minería › Sitios de la flota: «Usar la conexión de Skull Mining (EDMC)» no encuentra la URL ni la clave | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
+| 17 | Órbita planetaria › Cuerpo: sin gravedad, temperatura ni radio | Specter A.G. (captura vía Adder) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
 
 ## Detalle
 
@@ -191,4 +192,14 @@ Revisado todo lo que la app toma del Journal y de los archivos del juego:
 - **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** 0.7.0-beta.4
 - **Qué pasaba:** al pulsar «Usar la conexión de Skull Mining (EDMC)» salía «No encuentro la URL o la clave en los ajustes de Skull Mining en EDMC», aunque el plugin estaba configurado.
 - **Causa:** la app buscaba los ajustes en el registro de Windows, donde los guardaba EDMC 5. EDMC 6 los pasó a `%LOCALAPPDATA%\EDMarketConnector\config.toml` (sección `[settings]`, claves `skullmining_url` y `skullmining_token`). Ahora se lee primero ese archivo y, si no existe, el registro.
+
+### 17 · Ficha del cuerpo vacía
+
+- **Informado por:** Adder (25-11-2026), con captura de Specter A.G. en Col 285 Sector TV-I b11-3 AB 1.
+- **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** 0.7.0-beta.4
+- **Qué pasaba:** la tarjeta Cuerpo mostraba el nombre pero «—» en gravedad, temperatura y radio.
+- **Causas:**
+  - Ese cuerpo está en Spansh pero sin datos (nadie lo ha escaneado: ni gravedad, ni temperatura, ni radio, ni BodyID), y en el diario de Specter no había escaneo suyo. Eso no se puede rellenar desde fuera: ahora la tarjeta lo explica y pide escanearlo con el FSS o con sondas.
+  - La ficha solo se buscaba tras el evento `ApproachBody`; si la app se abría ya en el planeta (o se llegaba de otra forma), no se buscaba. Ahora también vale el cuerpo de `Location`, `SupercruiseExit`, `Touchdown` y `Liftoff`, y el de `Status.json` si el diario tiene su BodyID.
+  - El radio sale ahora también de `Status.json` (`PlanetRadius`), que el juego da siempre cerca de un planeta.
 

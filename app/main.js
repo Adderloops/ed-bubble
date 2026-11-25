@@ -226,8 +226,14 @@ async function lookHere(snap) {
 let bodyLooked = null;
 const bodyInfo = {}; // por nombre, para la ventana aunque se abra después de la consulta
 async function lookBody(snap) {
-  const a = snap.state.location.approach;
-  const id = a ? spansh.bodyId64(a.systemAddress, a.bodyId) : null;
+  let a = snap.state.location.approach;
+  // sin ApproachBody (p. ej. la app se abrió ya en la superficie): el cuerpo de Status.json y su BodyID del escaneo
+  if (!a || a.bodyId == null) {
+    const name = snap.state.status && snap.state.status.bodyName;
+    const jb = name && snap.state.bodies && snap.state.bodies[name];
+    if (jb && jb.id != null && snap.state.location.systemAddress != null) a = { body: name, bodyId: jb.id, systemAddress: snap.state.location.systemAddress };
+  }
+  const id = a && a.bodyId != null && a.systemAddress != null ? spansh.bodyId64(a.systemAddress, a.bodyId) : null;
   if (!id || id === bodyLooked) return;
   bodyLooked = id;
   try {

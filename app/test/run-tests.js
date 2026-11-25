@@ -746,6 +746,17 @@ test('casco: el del caza no cuenta como el de tu nave; se guarda la hora del dat
   assert.strictEqual(s.ship.hull, 1);
 });
 
+test('cuerpo: se sabe en qué planeta estás aunque no haya ApproachBody (Location, SupercruiseExit, Touchdown)', () => {
+  const s = model.createState();
+  model.applyEvent(s, ev('Location', { StarSystem: 'X', SystemAddress: 100, Body: 'X AB 1', BodyID: 7, BodyType: 'Planet', Docked: false }));
+  assert.deepStrictEqual(s.location.approach, { body: 'X AB 1', bodyId: 7, systemAddress: 100 });
+  const s2 = model.createState();
+  model.applyEvent(s2, ev('Location', { StarSystem: 'X', SystemAddress: 100, Body: 'X', BodyID: 0, BodyType: 'Star', Docked: false }));
+  assert.strictEqual(s2.location.approach, null, 'una estrella no');
+  model.applyEvent(s2, ev('Touchdown', { Body: 'X 2 a', BodyID: 12, SystemAddress: 100, Latitude: 1, Longitude: 2 }));
+  assert.strictEqual(s2.location.approach.bodyId, 12);
+});
+
 (async () => {
   for (const [name, fn] of asyncTests) {
     try { await fn(); ok += 1; console.log(`  OK  ${name}`); } catch (e) { fail += 1; console.log(`  FALLA  ${name}\n        ${e.message}`); }

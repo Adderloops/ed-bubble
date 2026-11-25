@@ -1207,8 +1207,9 @@ function screenOrbita(s, v) {
       <span class="va nowrap" style="font-size:22px">${esc(b.name)}</span>
       <span class="eb dim nowrap">${esc(cls)}${atmo ? ` · ${esc(atmo)}` : ''}</span>
       <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
-        ${stat('Gravedad', fmtGravity(s))}${stat('Temperatura', temp != null ? `${nf(temp, 0)} K` : '—')}${stat('Radio', (jb.radius || sp.radius) ? `${nf(jb.radius ? jb.radius / 1000 : sp.radius, 0)} km` : '—')}
+        ${stat('Gravedad', fmtGravity(s))}${stat('Temperatura', temp != null ? `${nf(temp, 0)} K` : '—')}${stat('Radio', (jb.radius || sp.radius || s.status.planetRadius) ? `${nf(jb.radius ? jb.radius / 1000 : sp.radius || s.status.planetRadius / 1000, 0)} km` : '—')}
       </div>
+      ${!b.sp && jb.gravity == null && jb.temperature == null ? '<span class="note">Sin datos de este cuerpo: nadie lo ha escaneado aún en Spansh y en tu diario no hay escaneo. Escanéalo con el FSS (o con sondas) y aparecerán aquí; la gravedad también sale al bajar a pie.</span>' : ''}
     </section>`;
 
   // Exobiología: señales, géneros (DSS), muestras tomadas y especies conocidas (Spansh)

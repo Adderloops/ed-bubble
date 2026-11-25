@@ -202,6 +202,7 @@ const HANDLERS = {
     state.location.docked = !!e.Docked;
     state.location.station = e.Docked ? (e.StationName || null) : null;
     state.location.stationType = e.Docked ? (e.StationType || null) : null;
+    if (e.BodyType === 'Planet') setApproachFrom(state, e);
     pushLog(state, e, 'Posición', e.Docked ? `${e.StationName} · ${e.StarSystem}` : e.StarSystem);
   },
   FSDJump(state, e) {
@@ -238,6 +239,7 @@ const HANDLERS = {
   SupercruiseEntry(state, e) { state.location.body = null; pushLog(state, e, 'Supercrucero', 'Entrada'); },
   SupercruiseExit(state, e) {
     if (e.Body) { state.location.body = e.Body; state.location.bodyType = e.BodyType || null; }
+    if (e.BodyType === 'Planet') setApproachFrom(state, e);
     pushLog(state, e, 'Supercrucero', `Salida · ${e.Body || ''}`);
   },
   ApproachBody(state, e) {
@@ -322,8 +324,8 @@ const HANDLERS = {
     state.location.docked = false; state.location.station = null; state.location.stationType = null;
     pushLog(state, e, 'Despegue', e.StationName);
   },
-  Touchdown(state, e) { state.location.landed = true; pushLog(state, e, 'Aterrizaje', e.Body || ''); },
-  Liftoff(state, e) { state.location.landed = false; pushLog(state, e, 'Despegue', e.Body || ''); },
+  Touchdown(state, e) { setApproachFrom(state, e); state.location.landed = true; pushLog(state, e, 'Aterrizaje', e.Body || ''); },
+  Liftoff(state, e) { setApproachFrom(state, e); state.location.landed = false; pushLog(state, e, 'Despegue', e.Body || ''); },
   FuelScoop(state, e) { pushLog(state, e, 'Recogida de combustible', `${fmtNum(e.Scooped, 1)} t`); },
   RefuelAll(state, e) { pushLog(state, e, 'Repostaje', `${fmtNum(e.Amount, 1)} t`); },
   Interdicted(state, e) { pushLog(state, e, 'Interdicción', e.Submitted ? 'Sometido' : (e.Interdictor || ''), 'warn'); },
@@ -462,6 +464,14 @@ function addMat(state, name, n) {
   state.materials[k] = Math.max(0, (state.materials[k] || 0) + (Number(n) || 0));
 }
 // ranuras de aspecto (pintura, cabina, voz…) que no son módulos
+/** Cuerpo planetario en el que estás (para buscar su ficha en Spansh) aunque no haya ApproachBody. */
+function setApproachFrom(state, e) {
+  if (!e.Body || e.BodyID == null) return;
+  if (e.BodyType && e.BodyType !== 'Planet') return;
+  const a = state.location.approach;
+  if (a && a.body === e.Body && a.bodyId != null) return;
+  state.location.approach = { body: e.Body, bodyId: e.BodyID, systemAddress: e.SystemAddress ?? state.location.systemAddress };
+}
 const COSMETIC = /^(PaintJob|ShipCockpit|CargoHatch|VesselVoice|Decal\d*|ShipName\d*|ShipID\d*|Bobble\d*|WeaponColour|EngineColour|StringLights|ShipKitSpoiler|ShipKitWings|ShipKitTail|ShipKitBumper)$/i;
 function suitFrom(raw, id, mods) { return { id, key: String(raw || '').toLowerCase(), name: suitName(raw), grade: gradeOf(raw), mods: mods || [] }; }
 function weaponFrom(m) {
