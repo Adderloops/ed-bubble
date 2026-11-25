@@ -2,8 +2,8 @@
 
 Errores encontrados en las versiones publicadas y versión en la que se corrigen.
 
-- **Versión actual publicada:** 0.7.0-beta.3 (24-11-2026)
-- **Versión anterior:** 0.7.0-beta.2 (24-11-2026)
+- **Versión actual publicada:** 0.7.0-beta.4 (25-11-2026)
+- **Versión anterior:** 0.7.0-beta.3 (24-11-2026)
 
 Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo, pendiente de publicar) · **Publicado** (incluido en una versión publicada).
 
@@ -17,15 +17,15 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 6 | Nombre de las construcciones: el prefijo «Orbital Construction Site:» solo se quitaba en inglés | Revisión de idiomas | 0.7.0-beta.1 | 0.7.0-beta.2 | Publicado |
 | 7 | A pie › Mejoras: el material propio del traje Maverick era Titanium Plating (es Carbon Fibre Plating) | Adder (Odyssey Materials Helper) | 0.7.0-beta.2 | 0.7.0-beta.3 | Publicado |
 | 8 | Estación › Ingenieros: los de a pie con estado «Invited» no contaban como desbloqueados (en Odyssey ya dan acceso) | Adder (captura del juego) | 0.7.0-beta.2 | 0.7.0-beta.3 | Publicado |
-| 9 | A pie › Taquilla: los botones Bienes, Componentes, Datos y Consumibles se salen del panel | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
-| 10 | Equipo › Naves: la lista no deja ver todas las naves (el paginador queda fuera del panel) | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
-| 11 | Equipo › Tu nave: no salían las ranuras vacías, y algunas ranuras y recetas salían con el nombre interno («MEDIUMMININGHARDPOINT1», «LIMPETCONTROLLER01», «CARGORACKS6C1 EXTENDED») | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
-| 12 | Equipo: 22 módulos normales salían con el nombre de su versión Merc («Extended Cargo Rack», «Long Range Detailed Surface Scanner», «Far-Reaching Abrasion Blaster»…) y algunos sin precio | Revisión al hacer la lista de deseos | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
+| 9 | A pie › Taquilla: los botones Bienes, Componentes, Datos y Consumibles se salen del panel | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado |
+| 10 | Equipo › Naves: la lista no deja ver todas las naves (el paginador queda fuera del panel) | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado |
+| 11 | Equipo › Tu nave: no salían las ranuras vacías, y algunas ranuras y recetas salían con el nombre interno («MEDIUMMININGHARDPOINT1», «LIMPETCONTROLLER01», «CARGORACKS6C1 EXTENDED») | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado |
+| 12 | Equipo: 22 módulos normales salían con el nombre de su versión Merc («Extended Cargo Rack», «Long Range Detailed Surface Scanner», «Far-Reaching Abrasion Blaster»…) y algunos sin precio | Revisión al hacer la lista de deseos | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado |
 | 13 | Vuelo › Plataformas: en las estaciones Dodec, el esquema de la plataforma de atraque a veces no es correcto | Adder | 0.7.0-beta.3 | — | Abierto |
-| 14 | Con el instalador, los paneles se descuadran (botones cortados, como las pestañas de Colonización) | Specter A.G. (captura vía Adder) | 0.7.0-beta.1 | 0.7.0-beta.4 | Corregido |
-| 15 | Combate › Tu nave: el casco marcaba 100 % con la nave al 53 % | Adder (captura del juego) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido (limitación del juego) |
-| 16 | Minería › Sitios de la flota: «Usar la conexión de Skull Mining (EDMC)» no encuentra la URL ni la clave | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
-| 17 | Órbita planetaria › Cuerpo: sin gravedad, temperatura ni radio | Specter A.G. (captura vía Adder) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
+| 14 | Con el instalador, los paneles se descuadran (botones cortados, como las pestañas de Colonización) | Specter A.G. (captura vía Adder) | 0.7.0-beta.1 | 0.7.0-beta.4 | Publicado |
+| 15 | Combate › Tu nave: el casco marcaba 100 % con la nave al 53 % | Adder (captura del juego) | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado (limitación del juego) |
+| 16 | Minería › Sitios de la flota: «Usar la conexión de Skull Mining (EDMC)» no encuentra la URL ni la clave | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado |
+| 17 | Órbita planetaria › Cuerpo: sin gravedad, temperatura ni radio | Specter A.G. (captura vía Adder) | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado |
 
 ## Detalle
 
