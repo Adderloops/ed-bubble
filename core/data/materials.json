@@ -1,5 +1,5 @@
 {
- "_nota": "Materiales de ingeniería de nave: nombre en el juego en español, categoría, grado y máximo que se puede llevar. Nombres en español y máximos transcritos de capturas del juego de Adder (25-11-2026); símbolos y nombres en inglés de EDCD FDevIDs (material.csv). Los marcados con «verificar» no están aún en FDevIDs: falta su símbolo del diario.",
+ "_nota": "Materiales de ingeniería de nave: nombre en el juego en español, categoría, grado y máximo que se puede llevar. Nombres en español y máximos transcritos de capturas del juego de Specter A.G. (enviadas por Adder, 25-11-2026); símbolos y nombres en inglés de EDCD FDevIDs (material.csv). Los marcados con «verificar» no están aún en FDevIDs: falta su símbolo del diario.",
  "materials": {
   "carbon": {
    "symbol": "Carbon",

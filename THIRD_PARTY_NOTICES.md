@@ -69,5 +69,5 @@ ED BUBBLE lee y escribe builds en SLEF (Ship Loadout Exchange Format, formato p�
 
 ## Materiales de ingeniería (español y máximos)
 
-`core/data/materials.json`: los 146 materiales de ingeniería de nave (en bruto, fabricados y codificados, también guardianes y thargoides) con su nombre en español del juego, categoría, grado y cuánto se puede llevar como máximo. Nombres en español y máximos transcritos a mano de capturas del juego de Adder (25-11-2026); símbolos y nombres en inglés de EDCD FDevIDs (material.csv). Nueve materiales thargoides recientes no están todavía en FDevIDs y van marcados para verificar su símbolo.
+`core/data/materials.json`: los 146 materiales de ingeniería de nave (en bruto, fabricados y codificados, también guardianes y thargoides) con su nombre en español del juego, categoría, grado y cuánto se puede llevar como máximo. Nombres en español y máximos transcritos a mano de capturas del juego de Specter A.G. (enviadas por Adder, 25-11-2026); símbolos y nombres en inglés de EDCD FDevIDs (material.csv). Nueve materiales thargoides recientes no están todavía en FDevIDs y van marcados para verificar su símbolo.
 
