@@ -88,7 +88,7 @@ Sección del grupo Nave, con tres columnas (datos de `core/combat.js`):
 
 - **Botones** (pulsan las teclas de tu preset; necesitan tecla de **teclado** asignada en el juego):
   - **Fijar planta de energía** (grande, resaltado): la misma secuencia que el botón de la página Combate de Touch Portal: 6 pulsaciones de «Subsistema anterior» (`CyclePreviousSubsystem`), porque el juego no tiene tecla directa para la planta.
-  - **Obj. compañero 1/2/3**: fija al compañero de ala (`TargetWingman0/1/2`) y su objetivo (`SelectTargetsTarget`).
+  - **Fijar objetivo de mi compañero**: fija a tu compañero de ala (el primero, `TargetWingman0`) y después su objetivo (`SelectTargetsTarget`).
   - **Caza**: atacar mi objetivo, atacar a discreción, defenderme, alto el fuego, mantener posición, seguirme, volver a la nave y abrir órdenes (`Order…` y `OpenOrders`). El caza se lanza desde el panel de funciones del juego (no hay tecla para eso).
 
 No muestra pips, grupo de fuego ni arma seleccionada. Salto automático a Combate al desplegar el armamento con el HUD en modo combate (no en modo análisis), al entrar en una zona de combate o si te atacan, interdictan o derribas a alguien (90 s), salvo en supercrucero, atracado o aterrizado; se desactiva en Ajustes.

@@ -200,3 +200,4 @@ button.eng-mod.click:hover { color: #fff; }
 .act.pp:not(:disabled):hover { background: linear-gradient(180deg, #ffc266, #f0962f); border-color: #fff0d0; }
 .act.pp .k { color: #3a2508; font-size: 12px; }
 .act.sm { height: 44px; font-size: 13px; }
+.act.wing { height: 58px; font-size: 17px; letter-spacing: .1em; }

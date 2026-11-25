@@ -31,7 +31,7 @@ const ACTIONS = {
   // Combate. «Fijar planta de energía»: como el botón de la página Combate de Touch Portal,
   // 6 pulsaciones de «subsistema anterior» (en el juego no hay tecla directa para la planta).
   powerplant:  { label: 'Fijar planta de energía', steps: [press('CyclePreviousSubsystem'), wait(40), press('CyclePreviousSubsystem'), wait(40), press('CyclePreviousSubsystem'), wait(40), press('CyclePreviousSubsystem'), wait(40), press('CyclePreviousSubsystem'), wait(40), press('CyclePreviousSubsystem')] },
-  wing1:       { label: 'Objetivo del compañero 1', steps: [press('TargetWingman0'), wait(250), press('SelectTargetsTarget')] },
+  wing1:       { label: 'Fijar objetivo de mi compañero', steps: [press('TargetWingman0'), wait(250), press('SelectTargetsTarget')] },
   wing2:       { label: 'Objetivo del compañero 2', steps: [press('TargetWingman1'), wait(250), press('SelectTargetsTarget')] },
   wing3:       { label: 'Objetivo del compañero 3', steps: [press('TargetWingman2'), wait(250), press('SelectTargetsTarget')] },
   wingtarget:  { label: 'Objetivo del compañero fijado', steps: [press('SelectTargetsTarget')] },

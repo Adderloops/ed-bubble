@@ -1684,7 +1684,7 @@ function screenCombate(s, v) {
   const left = `<aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">
       <section class="pn card" style="flex:1;min-height:0;overflow:hidden;border-left:3px solid ${t && t.hostile ? 'var(--cyan)' : t && t.legal === 'Clean' ? 'var(--amber)' : 'var(--line2)'}"><span class="eb">Objetivo</span>${tgt}</section>
       ${cbAct('powerplant', 'Fijar planta de energía', 'pp')}
-      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${cbAct('wing1', 'Obj. compañero 1')}${cbAct('wing2', 'Obj. compañero 2')}${cbAct('wing3', 'Obj. compañero 3')}</div>
+      ${cbAct('wing1', 'Fijar objetivo de mi compañero', 'wing')}
       ${own}
     </aside>`;
 
