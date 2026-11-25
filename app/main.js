@@ -13,7 +13,7 @@ const fs = require('fs');
 const { Engine } = require('../core/engine');
 const binds = require('../core/binds');
 const actions = require('../core/actions');
-const { KeySender } = require('../core/keysender');
+const { KeySender, canSend, pressOps } = require('../core/keysender');
 const spansh = require('../core/spansh');
 const { plotRoute } = require('../core/plot');
 const geo = require('../core/geo');
@@ -379,8 +379,45 @@ app.whenReady().then(() => {
   keys.start();
   ipcMain.on('ed:log', (_e, msg) => { console.warn('[ventana]', msg); logLine(`[ventana] ${msg}`); });
   ipcMain.handle('ed:controls', () => controlsInfo());
+  // «Fijar planta de energía»: pulsa «siguiente subsistema» y mira en el diario (ShipTargeted)
+  // qué subsistema queda fijado, hasta llegar a la planta (o hasta dar la vuelta entera).
+  const isPowerPlant = (t) => !!t && (/powerplant/i.test(t.subSym || '') || /power ?plant|planta de energ/i.test(t.subsystem || ''));
+  async function targetPowerPlant() {
+    const b = controls.binds && controls.binds.CycleNextSubsystem;
+    if (!controls.binds) return { ok: false, error: 'no-binds' };
+    if (!canSend(b)) return { ok: false, error: 'no-key', action: 'CycleNextSubsystem' };
+    const C = () => engine.state.combat || {};
+    const t0 = C().target;
+    if (!t0) return { ok: false, error: 'no-target' };
+    if ((t0.stage || 0) < 3) return { ok: false, error: 'not-scanned' };
+    if (isPowerPlant(t0)) return { ok: true, already: true };
+    const seen = new Set();
+    for (let i = 0; i < 14; i += 1) {
+      const before = C().target ? C().target.seq : null;
+      const prevSub = C().target ? C().target.subsystem : null;
+      const res = await keys.run(i === 0 ? [{ op: 'focus' }, { op: 'sleep', ms: 120 }, ...pressOps(b)] : pressOps(b));
+      if (!res.ok || res.simulated) return res;
+      let t = null; const end = Date.now() + 1500;
+      while (Date.now() < end) {
+        await new Promise((r) => setTimeout(r, 80));
+        t = C().target;
+        if (!t) return { ok: false, error: 'target-lost' };
+        if (t.seq !== before && t.subsystem && t.subsystem !== prevSub) break; // el subsistema nuevo
+      }
+      if (isPowerPlant(t)) return { ok: true, presses: i + 1 };
+      if (!t || !t.subsystem || t.seq === before || t.subsystem === prevSub) return { ok: false, error: 'no-journal' };
+      if (seen.has(t.subsystem)) return { ok: false, error: 'no-powerplant' };
+      seen.add(t.subsystem);
+    }
+    return { ok: false, error: 'no-powerplant' };
+  }
   ipcMain.handle('ed:run', async (_e, id) => {
     if (plotting) return { ok: false, error: 'plot-busy' };
+    if (id === 'powerplant') {
+      const r = await targetPowerPlant();
+      if (!r.ok) logLine(`[teclas] powerplant: ${r.error}`);
+      return r;
+    }
     const built = actions.build(String(id), controls.binds);
     if (built.error) return { ok: false, error: built.error, action: built.action };
     const res = await keys.run(built.ops);

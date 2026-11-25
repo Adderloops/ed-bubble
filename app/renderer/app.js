@@ -332,6 +332,11 @@ const ERRORS = {
   'no-binds': 'No he podido leer tus controles',
   'no-key': 'Esa acción no tiene tecla de teclado en tu preset',
   timeout: 'El ayudante de teclas no responde',
+  'no-target': 'Fija antes una nave como objetivo',
+  'not-scanned': 'Espera a que termine el escaneo del objetivo',
+  'target-lost': 'Se ha perdido el objetivo',
+  'no-powerplant': 'Ese objetivo no tiene planta de energía que fijar',
+  'no-journal': 'El diario no confirma el subsistema: inténtalo otra vez',
   'helper-exited': 'El ayudante de teclas se ha cerrado; reintenta',
 };
 
@@ -1626,7 +1631,7 @@ function screenPowerplay(s, v) {
 }
 
 /* ---------- Combate ---------- */
-const CB_PER = { kills: 6, cobrar: 6, masacre: 6, conflictos: 3 };
+const CB_PER = { kills: 6, cobrar: 3, masacre: 3, conflictos: 2 };
 function cbPager(key, page, pages) {
   return pages > 1 ? `<span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-cbpg="${key}" data-d="-1" ${page === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${page + 1}/${pages}</span><button type="button" class="pg" data-cbpg="${key}" data-d="1" ${page >= pages - 1 ? 'disabled' : ''}>›</button></span>` : '';
 }
@@ -1641,6 +1646,11 @@ function cbBar(label, pct, col) {
 }
 const agoText = (iso) => { if (!iso) return ''; const sec = Math.max(0, (Date.now() - Date.parse(iso)) / 1000); return sec < 60 ? 'ahora' : sec < 3600 ? `hace ${Math.round(sec / 60)} min` : `${String(iso).slice(0, 10)} ${hhmm(iso)}`; };
 
+function cbAct(id, label, extra = '') {
+  const a = actAttrs(id);
+  return `<button type="button" class="act${a.cls || ''} ${extra}" data-act="${id}" ${a.dis} title="${esc(a.title)}">${label}${a.key ? `<span class="k">${esc(a.key)}</span>` : ''}</button>`;
+}
+const FIGHTER = [['f_focus', 'Atacar mi objetivo'], ['f_attack', 'Atacar a discreción'], ['f_defend', 'Defenderme'], ['f_hold', 'Alto el fuego'], ['f_pos', 'Mantener posición'], ['f_follow', 'Seguirme'], ['f_dock', 'Volver a la nave'], ['f_orders', 'Abrir órdenes']];
 function screenCombate(s, v) {
   const c = v.combat || {};
   const t = c.target;
@@ -1673,11 +1683,13 @@ function screenCombate(s, v) {
         ${stat('Escudos', shieldsUp === false ? 'Caídos' : shieldsUp ? 'Activos' : '—', shieldsUp === false ? 'red' : 'cyan')}
         ${stat('Casco', hull != null ? `${nf(hull * 100)} %` : '—', hull != null && hull < 0.5 ? 'red' : '')}
         ${stat('Estado legal', s.cmdr.legalState === 'Clean' ? 'Limpio' : or(s.cmdr.legalState), s.cmdr.legalState && s.cmdr.legalState !== 'Clean' ? 'amber' : '')}
-        ${stat('Caza', c.fighter ? `Fuera · ${c.fighter.crew ? 'tripulante' : 'tú'}` : 'En el hangar')}
       </div>
+      <span class="nowrap" style="display:block;overflow:hidden">${feedbackLine()}</span>
     </section>`;
   const left = `<aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">
-      <section class="pn card" style="flex:1;min-height:0;border-left:3px solid ${t && t.hostile ? 'var(--cyan)' : t && t.legal === 'Clean' ? 'var(--amber)' : 'var(--line2)'}"><span class="eb">Objetivo</span>${tgt}</section>
+      <section class="pn card" style="flex:1;min-height:0;overflow:hidden;border-left:3px solid ${t && t.hostile ? 'var(--cyan)' : t && t.legal === 'Clean' ? 'var(--amber)' : 'var(--line2)'}"><span class="eb">Objetivo</span>${tgt}</section>
+      ${cbAct('powerplant', 'Fijar planta de energía', 'pp')}
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${cbAct('wing1', 'Obj. compañero 1')}${cbAct('wing2', 'Obj. compañero 2')}${cbAct('wing3', 'Obj. compañero 3')}</div>
       ${own}
     </aside>`;
 
@@ -1746,7 +1758,10 @@ function screenCombate(s, v) {
       }).join('') || '<span class="soft" style="font-size:14px">No hay guerras ni elecciones en este sistema.</span>'}</div>
       <span class="note" style="margin-top:auto">Los números grandes son los días ganados de cada bando. El diario los da al entrar en el sistema.</span>`;
   }
-  const right = `<aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0"><section class="pn card" style="flex:1;min-height:0;overflow:hidden">${tabs}${body}</section></aside>`;
+  const fighter = `<section class="pn card" style="gap:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Caza</span><span class="eb ${c.fighter ? 'cyan' : 'dim'}">${c.fighter ? `Fuera · ${c.fighter.crew ? 'tripulante' : 'tú'}` : 'En el hangar'}</span></div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">${FIGHTER.map(([id, l]) => cbAct(id, l, 'sm')).join('')}</div>
+      <span class="note">Para lanzar el caza usa el panel de funciones (derecha) del juego.</span></section>`;
+  const right = `<aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${fighter}<section class="pn card" style="flex:1;min-height:0;overflow:hidden">${tabs}${body}</section></aside>`;
   return `<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) 440px;gap:12px;min-height:0;height:100%">${left}${mid}${right}</div>`;
 }
 
@@ -2393,7 +2408,7 @@ function screenAjustes(s, v) {
       ${setRow('jump.vuelo', 'Vuelo', 'Vuelas, saltas o vas en supercrucero', p.jump.vuelo, off)}
       ${setRow('jump.orbita', 'Órbita planetaria', 'Te acercas a un planeta o aterrizas', p.jump.orbita, off)}
       ${setRow('jump.mineria', 'Minería', 'Minas con el Rhino o con la nave', p.jump.mineria, off)}
-      ${setRow('jump.combate', 'Combate', 'Zona de combate o te atacan', p.jump.combate !== false, off)}
+      ${setRow('jump.combate', 'Combate', 'Armamento desplegado, zona de combate o te atacan', p.jump.combate !== false, off)}
       ${setRow('jump.approach', 'Vuelo · plataformas', 'Te conceden el atraque', p.jump.approach, off)}
       ${setRow('jump.docked', 'Estación', 'Atracas en una estación', p.jump.docked, off)}
       ${setRow('jump.depot', 'Colonización', 'Atracas en una construcción', p.jump.depot, off)}

@@ -30,6 +30,8 @@ function flightMode(state) {
     return { key: atDepot ? 'docked-depot' : 'docked', label: 'Atracado', section: atDepot ? 'colonizacion' : 'estacion' };
   }
   // minería con la nave: hubo prospección, dron o refinado hace menos de 5 minutos
+  // armamento desplegado con el HUD en modo combate (no análisis): Combate, aunque estuvieras minando
+  if (f.areHardpointsDeployed && !f.isHUDInAnalysisMode && !f.isSupercruise && !state.docking.active) return { key: 'combat', label: 'Armamento desplegado', section: 'combate' };
   const m = state.mining;
   if (m && m.lastAt && !f.isSupercruise && Date.parse(state.status.timestamp || new Date().toISOString()) - Date.parse(m.lastAt) < 5 * 60 * 1000) return { key: 'mining', label: 'Minando', section: 'mineria' };
   // combate: en una zona de conflicto o de extracción, o te han atacado / has derribado a alguien hace poco

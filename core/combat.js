@@ -112,10 +112,12 @@ const H = {
       shield: e.ShieldHealth ?? (prev && prev.shield) ?? null,
       hull: e.HullHealth ?? (prev && prev.hull) ?? null,
       subsystem: e.Subsystem_Localised || e.Subsystem || null,
+      subSym: e.Subsystem || null,
       subHealth: e.SubsystemHealth ?? null,
       power: e.Power || (prev && prev.power) || null,
       at: e.timestamp || null,
     };
+    c.targetSeq = (c.targetSeq || 0) + 1; t.seq = c.targetSeq;
     t.legalEs = t.legal ? (LEGAL_ES[t.legal] || t.legal) : null;
     t.hostile = t.legal ? HOSTILE.has(t.legal) : null;
     c.target = t;

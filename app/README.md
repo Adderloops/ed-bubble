@@ -86,7 +86,12 @@ Sección del grupo Nave, con tres columnas (datos de `core/combat.js`):
 - **Masacres**: progreso de cada misión de masacre. Cada baja cuenta para la primera misión sin terminar de cada facción emisora, como en el juego, y se marca «entrégala» al completarse. Arriba, las bajas que faltan para la pila más larga.
 - **Conflictos**: guerras, guerras civiles y elecciones del sistema, con lo que está en juego y los días ganados de cada bando.
 
-No muestra pips, grupo de fuego ni arma seleccionada. Salto automático a Combate al entrar en una zona de combate o si te atacan, interdictan o derribas a alguien (90 s), salvo en supercrucero, atracado o aterrizado; se desactiva en Ajustes.
+- **Botones** (pulsan las teclas de tu preset; necesitan tecla de **teclado** asignada en el juego):
+  - **Fijar planta de energía** (grande, resaltado): pulsa «Siguiente subsistema» (`CycleNextSubsystem`) y lee en el diario (`ShipTargeted`, que el juego escribe al cambiar de subsistema) cuál queda fijado, hasta llegar a la planta o dar la vuelta entera. Necesita un objetivo escaneado del todo.
+  - **Obj. compañero 1/2/3**: fija al compañero de ala (`TargetWingman0/1/2`) y su objetivo (`SelectTargetsTarget`).
+  - **Caza**: atacar mi objetivo, atacar a discreción, defenderme, alto el fuego, mantener posición, seguirme, volver a la nave y abrir órdenes (`Order…` y `OpenOrders`). El caza se lanza desde el panel de funciones del juego (no hay tecla para eso).
+
+No muestra pips, grupo de fuego ni arma seleccionada. Salto automático a Combate al desplegar el armamento con el HUD en modo combate (no en modo análisis), al entrar en una zona de combate o si te atacan, interdictan o derribas a alguien (90 s), salvo en supercrucero, atracado o aterrizado; se desactiva en Ajustes.
 
 ## Equipo
 

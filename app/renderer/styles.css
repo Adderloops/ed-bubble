@@ -193,3 +193,10 @@ button.eng-mod.click:hover { color: #fff; }
 .eq-mod { display: flex; flex-direction: column; gap: 1px; padding: 4px 12px; min-width: 0; }
 .eq-mod.off { opacity: .55; }
 .eq-table { display: grid; gap: 4px 12px; align-items: baseline; font-size: 14px; }
+
+/* Combate: botón principal (se usa siempre) y botones pequeños del caza */
+.act.pp { height: 84px; font-size: 24px; letter-spacing: .14em; }
+.act.pp:not(:disabled) { color: #1a1206; background: linear-gradient(180deg, #ffb347, #e8892a); border: 2px solid #ffd08a; box-shadow: 0 0 18px rgba(255,160,60,.35); }
+.act.pp:not(:disabled):hover { background: linear-gradient(180deg, #ffc266, #f0962f); border-color: #fff0d0; }
+.act.pp .k { color: #3a2508; font-size: 12px; }
+.act.sm { height: 44px; font-size: 13px; }
