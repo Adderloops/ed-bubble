@@ -1907,11 +1907,11 @@ function slotLayout(sh) {
   if (!sh.slots) return '';
   const sz = (x) => (typeof x === 'number' ? x : x.cl);
   const hp = sh.slots.hardpoints.filter((x) => sz(x) > 0); const ut = sh.slots.hardpoints.filter((x) => sz(x) === 0).length;
-  const hpTxt = [4, 3, 2, 1].map((k) => { const n = hp.filter((x) => sz(x) === k).length; return n ? `${n} ${{ 4: 'enorme', 3: 'grande', 2: 'mediana', 1: 'pequeña' }[k]}${n > 1 ? (k === 4 ? 's' : 's') : ''}` : ''; }).filter(Boolean).join(' · ');
+  const hpTxt = [4, 3, 2, 1].map((k) => { const n = hp.filter((x) => sz(x) === k).length; return n ? `${n} ${{ 4: 'enorme', 3: 'grande', 2: 'mediano', 1: 'pequeño' }[k]}${n > 1 ? 's' : ''}` : ''; }).filter(Boolean).join(' · ');
   const std = sh.slots.standard; const names = ['Planta', 'Propulsores', 'FSD', 'Soporte vital', 'Distribuidor', 'Sensores', 'Tanque'];
   return `<div style="display:flex;flex-direction:column;gap:6px">
-    <span class="eb dim">Núcleo</span><span style="font-size:13px;line-height:1.4">${std.map((c, i) => `${names[i] || '?'} ${c}`).join(' · ')}</span>
-    <span class="eb dim">Armas y utilidades</span><span style="font-size:13px">${hpTxt || 'Ninguna'} · ${ut} de utilidad</span>
+    <span class="eb dim">Internos principales</span><span style="font-size:13px;line-height:1.4">${std.map((c, i) => `${names[i] || '?'} ${c}`).join(' · ')}</span>
+    <span class="eb dim">Anclajes y apoyo</span><span style="font-size:13px">${hpTxt ? `Anclajes: ${hpTxt}` : 'Sin anclajes'} · ${ut} de apoyo</span>
     <span class="eb dim">Internos opcionales</span><span style="font-size:13px;line-height:1.4">${sh.slots.internal.map((x) => (typeof x === 'number' ? x : `${x.cl} (${{ Military: 'militar', PlanetaryApproachSuite: 'aprox. planetaria', Passenger: 'pasajeros', Storage: 'almacén' }[x.name] || x.name})`)).join(' · ')}</span>
   </div>`;
 }
@@ -1950,7 +1950,7 @@ function eqMine(s, D) {
   };
   return `${hero}<div style="flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-height:0">${col('Internos principales', core, 'core')}${col('Anclajes y apoyo', hard, 'hard')}${col('Internos opcionales', opt, 'opt')}</div>`;
 }
-const SHIP_PAGE = 20;
+const SHIP_PAGE = 14;
 function eqShips(D) {
   const list = Object.entries(D.ships).map(([k, v]) => ({ k, ...v })).sort((a, b) => a.n.localeCompare(b.n));
   const pages = Math.max(1, Math.ceil(list.length / SHIP_PAGE));

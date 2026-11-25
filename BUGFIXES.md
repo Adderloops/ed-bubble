@@ -18,6 +18,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 7 | A pie › Mejoras: el material propio del traje Maverick era Titanium Plating (es Carbon Fibre Plating) | Adder (Odyssey Materials Helper) | 0.7.0-beta.2 | 0.7.0-beta.3 | Publicado |
 | 8 | Estación › Ingenieros: los de a pie con estado «Invited» no contaban como desbloqueados (en Odyssey ya dan acceso) | Adder (captura del juego) | 0.7.0-beta.2 | 0.7.0-beta.3 | Publicado |
 | 9 | A pie › Taquilla: los botones Bienes, Componentes, Datos y Consumibles se salen del panel | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
+| 10 | Equipo › Naves: la lista no deja ver todas las naves (el paginador queda fuera del panel) | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
 
 ## Detalle
 
@@ -135,3 +136,10 @@ Revisado todo lo que la app toma del Journal y de los archivos del juego:
 - **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** 0.7.0-beta.4
 - **Qué pasaba:** en A pie › Taquilla, los cuatro botones de categoría no cabían en una fila: «Componentes» y «Consumibles» se cortaban y el último se salía del panel.
 - **Causa:** con la ventana más estrecha que la pantalla completa, la columna no da para cuatro botones con esos nombres. Ahora van en dos filas de dos, como las categorías de Equipo.
+
+### 10 · Equipo › Naves: no se ven todas las naves
+
+- **Informado por:** Adder (25-11-2026), con captura.
+- **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** 0.7.0-beta.4
+- **Qué pasaba:** la lista mostraba 17 naves (de la Adder a la Dolphin) y no había forma de ver el resto.
+- **Causa:** cada página tenía 20 naves y no cabían en el panel: las últimas filas y los botones ‹ › para pasar de página quedaban cortados por debajo. Ahora son 14 por página (4 páginas) y los botones se ven. Se ha comprobado con un recorrido automático que ninguna otra lista de la app se sale de su panel.
