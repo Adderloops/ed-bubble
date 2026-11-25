@@ -1676,9 +1676,10 @@ function screenCombate(s, v) {
       <span class="ti" style="font-size:16px">Tu nave</span>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
         ${stat('Escudos', shieldsUp === false ? 'Caídos' : shieldsUp ? 'Activos' : '—', shieldsUp === false ? 'red' : 'cyan')}
-        ${stat('Casco', hull != null ? `${nf(hull * 100)} %` : '—', hull != null && hull < 0.5 ? 'red' : '')}
+        ${stat(`Casco · ${s.ship.hullAt ? `dato de las ${hhmm(s.ship.hullAt)}` : 'último dato'}`, hull != null ? `${nf(hull * 100)} %` : '—', hull != null && hull < 0.5 ? 'red' : '')}
         ${stat('Estado legal', s.cmdr.legalState === 'Clean' ? 'Limpio' : or(s.cmdr.legalState), s.cmdr.legalState && s.cmdr.legalState !== 'Clean' ? 'amber' : '')}
       </div>
+      <span class="note">El juego no informa del casco de tu nave durante el combate: el dato es de la última vez que lo escribió (al cargar la partida, atracar o equipar). Míralo en el panel de la nave.</span>
       <span class="nowrap" style="display:block;overflow:hidden">${feedbackLine()}</span>
     </section>`;
   const left = `<aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">
@@ -1953,7 +1954,7 @@ function eqMine(s, v, D) {
   const hero = `<section class="pn card" style="gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px">
         <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span class="eb">${esc(sh ? sh.n : S.typeLocalised || S.type)}${S.ident ? ` · ${esc(S.ident)}` : ''}${sh && sh.spec ? ` · ${esc(sh.spec.manufacturer)}` : ''}</span><span class="ti nowrap" style="font-size:30px">${esc(or(S.name, sh ? sh.n : S.type))}</span></span>
-        <div style="display:grid;grid-template-columns:repeat(6,auto);gap:8px">${stat('Salto máx.', S.maxJumpRange ? `${nf(S.maxJumpRange, 2)} ly` : '—', 'cyan')}${stat('Carga', S.cargoCapacity != null ? `${nf(S.cargoCapacity)} t` : '—')}${stat('Casco', S.hull != null ? `${nf(S.hull * 100)} %` : '—')}${stat('Reembolso', S.rebuy != null ? `${nf(S.rebuy)} cr` : '—')}${stat('Ingeniería', `${engN} / ${mods.length}`)}${stat('Ranuras libres', nf(free), free ? 'amber' : '')}</div>
+        <div style="display:grid;grid-template-columns:repeat(6,auto);gap:8px">${stat('Salto máx.', S.maxJumpRange ? `${nf(S.maxJumpRange, 2)} ly` : '—', 'cyan')}${stat('Carga', S.cargoCapacity != null ? `${nf(S.cargoCapacity)} t` : '—')}${stat('Casco · último dato', S.hull != null ? `${nf(S.hull * 100)} %` : '—')}${stat('Reembolso', S.rebuy != null ? `${nf(S.rebuy)} cr` : '—')}${stat('Ingeniería', `${engN} / ${mods.length}`)}${stat('Ranuras libres', nf(free), free ? 'amber' : '')}</div>
       </div></section>`;
   const PER = 13;
   const col = (title, list, key) => {

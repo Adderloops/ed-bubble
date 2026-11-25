@@ -23,6 +23,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 12 | Equipo: 22 módulos normales salían con el nombre de su versión Merc («Extended Cargo Rack», «Long Range Detailed Surface Scanner», «Far-Reaching Abrasion Blaster»…) y algunos sin precio | Revisión al hacer la lista de deseos | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
 | 13 | Vuelo › Plataformas: en las estaciones Dodec, el esquema de la plataforma de atraque a veces no es correcto | Adder | 0.7.0-beta.3 | — | Abierto |
 | 14 | Con el instalador, los paneles se descuadran (botones cortados, como las pestañas de Colonización) | Specter A.G. (captura vía Adder) | 0.7.0-beta.1 | 0.7.0-beta.4 | Corregido |
+| 15 | Combate › Tu nave: el casco marcaba 100 % con la nave al 53 % | Adder (captura del juego) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido (limitación del juego) |
 
 ## Detalle
 
@@ -175,4 +176,11 @@ Revisado todo lo que la app toma del Journal y de los archivos del juego:
 - **Encontrado en:** 0.7.0-beta.1 (afecta a todas las betas publicadas) · **Corregido en:** 0.7.0-beta.4
 - **Qué pasaba:** a Specter, con la app instalada, las pestañas de Colonización (Comprar, A bordo, Entregas, Planificar) no cabían y «Planificar» salía cortado. A Adder, que la arranca desde el repositorio, se veía bien.
 - **Causa:** no era la resolución: la app dibuja siempre una pantalla de 1920×1080 y la escala entera a la ventana. El problema eran los tipos de letra (Rajdhani, Exo 2 y Share Tech Mono): el instalador los copiaba a `node_modules`, pero electron-builder borra de ahí lo que no está en las dependencias, así que la versión instalada usaba las letras de Windows, más anchas, y los textos se salían de sus botones. Ahora el instalador los lleva dentro de `renderer/fontsource` (comprobado: 106 archivos de letra en el paquete y cargados al arrancar), y la preparación del instalador falla si los enlaces a las letras cambian.
+
+### 15 · Casco de tu nave desactualizado en combate
+
+- **Informado por:** Adder (25-11-2026), con captura del panel de la nave (casco al 53 %) y la app marcando 100 %.
+- **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** 0.7.0-beta.4 (en lo que se puede)
+- **Qué pasaba:** la app mostraba el casco como si fuera el actual.
+- **Causa:** el juego no informa del casco de tu nave mientras vuelas: ni `Status.json` lo trae ni el diario escribió ningún `HullDamage` en ese combate (solo `UnderAttack` y `ShieldState`). El dato sale de `Loadout` (al cargar la partida, atracar o equipar). Además, la app tomaba como tuyo el `HullDamage` de tu caza si lo pilotabas tú (`Fighter: true`). Ahora la tarjeta dice de qué hora es el dato y avisa de que en combate hay que mirarlo en el panel de la nave; el casco del caza ya no se mezcla, y las reparaciones del casco (`Repair` / `RepairAll`) lo ponen al 100 %.
 

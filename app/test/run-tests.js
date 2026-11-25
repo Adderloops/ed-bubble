@@ -734,6 +734,18 @@ test('combate: salto con el armamento desplegado en modo combate y botones de co
   assert.ok(/powerplant/.test(s.combat.target.subSym)); assert.strictEqual(s.combat.target.seq, 1);
 });
 
+test('casco: el del caza no cuenta como el de tu nave; se guarda la hora del dato', () => {
+  const s = model.createState();
+  model.applyEvent(s, ev('Loadout', { timestamp: '2026-11-25T12:00:00Z', Ship: 'lakonminer', HullHealth: 1, Modules: [] }));
+  model.applyEvent(s, ev('HullDamage', { timestamp: '2026-11-25T12:10:00Z', Health: 0.3, PlayerPilot: false, Fighter: true }));
+  model.applyEvent(s, ev('HullDamage', { timestamp: '2026-11-25T12:11:00Z', Health: 0.4, PlayerPilot: true, Fighter: true }));
+  assert.strictEqual(s.ship.hull, 1); assert.strictEqual(s.ship.hullAt, '2026-11-25T12:00:00Z');
+  model.applyEvent(s, ev('HullDamage', { timestamp: '2026-11-25T12:12:00Z', Health: 0.55, PlayerPilot: true, Fighter: false }));
+  assert.strictEqual(s.ship.hull, 0.55);
+  model.applyEvent(s, ev('Repair', { timestamp: '2026-11-25T12:20:00Z', Items: ['Hull'], Cost: 100 }));
+  assert.strictEqual(s.ship.hull, 1);
+});
+
 (async () => {
   for (const [name, fn] of asyncTests) {
     try { await fn(); ok += 1; console.log(`  OK  ${name}`); } catch (e) { fail += 1; console.log(`  FALLA  ${name}\n        ${e.message}`); }

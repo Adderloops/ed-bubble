@@ -175,7 +175,7 @@ const HANDLERS = {
     if (e.MaxJumpRange !== undefined) S.maxJumpRange = e.MaxJumpRange;
     if (e.FuelCapacity) { S.fuelCapacity = e.FuelCapacity.Main; S.reserveCapacity = e.FuelCapacity.Reserve; }
     if (e.CargoCapacity !== undefined) S.cargoCapacity = e.CargoCapacity;
-    if (e.HullHealth !== undefined) S.hull = e.HullHealth;
+    if (e.HullHealth !== undefined) { S.hull = e.HullHealth; S.hullAt = e.timestamp || null; }
     if (e.Rebuy !== undefined) S.rebuy = e.Rebuy;
     if (Array.isArray(e.Modules)) {
       const fsd = e.Modules.find((m) => /hyperdrive/i.test(m.Item || ''));
@@ -329,8 +329,11 @@ const HANDLERS = {
   Interdicted(state, e) { pushLog(state, e, 'Interdicción', e.Submitted ? 'Sometido' : (e.Interdictor || ''), 'warn'); },
   EscapeInterdiction(state, e) { pushLog(state, e, 'Interdicción', 'Evadida', 'warn'); },
   UnderAttack(state, e) { pushLog(state, e, 'Bajo ataque', e.Target || '', 'danger'); },
-  HullDamage(state, e) { if (e.PlayerPilot !== false && e.Health !== undefined) state.ship.hull = e.Health; },
-  RepairAll(state) { state.ship.hull = 1; },
+  // El juego no escribe el casco de tu nave durante el vuelo: solo lo da Loadout (al cargar, atracar o equipar)
+  // y, a veces, HullDamage. HullDamage también llega para el caza (Fighter: true): ese no es tu casco.
+  HullDamage(state, e) { if (e.PlayerPilot !== false && !e.Fighter && e.Health !== undefined) { state.ship.hull = e.Health; state.ship.hullAt = e.timestamp || null; } },
+  RepairAll(state, e) { state.ship.hull = 1; state.ship.hullAt = e.timestamp || null; },
+  Repair(state, e) { const it = [].concat(e.Items || e.Item || []).map((x) => String(x).toLowerCase()); if (it.some((x) => x === 'hull' || x === 'all')) { state.ship.hull = 1; state.ship.hullAt = e.timestamp || null; } },
   Died(state, e) { clearDocking(state); pushLog(state, e, 'Nave destruida', e.KillerName || '', 'danger'); },
   NavRoute() { /* el contenido real está en NavRoute.json */ },
   NavRouteClear(state, e) { state.route = []; state.routeFull = []; pushLog(state, e, 'Ruta borrada', ''); },
