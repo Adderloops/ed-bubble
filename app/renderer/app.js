@@ -1372,7 +1372,7 @@ function screenApie(s, v) {
     const per = 10; const pages = Math.max(1, Math.ceil(list.length / per));
     ui.lockPage = Math.min(ui.lockPage, pages - 1);
     lock = `
-      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px">${LOCK_TABS.map(([k, t]) => `<button type="button" class="tab small ${ui.lockTab === k ? 'on' : ''}" data-locktab="${k}" title="${(src[k] || []).reduce((a, x) => a + x.count, 0)} en total">${t}</button>`).join('')}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">${LOCK_TABS.map(([k, t]) => `<button type="button" class="tab small ${ui.lockTab === k ? 'on' : ''}" data-locktab="${k}" style="white-space:nowrap;min-width:0" title="${(src[k] || []).reduce((a, x) => a + x.count, 0)} en total">${t}</button>`).join('')}</div>
       <span class="eb dim">${nf(list.reduce((a, x) => a + x.count, 0))} en total · ${list.length} tipos</span>
       <div style="display:flex;flex-direction:column;gap:4px">${list.slice(ui.lockPage * per, (ui.lockPage + 1) * per).map((x) => `<div class="in" style="display:flex;justify-content:space-between;gap:10px;padding:7px 12px"><span class="va nowrap">${esc(x.name)}${x.mission ? ' <span class="eb amber" style="font-size:10px">misión</span>' : ''}</span><span class="num">${nf(x.count)}</span></div>`).join('') || '<div class="empty">Vacío</div>'}</div>
       <span style="display:flex;justify-content:flex-end;margin-top:auto">${pager2('lock', ui.lockPage, pages)}</span>`;

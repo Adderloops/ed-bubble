@@ -17,6 +17,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 6 | Nombre de las construcciones: el prefijo «Orbital Construction Site:» solo se quitaba en inglés | Revisión de idiomas | 0.7.0-beta.1 | 0.7.0-beta.2 | Publicado |
 | 7 | A pie › Mejoras: el material propio del traje Maverick era Titanium Plating (es Carbon Fibre Plating) | Adder (Odyssey Materials Helper) | 0.7.0-beta.2 | 0.7.0-beta.3 | Publicado |
 | 8 | Estación › Ingenieros: los de a pie con estado «Invited» no contaban como desbloqueados (en Odyssey ya dan acceso) | Adder (captura del juego) | 0.7.0-beta.2 | 0.7.0-beta.3 | Publicado |
+| 9 | A pie › Taquilla: los botones Bienes, Componentes, Datos y Consumibles se salen del panel | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
 
 ## Detalle
 
@@ -127,3 +128,10 @@ Revisado todo lo que la app toma del Journal y de los archivos del juego:
   - Minería: señales geológicas, zonas de minería del planeta (Spansh) y puntos calientes de cada anillo (DSS o Spansh).
 - **Vuelo**, en el hueco de la aproximación: tarjeta «En este sistema» con las estaciones y portanaves del sistema actual (Spansh), filtrables por tipo con los mismos botones de iconos que Navegación (varios a la vez, «Solo L» y «Todas»). Los portanaves bastión de Powerplay tienen su propio botón y salen en ámbar con su potencia; Spansh los da como «Planetary Outpost» con el nombre «Stronghold Carrier».
 - **Archivos:** `core/model.js`, `core/derive.js`, `core/spansh.js`, `app/main.js`, `app/preload.js`, `app/renderer/app.js`, `app/test/run-tests.js`.
+
+### 9 · Botones de la taquilla desencajados
+
+- **Informado por:** Adder (25-11-2026), con captura.
+- **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** 0.7.0-beta.4
+- **Qué pasaba:** en A pie › Taquilla, los cuatro botones de categoría no cabían en una fila: «Componentes» y «Consumibles» se cortaban y el último se salía del panel.
+- **Causa:** con la ventana más estrecha que la pantalla completa, la columna no da para cuatro botones con esos nombres. Ahora van en dos filas de dos, como las categorías de Equipo.
