@@ -22,7 +22,14 @@ fs.mkdirSync(stage, { recursive: true });
 
 // app/ sin dependencias de desarrollo, pruebas ni salidas de compilación
 for (const f of ['main.js', 'preload.js', 'package.json', 'renderer']) copy(path.join('app', f));
-copy('app/node_modules/@fontsource');
+// Tipos de letra: dentro de renderer/, porque electron-builder quita de node_modules lo que no
+// está en las dependencias del package.json del stage (y sin ellos la app usa letras más anchas
+// y los paneles se descuadran)
+fs.cpSync(path.join(appDir, 'node_modules', '@fontsource'), path.join(stage, 'app', 'renderer', 'fontsource'), { recursive: true });
+const idx = path.join(stage, 'app', 'renderer', 'index.html');
+const html = fs.readFileSync(idx, 'utf8');
+if (!html.includes('../node_modules/@fontsource/')) throw new Error('[stage] index.html ya no enlaza los tipos de letra de node_modules');
+fs.writeFileSync(idx, html.split('../node_modules/@fontsource/').join('fontsource/'));
 copy('core');
 for (const f of ['journal-tailer', 'status-reader', 'powerplay-control', 'powerplay-ranks']) copy(`src/services/${f}.js`);
 copy('definitions/flags.js');

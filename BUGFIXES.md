@@ -22,6 +22,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 11 | Equipo › Tu nave: no salían las ranuras vacías, y algunas ranuras y recetas salían con el nombre interno («MEDIUMMININGHARDPOINT1», «LIMPETCONTROLLER01», «CARGORACKS6C1 EXTENDED») | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
 | 12 | Equipo: 22 módulos normales salían con el nombre de su versión Merc («Extended Cargo Rack», «Long Range Detailed Surface Scanner», «Far-Reaching Abrasion Blaster»…) y algunos sin precio | Revisión al hacer la lista de deseos | 0.7.0-beta.3 | 0.7.0-beta.4 | Corregido |
 | 13 | Vuelo › Plataformas: en las estaciones Dodec, el esquema de la plataforma de atraque a veces no es correcto | Adder | 0.7.0-beta.3 | — | Abierto |
+| 14 | Con el instalador, los paneles se descuadran (botones cortados, como las pestañas de Colonización) | Specter A.G. (captura vía Adder) | 0.7.0-beta.1 | 0.7.0-beta.4 | Corregido |
 
 ## Detalle
 
@@ -167,4 +168,11 @@ Revisado todo lo que la app toma del Journal y de los archivos del juego:
 - **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** pendiente.
 - **Qué pasa:** en las estaciones Dodec, el gráfico que muestra dónde está la plataforma asignada a veces la sitúa mal.
 - **Por hacer:** revisar la distribución de plataformas de las Dodec con capturas del juego (número de plataforma, tamaño y posición) y corregir el esquema. Anotado para el futuro.
+
+### 14 · Paneles descuadrados en la versión instalada
+
+- **Informado por:** Adder (25-11-2026), comparando su pantalla de Colonización con la de Specter A.G.
+- **Encontrado en:** 0.7.0-beta.1 (afecta a todas las betas publicadas) · **Corregido en:** 0.7.0-beta.4
+- **Qué pasaba:** a Specter, con la app instalada, las pestañas de Colonización (Comprar, A bordo, Entregas, Planificar) no cabían y «Planificar» salía cortado. A Adder, que la arranca desde el repositorio, se veía bien.
+- **Causa:** no era la resolución: la app dibuja siempre una pantalla de 1920×1080 y la escala entera a la ventana. El problema eran los tipos de letra (Rajdhani, Exo 2 y Share Tech Mono): el instalador los copiaba a `node_modules`, pero electron-builder borra de ahí lo que no está en las dependencias, así que la versión instalada usaba las letras de Windows, más anchas, y los textos se salían de sus botones. Ahora el instalador los lleva dentro de `renderer/fontsource` (comprobado: 106 archivos de letra en el paquete y cargados al arrancar), y la preparación del instalador falla si los enlaces a las letras cambian.
 
