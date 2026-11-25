@@ -260,6 +260,10 @@ const HANDLERS = {
     if (e.SurfaceTemperature != null) b.temperature = e.SurfaceTemperature;
     if (e.Volcanism !== undefined) b.volcanism = e.Volcanism_Localised || e.Volcanism || '';
     if (Array.isArray(e.Rings)) b.rings = e.Rings.map((r) => r.Name).filter(Boolean);
+    // datos en bruto para predecir especies de exobiología (core/biopredict.js)
+    const keep = ['BodyID', 'BodyName', 'SystemAddress', 'StarType', 'Radius', 'SurfaceTemperature', 'AbsoluteMagnitude', 'DistanceFromArrivalLS', 'Parents', 'SemiMajorAxis',
+      'PlanetClass', 'Landable', 'SurfaceGravity', 'SurfacePressure', 'Atmosphere', 'AtmosphereType', 'AtmosphereComposition', 'Volcanism', 'Materials'];
+    b.scan = Object.fromEntries(keep.filter((k) => e[k] !== undefined).map((k) => [k, e[k]]));
   },
   FSSBodySignals(state, e) { if (e.BodyName) bodySignals(state, e.BodyName, e.BodyID, e.Signals); },
   SAASignalsFound(state, e) {

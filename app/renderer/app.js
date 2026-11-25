@@ -1219,17 +1219,30 @@ function screenOrbita(s, v) {
   const genuses = jb.genuses || [];
   const scanned = Object.entries(b.scans);
   const species = sp.species || [];
+  // predicción de especies (core/biopredict.js con las reglas de SrvSurvey), agrupada por especie
+  const preds = sp.predictions || [];
+  const predGroups = [];
+  for (const p of preds) {
+    let g = predGroups.find((x) => x.species === p.species);
+    if (!g) predGroups.push(g = { species: p.species, genus: p.genus, variants: [], unsure: true });
+    if (p.variant) g.variants.push(p.variant);
+    if (!p.unsure) g.unsure = false;
+  }
+  const GENUS_OF = { Bacterial: 'Bacterium', Fonticulus: 'Fonticulua', Shrubs: 'Frutexa', Tussocks: 'Tussock', Cactoid: 'Cactoida', Clypeus: 'Clypeus', Conchas: 'Concha', Electricae: 'Electricae', Fumerolas: 'Fumerola', Fungoids: 'Fungoida', Osseus: 'Osseus', Recepta: 'Recepta', Stratum: 'Stratum', Tubus: 'Tubus', Aleoids: 'Aleoida', Vents: 'Amphora Plant', Sphere: 'Luteolum Anemone', Cone: 'Bark Mounds', Brancae: 'Brain Trees', Ground_Struct_Ice: 'Crystalline Shards', Tubers: 'Roseum Sinuous Tubers' };
+  const predForGenus = (g) => { const k = GENUS_OF[String(g.key || '').replace(/^\$Codex_Ent_|_Genus_Name;$/g, '')]; return k ? predGroups.filter((x) => x.genus === k) : []; };
+  const shortSp = (x) => x.species.split(' ').slice(1).join(' ') || x.species;
   const dots = (n) => `<span style="display:inline-flex;gap:4px">${[1, 2, 3].map((i) => `<span class="dot ${i <= n ? 'on' : ''}"></span>`).join('')}</span>`;
   const bioRows = [
     ...scanned.map(([, x]) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 12px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:15px">${esc(x.species || x.genus)}</span><span class="eb dim" style="font-size:10px">${x.step >= 3 ? 'Análisis completo' : `Muestra ${x.step} de 3`}</span></span>${dots(x.step)}</div>`),
-    ...genuses.filter((g) => !b.scans[g.key]).map((g) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 12px"><span class="va nowrap" style="font-size:15px">${esc(g.name)}</span><span class="eb dim" style="font-size:10px">Sin muestras</span></div>`),
+    ...genuses.filter((g) => !b.scans[g.key]).map((g) => { const pg = predForGenus(g); return `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 12px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:15px">${esc(g.name)}</span>${pg.length ? `<span class="eb cyan nowrap" style="font-size:10px" title="${esc(pg.map((x) => `${x.species}: ${x.variants.join(', ')}`).join(' · '))}">Posible: ${esc(pg.map(shortSp).join(' · '))}</span>` : ''}</span><span class="eb dim" style="font-size:10px">Sin muestras</span></div>`; }),
+    ...(genuses.length || scanned.length || species.length || b.bio === 0 ? [] : predGroups.map((x) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 12px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:15px">${esc(x.species)}</span><span class="eb dim nowrap" style="font-size:10px">${esc(x.variants.join(', '))}</span></span><span class="eb ${x.unsure ? 'amber' : 'cyan'}" style="font-size:10px" title="${x.unsure ? 'Faltan datos del cuerpo (por ejemplo, la composición de la atmósfera): escanéalo para afinar' : ''}">${x.unsure ? 'Posible ?' : 'Posible'}</span></div>`)),
     ...(genuses.length || scanned.length ? [] : species.map((x) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:6px 12px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:15px">${esc(x.species)}</span><span class="eb dim" style="font-size:10px">${fmtCr(x.value)} · ${x.count} conocida${x.count === 1 ? '' : 's'}</span></span>${x.lat != null ? `<button type="button" class="tab small" data-spot="${x.lat},${x.lon}" title="Fijar como destino la primera posición conocida">Fijar</button>` : '<span></span>'}</div>`)),
   ];
   const BIO_PAGE = 4;
   const bioPages = Math.max(1, Math.ceil(bioRows.length / BIO_PAGE));
   ui.bioPage = Math.min(ui.bioPage, bioPages - 1);
   const bioPager = bioPages > 1 ? `<span style="display:flex;align-items:center;gap:6px"><button type="button" class="pg" data-pager="bio" data-d="-1" ${ui.bioPage === 0 ? 'disabled' : ''}>‹</button><span class="num soft" style="font-size:13px">${ui.bioPage + 1}/${bioPages}</span><button type="button" class="pg" data-pager="bio" data-d="1" ${ui.bioPage >= bioPages - 1 ? 'disabled' : ''}>›</button></span>` : '';
-  const bioSource = scanned.length || genuses.length ? 'Tus escaneos' : species.length ? 'Especies conocidas · Spansh' : '';
+  const bioSource = scanned.length || genuses.length ? `Tus escaneos${predGroups.length ? ' · posibles especies: reglas de SrvSurvey' : ''}` : species.length ? 'Especies conocidas · Spansh' : predGroups.length && b.bio !== 0 ? `Predicción con las reglas de SrvSurvey · datos ${sp.predictionSource === 'journal' ? 'de tu escaneo' : 'de Spansh'}${sp.region ? ` · ${sp.region}` : ''}` : '';
   const bioCard = `
     <section class="pn card" style="min-height:0">
       <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Exobiología</span>${bioPager}</div>

@@ -15,6 +15,7 @@ const binds = require('../core/binds');
 const actions = require('../core/actions');
 const { KeySender } = require('../core/keysender');
 const spansh = require('../core/spansh');
+const biopredict = require('../core/biopredict');
 const { plotRoute } = require('../core/plot');
 const geo = require('../core/geo');
 const commodities = require('../core/commodities');
@@ -234,15 +235,54 @@ async function lookBody(snap) {
     if (jb && jb.id != null && snap.state.location.systemAddress != null) a = { body: name, bodyId: jb.id, systemAddress: snap.state.location.systemAddress };
   }
   const id = a && a.bodyId != null && a.systemAddress != null ? spansh.bodyId64(a.systemAddress, a.bodyId) : null;
-  if (!id || id === bodyLooked) return;
-  bodyLooked = id;
+  if (!id) return;
+  // se vuelve a calcular si llegan escaneos nuevos del sistema (FSS, sondas) o géneros del DSS
+  const bodies = snap.state.bodies || {};
+  const jb = bodies[a.body] || {};
+  const key = `${id}|${Object.values(bodies).filter((x) => x.scan).length}|${(jb.genuses || []).length}|${Object.keys((snap.state.bio || {})[a.bodyId] || {}).length}`;
+  if (key === bodyLooked) return;
+  bodyLooked = key;
+  let info = { body: a.body };
+  try { const b = await spansh.body(id); if (b) info = { ...b, body: a.body }; } catch (e) { logLine(`[spansh] cuerpo ${a.body}: ${e.message}`); }
+  // predicción de exobiología con los datos del diario y, para lo que falte, el volcado de Spansh
   try {
-    const b = await spansh.body(id);
-    if (!b) return;
-    bodyInfo[a.body] = { ...b, body: a.body };
-    if (win && !win.isDestroyed()) win.webContents.send('ed:body', bodyInfo[a.body]);
-  } catch (e) { bodyLooked = null; logLine(`[spansh] cuerpo ${a.body}: ${e.message}`); }
+    let dumpSys = null;
+    try { dumpSys = await spansh.dump(a.systemAddress); } catch (e) { logLine(`[spansh] volcado del sistema: ${e.message}`); }
+    const all = new Map();
+    for (const x of (dumpSys && dumpSys.bodies) || []) all.set(x.bodyId, biopredict.normBody(x, 'spansh'));
+    for (const x of Object.values(bodies)) if (x.scan && x.scan.BodyID != null && (x.scan.SystemAddress == null || x.scan.SystemAddress === a.systemAddress)) all.set(x.scan.BodyID, biopredict.normBody(x.scan, 'journal'));
+    const list = [...all.values()];
+    const me = all.get(a.bodyId);
+    if (me && !me.star) {
+      // si Spansh no tenía la ficha del cuerpo, sus datos físicos salen del volcado
+      if (info.gravity == null && me.gravity != null) info.gravity = me.gravity * 10 / 9.80665;
+      if (info.temperature == null && me.temp != null) info.temperature = me.temp;
+      if (info.radius == null && me.radius != null) info.radius = me.radius / 1000;
+      if (!info.subtype && me.planetClass) info.subtype = me.planetClass;
+      const pos = snap.state.location.starPos || (dumpSys && dumpSys.coords ? [dumpSys.coords.x, dumpSys.coords.y, dumpSys.coords.z] : null);
+      // géneros ya conocidos: los de tu DSS o, si no, los que otros subieron a Spansh
+      const rawDump = ((dumpSys && dumpSys.bodies) || []).find((x) => x.bodyId === a.bodyId);
+      const genusKeys = (jb.genuses || []).length ? jb.genuses.map((g) => g.key) : ((rawDump && rawDump.signals && rawDump.signals.genuses) || []);
+      const known = {
+        genus: genusKeys.map((g) => GENUS_KEYS[String(g || '').replace(/^\$Codex_Ent_|_Genus_Name;$/g, '')]).filter(Boolean),
+        species: Object.fromEntries(Object.values((snap.state.bio || {})[a.bodyId] || {}).filter((x) => x.species).map((x) => [String(x.species).split(' ')[0], x.species])),
+      };
+      const bioCount = ((jb.signals || []).find((x) => x.key === 'biological') || {}).count || 0;
+      const spBio = rawDump && rawDump.signals && rawDump.signals.signals ? rawDump.signals.signals['$SAA_SignalType_Biological;'] || 0 : 0;
+      known.allGenusKnown = known.genus.length > 0 && known.genus.length >= (bioCount || spBio);
+      info.knownGenus = known.genus;
+      info.predictions = me.landable === false ? [] : biopredict.predict(biopredict.bodyProps(me, list, pos), known);
+      info.predictionSource = jb.scan ? 'journal' : 'spansh';
+      info.region = biopredict.regionName(biopredict.regionAt(pos));
+    }
+  } catch (e) { logLine(`[bio] predicción: ${e.message}`); }
+  bodyInfo[a.body] = info;
+  if (win && !win.isDestroyed()) win.webContents.send('ed:body', bodyInfo[a.body]);
 }
+// claves de género del juego (SAASignalsFound) → nombre de género de las reglas
+const GENUS_KEYS = { Bacterial: 'Bacterium', Fonticulus: 'Fonticulua', Shrubs: 'Frutexa', Tussocks: 'Tussock', Cactoid: 'Cactoida', Clypeus: 'Clypeus', Conchas: 'Concha',
+  Electricae: 'Electricae', Fumerolas: 'Fumerola', Fungoids: 'Fungoida', Osseus: 'Osseus', Recepta: 'Recepta', Stratum: 'Stratum', Tubus: 'Tubus', Aleoids: 'Aleoida',
+  Vents: 'Amphora Plant', Sphere: 'Luteolum Anemone', Cone: 'Bark Mounds', Brancae: 'Brain Trees', Ground_Struct_Ice: 'Crystalline Shards', Tubers: 'Roseum Sinuous Tubers' };
 
 async function lookFuelStops(snap) {
   const p = snap.view.fuelPlan;
@@ -365,7 +405,30 @@ function createWindow() {
   }
 }
 
+/**
+ * Lista completa de nebulosas (EDAstro, la misma fuente que SrvSurvey) para predecir Electricae y otras
+ * especies que viven cerca de una nebulosa. Se descarga una vez por semana y se guarda; sin red se usa
+ * la lista que trae la app.
+ */
+async function loadNebulae() {
+  const file = path.join(app.getPath('userData'), 'nebulae.json');
+  let cached = null;
+  try { cached = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { /* aún no hay */ }
+  if (cached && cached.list) biopredict.setNebulae(cached.list);
+  if (process.env.ED_BUBBLE_OFFLINE === '1') return;
+  if (cached && cached.at && Date.now() - cached.at < 7 * 86400000) return;
+  try {
+    const r = await fetch('https://edastro.com/mapcharts/files/nebulae-coordinates.csv', { headers: { 'User-Agent': 'ED-BUBBLE' } });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    // columnas: Name, System, X, Y, Z, Type
+    const list = (await r.text()).split(/\r?\n/).slice(1).map((l) => l.split(',')).filter((p) => p.length >= 5)
+      .map((p) => [Number(p[2]), Number(p[3]), Number(p[4])]).filter((v) => v.every(Number.isFinite));
+    if (list.length > 100) { biopredict.setNebulae(list); fs.writeFileSync(file, JSON.stringify({ at: Date.now(), list })); }
+  } catch (e) { logLine(`[nebulosas] ${e.message}`); }
+}
+
 app.whenReady().then(() => {
+  loadNebulae();
   // Ajustes guardados: se leen lo primero (los controles dependen de ellos)
   const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
   try { settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')) || {}; } catch (e) { /* sin ajustes */ }

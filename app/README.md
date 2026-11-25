@@ -76,6 +76,10 @@ Sección del grupo Viaje (Odyssey):
 - Ranuras: cada traje y arma muestra cuántas ranuras de mejora ocupa de las que da su grado (una por grado a partir de G2).
 - Mejoras de ingeniero: pestaña «Mejoras» junto a Taquilla y Mochila (o tocando el traje o un arma del equipo). Lista las mejoras que aún no lleva esa pieza, con lo que te falta, y al tocar una muestra sus materiales y los ingenieros que la montan. Las mejoras de arma por tipo (alcance, daño en la cabeza, precisión sin apuntar) usan la variante del arma: cinética (Kinematic), láser (Takada) o plasma (Manticore). El acceso a cada ingeniero sale del evento `EngineerProgress` del diario: en Odyssey «Invited» ya da acceso. Si no tienes acceso, dice qué pide para desbloquearlo. Datos en `core/odymods.js`.
 
+## Órbita planetaria · Exobiología: posibles especies
+
+Al acercarte a un planeta, la tarjeta Exobiología predice qué especies puede haber (`core/biopredict.js`), con las reglas de SrvSurvey (`core/data/bio-criteria`). Usa los datos del cuerpo de tu diario (escaneo FSS o sondas) y, si no lo has escaneado, los del volcado de Spansh del sistema (`/api/dump`), la estrella que más lo ilumina, la región de la galaxia, la distancia a la nebulosa más cercana y si estás en una burbuja guardiana. Si ya se conocen los géneros (tu DSS o los que otros subieron a Spansh), solo predice especies de esos géneros, y debajo de cada género sin muestras pone la especie posible. «Posible ?» (ámbar) indica que faltó algún dato del cuerpo para comprobar todas las reglas. Comprobado con 63 cuerpos con vida de los diarios de Adder: acierta el 95 % de los géneros que hay de verdad. Si Spansh no tenía la ficha del cuerpo, la gravedad, la temperatura y el radio salen también del volcado.
+
 ## Combate
 
 Sección del grupo Nave, con tres columnas (datos de `core/combat.js`):

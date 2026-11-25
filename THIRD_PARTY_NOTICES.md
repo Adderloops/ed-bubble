@@ -71,3 +71,33 @@ ED BUBBLE lee y escribe builds en SLEF (Ship Loadout Exchange Format, formato p�
 
 `core/data/materials.json`: los 146 materiales de ingeniería de nave (en bruto, fabricados y codificados, también guardianes y thargoides) con su nombre en español del juego, categoría, grado y cuánto se puede llevar como máximo. Nombres en español y máximos transcritos a mano de capturas del juego de Specter A.G. (enviadas por Adder, 25-11-2026); símbolos y nombres en inglés de EDCD FDevIDs (material.csv). Nueve materiales thargoides recientes no están todavía en FDevIDs y van marcados para verificar su símbolo.
 
+## Exobiología: predicción de especies
+
+- **Reglas de predicción** (`core/data/bio-criteria/*.json`): copiadas sin cambios de SrvSurvey (njthomson, https://github.com/njthomson/SrvSurvey, carpeta `SrvSurvey/bio-criteria`, commit d7e87ef, 18-11-2026), con licencia GPLv3. El intérprete de las reglas (`core/biopredict.js`) es una implementación propia en JavaScript que sigue el formato y el comportamiento de SrvSurvey (`BioCriteria.cs`, `BioPredictor.cs`).
+- **Nebulosas** (`core/data/nebulae.json`): lista de SrvSurvey (`game/Data.cs`, GPLv3), usada si no se puede descargar la lista completa de EDAstro (https://edastro.com/mapcharts/files/nebulae-coordinates.csv), que la app descarga una vez por semana, como hace SrvSurvey. Las posiciones de las burbujas guardianas también siguen a SrvSurvey.
+- **Regiones de la galaxia** (`core/data/regionmap.json`): `RegionMapData.json` de EliteDangerousRegionMap (Ben Peddell / klightspeed, https://github.com/klightspeed/EliteDangerousRegionMap), con licencia MIT:
+
+```
+MIT License
+
+Copyright (c) 2020 Ben Peddell
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+

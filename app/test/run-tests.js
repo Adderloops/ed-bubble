@@ -757,6 +757,25 @@ test('cuerpo: se sabe en qué planeta estás aunque no haya ApproachBody (Locati
   assert.strictEqual(s2.location.approach.bodyId, 12);
 });
 
+test('exobiología: predicción con las reglas de SrvSurvey (cuerpo del diario)', () => {
+  const bp = require('../../core/biopredict');
+  assert.ok(bp.criteria().length >= 21, 'reglas cargadas');
+  assert.strictEqual(bp.flatStar('M_RedGiant'), 'M'); assert.strictEqual(bp.flatStar('DAB'), 'D'); assert.strictEqual(bp.flatStar('K (Yellow-Orange) Star'), 'K'); assert.strictEqual(bp.flatStar('AeBe'), 'Ae');
+  const c = bp.parseClause('  gravity [0.26 ~ 0.57]'); assert.deepStrictEqual([c.op, c.min, c.max], ['range', 0.26, 0.57]);
+  assert.strictEqual(bp.parseClause('# comentario'), null);
+  const star = bp.normBody({ BodyID: 0, BodyName: 'X A', StarType: 'F', Radius: 8e8, SurfaceTemperature: 6500, DistanceFromArrivalLS: 0 }, 'journal');
+  const body = bp.normBody({ BodyID: 3, BodyName: 'X 1', PlanetClass: 'Rocky body', Landable: true, SurfaceGravity: 1.5, SurfaceTemperature: 180, SurfacePressure: 1500, Atmosphere: 'thin carbon dioxide atmosphere', AtmosphereType: 'CarbonDioxide',
+    AtmosphereComposition: [{ Name: 'CarbonDioxide', Percent: 99 }, { Name: 'SulphurDioxide', Percent: 1 }], Volcanism: '', Materials: [{ Name: 'iron', Percent: 20 }], Parents: [{ Star: 0 }], DistanceFromArrivalLS: 500, SemiMajorAxis: 1e11 }, 'journal');
+  const props = bp.bodyProps(body, [star, body], [0, 0, 0]);
+  assert.deepStrictEqual(props.Star, ['F']); assert.strictEqual(props.PrimaryStar, 'F'); assert.strictEqual(props.Region, '18', 'Sol está en Inner Orion Spur');
+  const pr = bp.predict(props);
+  assert.ok(pr.length > 0, 'predice algo');
+  assert.ok(pr.some((p) => p.genus === 'Bacterium'), 'Bacterium en un mundo rocoso con CO2');
+  const only = bp.predict(props, { genus: ['Stratum'], allGenusKnown: true });
+  assert.ok(only.every((p) => p.genus === 'Stratum'), 'si se conocen los géneros, solo esos');
+  assert.strictEqual(bp.inGuardianBubble([1099, -146, -133]), true);
+});
+
 (async () => {
   for (const [name, fn] of asyncTests) {
     try { await fn(); ok += 1; console.log(`  OK  ${name}`); } catch (e) { fail += 1; console.log(`  FALLA  ${name}\n        ${e.message}`); }

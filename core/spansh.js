@@ -156,6 +156,14 @@ function bodyId64(systemAddress, bodyId) {
   if (systemAddress == null || bodyId == null) return null;
   return (BigInt(systemAddress) + (BigInt(bodyId) << 55n)).toString();
 }
+/** Volcado completo de un sistema (todos sus cuerpos con sus datos físicos), para predecir exobiología. */
+function dump(systemAddress) {
+  if (systemAddress == null) return Promise.resolve(null);
+  return cached(`d:${systemAddress}`, async () => {
+    const d = await getJson(`https://spansh.co.uk/api/dump/${encodeURIComponent(String(systemAddress))}`);
+    return (d && d.system) || null;
+  });
+}
 function body(id64) {
   if (!id64) return Promise.resolve(null);
   return cached(`b:${id64}`, async () => {
@@ -223,4 +231,4 @@ function outfitting({ item, info, reference }) {
   });
 }
 
-module.exports = { body, bodyId64, markets, outfitting, setFetch, suggest, system, normalise, stationKind, padSize };
+module.exports = { body, dump, bodyId64, markets, outfitting, setFetch, suggest, system, normalise, stationKind, padSize };
