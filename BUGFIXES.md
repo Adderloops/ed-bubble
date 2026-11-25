@@ -199,7 +199,7 @@ Revisado todo lo que la app toma del Journal y de los archivos del juego:
 - **Encontrado en:** 0.7.0-beta.3 · **Corregido en:** 0.7.0-beta.4
 - **Qué pasaba:** la tarjeta Cuerpo mostraba el nombre pero «—» en gravedad, temperatura y radio.
 - **Causas:**
-  - Ese cuerpo está en Spansh pero sin datos (nadie lo ha escaneado: ni gravedad, ni temperatura, ni radio, ni BodyID), y en el diario de Specter no había escaneo suyo. Eso no se puede rellenar desde fuera: ahora la tarjeta lo explica y pide escanearlo con el FSS o con sondas.
+  - Ese cuerpo está en Spansh pero sin datos (nadie lo ha escaneado: ni gravedad, ni temperatura, ni radio, ni BodyID), y en el diario de Specter no había escaneo suyo. Eso no se puede rellenar desde fuera: ahora la tarjeta muestra un aviso destacado («Este cuerpo no está escaneado en Spansh») que pide escanearlo con el FSS o con sondas.
   - La ficha solo se buscaba tras el evento `ApproachBody`; si la app se abría ya en el planeta (o se llegaba de otra forma), no se buscaba. Ahora también vale el cuerpo de `Location`, `SupercruiseExit`, `Touchdown` y `Liftoff`, y el de `Status.json` si el diario tiene su BodyID.
   - El radio sale ahora también de `Status.json` (`PlanetRadius`), que el juego da siempre cerca de un planeta.
 

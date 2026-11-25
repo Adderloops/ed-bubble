@@ -1209,7 +1209,10 @@ function screenOrbita(s, v) {
       <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
         ${stat('Gravedad', fmtGravity(s))}${stat('Temperatura', temp != null ? `${nf(temp, 0)} K` : '—')}${stat('Radio', (jb.radius || sp.radius || s.status.planetRadius) ? `${nf(jb.radius ? jb.radius / 1000 : sp.radius || s.status.planetRadius / 1000, 0)} km` : '—')}
       </div>
-      ${!b.sp && jb.gravity == null && jb.temperature == null ? '<span class="note">Sin datos de este cuerpo: nadie lo ha escaneado aún en Spansh y en tu diario no hay escaneo. Escanéalo con el FSS (o con sondas) y aparecerán aquí; la gravedad también sale al bajar a pie.</span>' : ''}
+      ${jb.gravity == null && jb.temperature == null && sp.gravity == null && sp.temperature == null ? `<div class="in" style="display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-color:var(--amber);border-left:3px solid var(--amber)">
+        <span class="eb amber">Este cuerpo no está escaneado en Spansh</span>
+        <span style="font-size:14px">Nadie ha subido aún sus datos, y en tu diario tampoco hay escaneo. <b>Escanéalo con el FSS</b> (o con sondas, el DSS) y la gravedad, la temperatura y el resto aparecerán aquí. Si usas EDMC, tu escaneo llegará también a Spansh para los demás.</span>
+      </div>` : ''}
     </section>`;
 
   // Exobiología: señales, géneros (DSS), muestras tomadas y especies conocidas (Spansh)
