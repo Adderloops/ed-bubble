@@ -72,7 +72,11 @@ class Engine extends EventEmitter {
       // materiales de ingeniería de nave: el total al arrancar el juego y lo que cambia después
       'Materials', 'MaterialCollected', 'MaterialDiscarded', 'MaterialTrade', 'Synthesis', 'TechnologyBroker', 'ScientificResearch', 'EngineerContribution', 'MissionCompleted',
       // combate: bonos y recompensas por cobrar, y misiones de masacre en curso
-      'MissionAccepted', 'MissionRedirected', 'MissionAbandoned', 'MissionFailed', 'Missions', 'Bounty', 'FactionKillBond', 'CapShipBond', 'RedeemVoucher', 'Died'];
+      'MissionAccepted', 'MissionRedirected', 'MissionAbandoned', 'MissionFailed', 'Missions', 'Bounty', 'FactionKillBond', 'CapShipBond', 'RedeemVoucher', 'Died',
+      // exploración: datos sin vender desde la última venta (cartografía y exobiología)
+      'Scan', 'SAAScanComplete', 'ScanOrganic', 'SellOrganicData', 'SellExplorationData', 'MultiSellExplorationData', 'FSSDiscoveryScan', 'FSSAllBodiesFound', 'FSSBodySignals', 'SAASignalsFound'];
+    // (si al arrancar sigues en el último sistema del historial, sus cuerpos ya escaneados se conservan)
+    const EXPLORE = new Set(['Scan', 'SAAScanComplete', 'ScanOrganic', 'SellOrganicData', 'SellExplorationData', 'MultiSellExplorationData', 'FSSDiscoveryScan', 'FSSAllBodiesFound', 'FSSBodySignals', 'SAASignalsFound']);
     let files;
     try { files = fs.readdirSync(this.folder).filter((f) => /^Journal\..*\.log$/.test(f)).sort(); } catch (e) { return 0; }
     files = files.slice(0, -1); // el último lo lee el tailer en vivo
@@ -93,7 +97,10 @@ class Engine extends EventEmitter {
         let e; try { e = JSON.parse(line); } catch (x) { continue; }
         if (!KEEP.includes(e.event)) continue;
         // de los saltos antiguos solo interesa el control de Powerplay (no cuentan como sesión)
-        if (e.event === 'FSDJump') { model.recordControl(this.state, e); model.recordJumpFuel(this.state, e); }
+        // de los sistemas antiguos solo cuenta lo que queda sin vender (no los cuerpos del sistema actual)
+        if (EXPLORE.has(e.event)) require('./exploration').apply(this.state, e);
+        if (EXPLORE.has(e.event)) { n += 1; continue; }
+        if (e.event === 'FSDJump') { require('./exploration').apply(this.state, e); model.recordControl(this.state, e); model.recordJumpFuel(this.state, e); }
         else model.applyEvent(this.state, e);
         n += 1;
       }
@@ -120,6 +127,15 @@ class Engine extends EventEmitter {
 
   /** Sistema de Powerplay que se sigue (se mantiene aunque saltes a otro). */
   setTrackedSystem(name) { this.state.powerplay.tracked = name || null; this.changed(); }
+
+  /** Ruta de neutrones de Spansh (o null para quitarla). */
+  setNeutronRoute(r) { this.state.neutron = r || null; this.changed(); }
+
+  /** Cuerpos del sistema según Spansh (volcado), para Exploración. bodies null: Spansh no lo tiene. */
+  setSpanshSystem(address, bodies, error) { this.state.exploration.spansh = { address, bodies: bodies || null, error: error || null, at: Date.now() }; this.changed(); }
+
+  /** Valores de especies biológicas aprendidos de Spansh o guardados. */
+  learnBioValues(map) { if (require('./exploration').learnBioValues(this.state, map)) this.changed(); }
 
   /** Fija (o quita, con null) las coordenadas de destino en un planeta. */
   setSurfaceTarget(t) { this.state.surfaceTarget = t || null; this.changed(); }

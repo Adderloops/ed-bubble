@@ -55,7 +55,7 @@ function defaultBounds() {
 // Ajustes del comandante (settings.json en la carpeta de datos de la app)
 const DEFAULT_PREFS = {
   autoJump: true,
-  jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true }, // a qué secciones salta solo
+  jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true, exploracion: true }, // a qué secciones salta solo
   startSection: 'puente', lastSection: 'puente', // al abrir: Puente o la última sección vista
   alerts: { dock: true, fuelRoute: true }, // avisos opcionales en la cabecera
   fullscreen: false,
@@ -69,7 +69,7 @@ function prefs() {
   delete p.ppTracked; delete p.skull; delete p.bindsFile; // datos internos, no son ajustes de la ventana
   return p;
 }
-const SECTION_IDS = ['puente', 'vuelo', 'orbita', 'combate', 'equipo', 'mineria', 'apie', 'ingenieros', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
+const SECTION_IDS = ['puente', 'vuelo', 'orbita', 'combate', 'exploracion', 'equipo', 'mineria', 'apie', 'ingenieros', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
 /** Valida un ajuste que llega de la ventana; devuelve el valor limpio o undefined. */
 function cleanPref(key, value) {
   const bool = (x) => (typeof x === 'boolean' ? x : undefined);
@@ -223,6 +223,23 @@ async function lookHere(snap) {
   if (win && !win.isDestroyed()) win.webContents.send('ed:here', hereInfo);
 }
 
+/** Exploración: cuerpos del sistema actual según Spansh (los que aún no has escaneado y si alguien lo ha subido). */
+let exploreLooked = null;
+let saveExplore = () => {};
+async function lookExplore(snap) {
+  const addr = snap.state.exploration && snap.state.exploration.system.address;
+  if (addr == null || addr === exploreLooked) return;
+  exploreLooked = addr;
+  try {
+    const d = await spansh.dump(addr);
+    if (exploreLooked !== addr) return;
+    engine.setSpanshSystem(addr, d && Array.isArray(d.bodies) ? d.bodies : null);
+  } catch (e) {
+    if (/ 404/.test(e.message)) engine.setSpanshSystem(addr, null);
+    else { engine.setSpanshSystem(addr, null, e.message); exploreLooked = null; logLine(`[spansh] volcado para Exploración: ${e.message}`); }
+  }
+}
+
 /** Gravedad del cuerpo al que te acercas, desde Spansh (Status.json solo la da a pie). */
 let bodyLooked = null;
 const bodyInfo = {}; // por nombre, para la ventana aunque se abra después de la consulta
@@ -244,6 +261,7 @@ async function lookBody(snap) {
   bodyLooked = key;
   let info = { body: a.body };
   try { const b = await spansh.body(id); if (b) info = { ...b, body: a.body }; } catch (e) { logLine(`[spansh] cuerpo ${a.body}: ${e.message}`); }
+  if (info.species) engine.learnBioValues(Object.fromEntries(info.species.filter((x) => x.species && x.value).map((x) => [require('../core/exploration').nameKey(x.species), x.value])));
   // predicción de exobiología con los datos del diario y, para lo que falte, el volcado de Spansh
   try {
     let dumpSys = null;
@@ -453,6 +471,8 @@ app.whenReady().then(() => {
     lookFuelStops(snap);
     lookBody(snap);
     lookHere(snap);
+    lookExplore(snap);
+    saveExplore(snap);
     skullSites(snap);
     // destino fijado sin cuerpo: se completa al llegar a uno
     const nt = geo.adoptBody(snap.state.surfaceTarget, snap.state);
@@ -462,6 +482,34 @@ app.whenReady().then(() => {
       logLine(`[destino] cuerpo completado: ${nt.body}`);
     }
   });
+  // Exploración: valores de especies aprendidos (ventas, Spansh) y ruta de neutrones, guardados entre sesiones
+  const BIOVAL_FILE = path.join(app.getPath('userData'), 'biovalues.json');
+  const NEUTRON_FILE = path.join(app.getPath('userData'), 'neutron.json');
+  try { engine.learnBioValues(JSON.parse(fs.readFileSync(BIOVAL_FILE, 'utf8'))); } catch (e) { /* aún no hay */ }
+  try { engine.setNeutronRoute(JSON.parse(fs.readFileSync(NEUTRON_FILE, 'utf8'))); } catch (e) { /* sin ruta */ }
+  let bioSaved = -1; let neutronSaved = JSON.stringify(engine.state.neutron || null);
+  saveExplore = (snap) => {
+    const X = snap.state.exploration;
+    if (X.bioValuesChanged !== bioSaved) { bioSaved = X.bioValuesChanged; try { fs.writeFileSync(BIOVAL_FILE, JSON.stringify(X.bioValues)); } catch (e) { /* no se guarda */ } }
+    const nj = JSON.stringify(snap.state.neutron || null);
+    if (nj !== neutronSaved) { neutronSaved = nj; try { if (snap.state.neutron) fs.writeFileSync(NEUTRON_FILE, nj); else fs.unlinkSync(NEUTRON_FILE); } catch (e) { /* no se guarda */ } }
+  };
+  ipcMain.handle('ed:neutron-plot', async (_e, opts) => {
+    const st = (last || engine.snapshot()).state;
+    const to = String((opts && opts.to) || '').trim().slice(0, 80);
+    const from = String((opts && opts.from) || st.location.system || '').trim().slice(0, 80);
+    const range = Number(opts && opts.range) || st.ship.maxJumpRange;
+    if (!to) return { ok: false, error: 'Escribe el sistema de destino' };
+    if (!from) return { ok: false, error: 'Aún no sé en qué sistema estás' };
+    if (!range) return { ok: false, error: 'Aún no sé el alcance de salto de tu nave (sale al cargar la partida)' };
+    try {
+      const r = await spansh.neutronRoute({ from, to, range: Math.round(range * 100) / 100, efficiency: 60 });
+      if (!r.jumps.length) return { ok: false, error: 'Spansh no encontró ruta' };
+      engine.setNeutronRoute({ ...r, at: new Date().toISOString(), reached: 0 });
+      return { ok: true };
+    } catch (e) { logLine(`[spansh] ruta de neutrones: ${e.message}`); return { ok: false, error: /400|422/.test(e.message) ? 'Spansh no conoce ese sistema' : e.message }; }
+  });
+  ipcMain.handle('ed:neutron-clear', () => { engine.setNeutronRoute(null); return true; });
   engine.on('warning', (msg) => { console.warn('[engine]', msg); logLine(`[motor] ${msg}`); });
   engine.start();
   ipcMain.handle('ed:snapshot', () => last || engine.snapshot());

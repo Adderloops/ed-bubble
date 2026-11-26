@@ -231,4 +231,27 @@ function outfitting({ item, info, reference }) {
   });
 }
 
-module.exports = { body, dump, bodyId64, markets, outfitting, setFetch, suggest, system, normalise, stationKind, padSize };
+/**
+ * Ruta con estrellas de neutrones (Neutron Plotter de Spansh). Lanza el cálculo y espera el resultado.
+ * Devuelve { from, to, range, efficiency, total, jumps: [{ system, jumps, neutron, left, dist }] }.
+ */
+async function neutronRoute({ from, to, range, efficiency = 60, maxWaitMs = 90000 }) {
+  const form = new URLSearchParams({ efficiency: String(efficiency), range: String(range), from, to });
+  const start = await getJson('https://spansh.co.uk/api/route', { method: 'POST', body: form.toString(), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+  if (start.error) throw new Error(start.error);
+  if (!start.job) throw new Error('Spansh no devolvió el trabajo');
+  const t0 = Date.now();
+  for (;;) {
+    await new Promise((r) => setTimeout(r, 1500));
+    const d = await getJson(`https://spansh.co.uk/api/results/${encodeURIComponent(start.job)}`);
+    if (d.error) throw new Error(d.error);
+    if (d.status === 'ok' && d.result) {
+      const R = d.result;
+      return { from: R.source_system || from, to: R.destination_system || to, range: Number(R.range) || range, efficiency, total: R.total_jumps ?? null,
+        jumps: (R.system_jumps || []).map((j) => ({ system: j.system, jumps: j.jumps || 0, neutron: !!j.neutron_star, left: j.distance_left ?? null, dist: j.distance_jumped ?? null })) };
+    }
+    if (Date.now() - t0 > maxWaitMs) throw new Error('Spansh tarda demasiado en calcular la ruta');
+  }
+}
+
+module.exports = { body, dump, neutronRoute, bodyId64, markets, outfitting, setFetch, suggest, system, normalise, stationKind, padSize };

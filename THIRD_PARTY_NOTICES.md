@@ -101,3 +101,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## Exploración
+
+Los cuerpos de un sistema que aún no has escaneado salen del volcado de sistemas de Spansh (https://spansh.co.uk/api/dump/) y la ruta de neutrones, del Neutron Plotter de Spansh (https://spansh.co.uk/plotter); ED BUBBLE solo los consulta y muestra el resultado. El valor estimado de los datos de exploración usa la fórmula publicada por la comunidad de jugadores (constantes por tipo de cuerpo, masa y multiplicadores de descubrimiento y cartografía de Odyssey), reescrita en `core/exploration.js`; son datos del juego (Frontier Developments).
+

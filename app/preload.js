@@ -51,4 +51,6 @@ contextBridge.exposeInMainWorld('edbubble', {
   buildDelete: (id) => ipcRenderer.invoke('ed:build-delete', id),
   shipExport: (kind) => ipcRenderer.invoke('ed:ship-export', kind),
   buySearch: (item) => ipcRenderer.invoke('ed:buy-search', item),
+  neutronPlot: (opts) => ipcRenderer.invoke('ed:neutron-plot', opts),
+  neutronClear: () => ipcRenderer.invoke('ed:neutron-clear'),
 });

@@ -776,6 +776,60 @@ test('exobiología: predicción con las reglas de SrvSurvey (cuerpo del diario)'
   assert.strictEqual(bp.inGuardianBubble([1099, -146, -133]), true);
 });
 
+test('la interfaz (renderer/app.js) se puede leer sin errores de sintaxis', () => {
+  const vm = require('vm');
+  new vm.Script(require('fs').readFileSync(require('path').join(__dirname, '..', 'renderer', 'app.js'), 'utf8'), { filename: 'app.js' });
+});
+
+test('exploración: valor de cuerpos, datos sin vender, venta y muerte', () => {
+  const X = require('../../core/exploration');
+  const elw = X.planetValue({ cls: 'Earth-like world', mass: 1, first: true, mapped: true, firstMapped: true, efficient: true });
+  assert.ok(elw > 4000000 && elw < 5000000, `mundo tipo Tierra cartografiado y descubierto: ${elw}`);
+  assert.strictEqual(X.planetValue({ cls: 'Icy body', mass: 0.001 }), 500, 'mínimo 500');
+  assert.strictEqual(X.planetClass('Sudarsky class II gas giant'), 'Class II gas giant');
+  const m = require('../../core/model');
+  const s = m.createState();
+  const ev = (e) => m.applyEvent(s, { timestamp: '2026-11-20T10:00:00Z', ...e });
+  ev({ event: 'FSDJump', StarSystem: 'Prua Phoe AB-C d1', SystemAddress: 111, StarPos: [0, 0, 0] });
+  ev({ event: 'FSSDiscoveryScan', SystemName: 'Prua Phoe AB-C d1', SystemAddress: 111, BodyCount: 3, NonBodyCount: 2, Progress: 0.2 });
+  ev({ event: 'Scan', ScanType: 'AutoScan', BodyName: 'Prua Phoe AB-C d1', BodyID: 0, SystemAddress: 111, StarType: 'K', StellarMass: 0.7, DistanceFromArrivalLS: 0, WasDiscovered: false, WasMapped: false });
+  ev({ event: 'Scan', ScanType: 'Detailed', BodyName: 'Prua Phoe AB-C d1 1', BodyID: 1, SystemAddress: 111, PlanetClass: 'Water world', TerraformState: 'Terraformable', MassEM: 0.8, DistanceFromArrivalLS: 400, WasDiscovered: false, WasMapped: false });
+  ev({ event: 'FSSBodySignals', BodyName: 'Prua Phoe AB-C d1 1', BodyID: 1, SystemAddress: 111, Signals: [{ Type: '$SAA_SignalType_Biological;', Count: 2 }] });
+  let v = require('../../core/derive').view(s).exploration;
+  assert.strictEqual(v.system.found, 2); assert.strictEqual(v.system.total, 3);
+  const ww = v.bodies.find((b) => b.id === 1);
+  assert.ok(ww.first && ww.terra && ww.interest && ww.mapLeft && ww.bio === 2, 'mundo de agua terraformable, descubierto, por cartografiar');
+  ev({ event: 'SAAScanComplete', BodyName: 'Prua Phoe AB-C d1 1', BodyID: 1, SystemAddress: 111, ProbesUsed: 5, EfficiencyTarget: 7 });
+  ev({ event: 'ScanOrganic', ScanType: 'Analyse', Genus: '$Codex_Ent_Stratum_Genus_Name;', Species: '$Codex_Ent_Stratum_07_Name;', Species_Localised: 'Stratum Tectonicas', SystemAddress: 111, Body: 1 });
+  v = require('../../core/derive').view(s).exploration;
+  assert.ok(v.bodies.find((b) => b.id === 1).mapped);
+  assert.strictEqual(v.unsold.carto.systems.length, 1); assert.strictEqual(v.unsold.carto.mapped, 1); assert.strictEqual(v.unsold.carto.first, 2);
+  assert.strictEqual(v.unsold.bio.list.length, 1); assert.strictEqual(v.unsold.bio.list[0].value, null, 'valor aún desconocido');
+  X.learnBioValues(s, { [X.nameKey('Stratum Tectonicas')]: 19010800 });
+  assert.strictEqual(require('../../core/derive').view(s).exploration.unsold.bio.value, 19010800, 'valor aprendido por nombre');
+  ev({ event: 'SellOrganicData', BioData: [{ Genus: '$Codex_Ent_Stratum_Genus_Name;', Species: '$Codex_Ent_Stratum_07_Name;', Species_Localised: 'Stratum Tectonicas', Value: 19010800, Bonus: 0 }] });
+  ev({ event: 'MultiSellExplorationData', Discovered: [{ SystemName: 'Prua Phoe AB-C d1', NumBodies: 2 }], BaseValue: 1, Bonus: 1, TotalEarnings: 2 });
+  v = require('../../core/derive').view(s).exploration;
+  assert.strictEqual(v.unsold.carto.systems.length, 0); assert.strictEqual(v.unsold.bio.list.length, 0);
+  assert.strictEqual(v.lastSale.kind, 'carto');
+  ev({ event: 'Scan', ScanType: 'Detailed', BodyName: 'Prua Phoe AB-C d1 1', BodyID: 1, SystemAddress: 111, PlanetClass: 'Water world', MassEM: 0.8 });
+  ev({ event: 'Died' });
+  assert.strictEqual(require('../../core/derive').view(s).exploration.unsold.carto.systems.length, 0, 'al morir se pierde');
+  s.status.guiFocus = 'FSS mode';
+  assert.strictEqual(require('../../core/derive').flightMode(s).section, 'exploracion');
+});
+
+test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {
+  const m = require('../../core/model');
+  const s = m.createState();
+  s.neutron = { to: 'C', range: 50, jumps: [{ system: 'A', jumps: 0, neutron: false, left: 1000 }, { system: 'B', jumps: 3, neutron: true, left: 600 }, { system: 'C', jumps: 5, neutron: false, left: 0 }], reached: 0 };
+  const ev = (e) => m.applyEvent(s, { timestamp: '2026-11-20T10:00:00Z', ...e });
+  ev({ event: 'FSDJump', StarSystem: 'B', SystemAddress: 2 });
+  ev({ event: 'FSDJump', StarSystem: 'Por el camino', SystemAddress: 3 });
+  const n = require('../../core/derive').view(s).neutron;
+  assert.strictEqual(n.at, 1); assert.strictEqual(n.next.system, 'C'); assert.strictEqual(n.jumpsLeft, 5); assert.ok(Math.abs(n.done - 0.4) < 1e-9);
+});
+
 (async () => {
   for (const [name, fn] of asyncTests) {
     try { await fn(); ok += 1; console.log(`  OK  ${name}`); } catch (e) { fail += 1; console.log(`  FALLA  ${name}\n        ${e.message}`); }

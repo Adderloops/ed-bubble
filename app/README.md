@@ -80,6 +80,15 @@ Sección del grupo Viaje (Odyssey):
 
 Al acercarte a un planeta, la tarjeta Exobiología predice qué especies puede haber (`core/biopredict.js`), con las reglas de SrvSurvey (`core/data/bio-criteria`). Usa los datos del cuerpo de tu diario (escaneo FSS o sondas) y, si no lo has escaneado, los del volcado de Spansh del sistema (`/api/dump`), la estrella que más lo ilumina, la región de la galaxia, la distancia a la nebulosa más cercana y si estás en una burbuja guardiana. Si ya se conocen los géneros (tu DSS o los que otros subieron a Spansh), solo predice especies de esos géneros, y debajo de cada género sin muestras pone la especie posible. «Posible ?» (ámbar) indica que faltó algún dato del cuerpo para comprobar todas las reglas. Comprobado con 63 cuerpos con vida de los diarios de Adder: acierta el 95 % de los géneros que hay de verdad. Si Spansh no tenía la ficha del cuerpo, la gravedad, la temperatura y el radio salen también del volcado.
 
+## Exploración
+
+Grupo Viaje. La app salta aquí al abrir el escáner FSS o lanzar sondas DSS (se puede desactivar en Ajustes).
+
+- **Sistema actual:** los cuerpos que has escaneado (diario: `Scan`, `SAAScanComplete`, `FSSDiscoveryScan`, `FSSBodySignals`) y, de los que aún no, los que conoce Spansh (volcado del sistema). De cada uno: tipo, distancia, si eres el primero en descubrirlo o cartografiarlo, si es terraformable o aterrizable, señales biológicas y geológicas, y su valor estimado ahora y cartografiado. Pestañas Todos · De interés (más de 300.000 CR cartografiado o con señales biológicas) · Sin escanear, con paginador. Si el sistema no está en Spansh, lo avisa (puede que seas el primero).
+- **Datos sin vender:** cartografía por sistema y muestras de exobiología analizadas desde la última venta (`SellExplorationData`, `MultiSellExplorationData`, `SellOrganicData`; al morir se pierden). Se calcula con los diarios de los últimos 45 días. El valor de cada especie se aprende de tus ventas y de Spansh y se guarda en `biovalues.json`; si aún no se sabe, sale «¿?».
+- **Ruta de neutrones:** el Neutron Plotter de Spansh calcula la ruta desde tu sistema con el alcance de la nave y eficiencia del 60 %. Muestra el siguiente punto (con botón Copiar para pegarlo en el mapa de la galaxia), si es estrella de neutrones, los saltos y años luz que quedan y los puntos siguientes. Avanza sola al llegar a cada punto y se guarda en `neutron.json` hasta que la borres.
+- **Valores:** fórmula de la comunidad para el pago de datos de exploración en Odyssey (constante por tipo de cuerpo, masa, primer descubrimiento ×2,6, cartografía y bono de eficiencia). No cuenta los bonos por sistema completo. Código en `core/exploration.js`.
+
 ## Combate
 
 Sección del grupo Nave, con tres columnas (datos de `core/combat.js`):

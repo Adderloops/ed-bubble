@@ -31,6 +31,8 @@ function flightMode(state) {
   }
   // minería con la nave: hubo prospección, dron o refinado hace menos de 5 minutos
   // armamento desplegado con el HUD en modo combate (no análisis): Combate, aunque estuvieras minando
+  // escáner de espectro completo (FSS) o sonda de superficie (DSS): Exploración
+  if (state.status.guiFocus === 'FSS mode' || state.status.guiFocus === 'SAA mode') return { key: 'explore', label: state.status.guiFocus === 'FSS mode' ? 'Escáner FSS' : 'Cartografía DSS', section: 'exploracion' };
   if (f.areHardpointsDeployed && !f.isHUDInAnalysisMode && !f.isSupercruise && !state.docking.active) return { key: 'combat', label: 'Armamento desplegado', section: 'combate' };
   const m = state.mining;
   if (m && m.lastAt && !f.isSupercruise && Date.parse(state.status.timestamp || new Date().toISOString()) - Date.parse(m.lastAt) < 5 * 60 * 1000) return { key: 'mining', label: 'Minando', section: 'mineria' };
@@ -46,6 +48,20 @@ function flightMode(state) {
   if (state.docking.active) return { key: 'approach', label: 'Aproximación', section: 'vuelo' };
   if (f.isFSDCharging) return { key: 'charging', label: 'Cargando FSD', section: 'vuelo' };
   return { key: 'normal', label: 'Vuelo normal', section: 'vuelo' };
+}
+
+/** Ruta de neutrones: en qué punto vas (último punto de la ruta en el que has estado) y el siguiente. */
+function neutronView(state) {
+  const r = state.neutron;
+  if (!r || !Array.isArray(r.jumps) || !r.jumps.length) return null;
+  const cur = String(state.location.system || '').toLowerCase();
+  let at = r.jumps.findIndex((j) => String(j.system).toLowerCase() === cur);
+  if (at < 0) at = Math.max(0, Math.min(r.reached ?? 0, r.jumps.length - 1));
+  const last = r.jumps[r.jumps.length - 1];
+  const total = r.jumps[0].left || 0;
+  const left = (r.jumps[at] || {}).left ?? total;
+  return { ...r, at, here: String((r.jumps[at] || {}).system || '').toLowerCase() === cur, next: r.jumps[at + 1] || null, arrived: at >= r.jumps.length - 1 && String(last.system).toLowerCase() === cur,
+    jumpsLeft: r.jumps.slice(at + 1).reduce((n, j) => n + (j.jumps || 0), 0), done: total ? Math.max(0, Math.min(1, 1 - left / total)) : 0, left };
 }
 
 function alerts(state) {
@@ -246,6 +262,8 @@ function view(state) {
     dockPad,
     mode: flightMode(state),
     combat: require('./combat').view(state),
+    exploration: require('./exploration').view(state),
+    neutron: neutronView(state),
     shipLayout: state.ship && state.ship.type ? require('./builds').layout(state.ship.type, state.ship.modules) : null,
     alerts: alerts(state),
     fuel: fuel(state),

@@ -5,7 +5,7 @@
 const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate', built: true }, { id: 'equipo', label: 'Equipo', built: true }, { id: 'srv', label: 'SRV' },
-  { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración' }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie', built: true },
+  { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración', built: true }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie', built: true },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
   { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
 ];
@@ -36,7 +36,8 @@ const ui = {
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
   plot: null, // { running, target, text, ok, error }
   extOk: null, // última consulta a Spansh: true / false
-  prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true }, rigMin: 75, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
+  prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true, exploracion: true }, rigMin: 75, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
+  xTab: 'all', xBodyPage: 0, xCartoPage: 0, xBioPage: 0, xNrPage: 0, nrDest: '', nrSug: [], nr: null, // Exploración
   displays: null, info: null, // Ajustes: pantallas conectadas y datos de la app
 };
 
@@ -50,7 +51,7 @@ function setPref(key, value) {
 }
 /** ¿Se salta solo a la sección de esta situación? */
 function jumpAllowed(key) {
-  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : key === 'rhino' || key === 'mining' ? 'mineria' : key === 'combat' ? 'combate' : 'vuelo';
+  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : key === 'rhino' || key === 'mining' ? 'mineria' : key === 'combat' ? 'combate' : key === 'explore' ? 'exploracion' : 'vuelo';
   return ui.prefs.jump[g] !== false;
 }
 /** Abre una sección (y la recuerda para la próxima vez). */
@@ -1685,6 +1686,135 @@ function cbAct(id, label, extra = '') {
   return `<button type="button" class="act${a.cls || ''} ${extra}" data-act="${id}" ${a.dis} title="${esc(a.title)}">${label}${a.key ? `<span class="k">${esc(a.key)}</span>` : ''}</button>`;
 }
 const FIGHTER = [['f_focus', 'Atacar mi objetivo'], ['f_attack', 'Atacar a discreción'], ['f_defend', 'Defenderme'], ['f_hold', 'Alto el fuego'], ['f_pos', 'Mantener posición'], ['f_follow', 'Seguirme'], ['f_dock', 'Volver a la nave'], ['f_orders', 'Abrir órdenes']];
+/* ---------- Exploración: sistema actual, datos sin vender y ruta de neutrones ---------- */
+const STAR_CODES = { O: 'Estrella O (azul)', B: 'Estrella B (azul-blanca)', A: 'Estrella A (blanca)', F: 'Estrella F (blanca-amarilla)', G: 'Estrella G (amarilla)', K: 'Estrella K (naranja)', M: 'Estrella M (roja)',
+  L: 'Enana marrón L', T: 'Enana marrón T', Y: 'Enana marrón Y', TTS: 'Estrella T Tauri', AeBe: 'Estrella Herbig Ae/Be', N: 'Estrella de neutrones', H: 'Agujero negro', SupermassiveBlackHole: 'Agujero negro supermasivo',
+  C: 'Estrella de carbono', CN: 'Estrella de carbono', CJ: 'Estrella de carbono', MS: 'Estrella MS', S: 'Estrella S' };
+function starLabel(t) {
+  const s = String(t || '');
+  if (!s) return 'Estrella';
+  if (STAR_CODES[s]) return STAR_CODES[s];
+  if (/^D/.test(s) || /white dwarf/i.test(s)) return 'Enana blanca';
+  if (/^W/.test(s) || /wolf-rayet/i.test(s)) return 'Estrella Wolf-Rayet';
+  if (/neutron/i.test(s)) return 'Estrella de neutrones';
+  if (/supermassive/i.test(s)) return 'Agujero negro supermasivo';
+  if (/black hole/i.test(s)) return 'Agujero negro';
+  if (/t tauri/i.test(s)) return 'Estrella T Tauri';
+  if (/herbig/i.test(s)) return 'Estrella Herbig Ae/Be';
+  const m = /^([OBAFGKMLTY]) \(/.exec(s);
+  if (m) return STAR_CODES[m[1]];
+  return s.replace(/ Star$/, '');
+}
+const shortBodyName = (name, system) => { const n = String(name || ''); const sys = String(system || ''); if (sys && n.toLowerCase() === sys.toLowerCase()) return 'Estrella principal'; return sys && n.toLowerCase().startsWith(sys.toLowerCase() + ' ') ? n.slice(sys.length + 1) : n; };
+const X_BODY_PAGE = 10;
+const fmtWhen = (iso) => (iso ? `${String(iso).slice(8, 10)}/${String(iso).slice(5, 7)} ${String(iso).slice(11, 16)}` : '—');
+
+function screenExploracion(s, v) {
+  const X = v.exploration;
+  const sys = X.system;
+  const sysName = clean(sys.name || s.location.system) || '—';
+  // cuerpos
+  const tabs = [['all', 'Todos', X.bodies.length], ['interest', 'De interés', X.bodies.filter((b) => b.interest || b.bio).length], ['todo', 'Sin escanear', X.bodies.filter((b) => !b.scanned).length]];
+  const tab = tabs.some(([k]) => k === ui.xTab) ? ui.xTab : 'all';
+  const list = tab === 'interest' ? X.bodies.filter((b) => b.interest || b.bio).sort((a, b) => (b.valueMapped || b.value || 0) - (a.valueMapped || a.value || 0)) : tab === 'todo' ? X.bodies.filter((b) => !b.scanned) : X.bodies;
+  const pages = Math.max(1, Math.ceil(list.length / X_BODY_PAGE));
+  ui.xBodyPage = Math.min(ui.xBodyPage || 0, pages - 1);
+  const spChip = { ok: '<span class="eb dim">En Spansh</span>', missing: '<span class="eb amber">Nadie lo ha subido a Spansh</span>', error: '<span class="eb red">Spansh no responde</span>', pending: '' }[X.spansh] || '';
+  const badge = (txt, cls) => `<span class="eb ${cls || 'dim'}" style="font-size:9px">${txt}</span>`;
+  const rows = list.slice(ui.xBodyPage * X_BODY_PAGE, (ui.xBodyPage + 1) * X_BODY_PAGE).map((b) => {
+    const type = b.kind === 'star' ? starLabel(b.starType) : b.kind === 'planet' ? tr(b.cls) : 'Cuerpo';
+    const tags = [
+      b.scanned ? (b.first ? badge('Primer descubrimiento', 'cyan') : b.wasDiscovered ? badge('Ya descubierto') : '') : badge('Sin escanear', 'amber'),
+      b.kind === 'planet' ? (b.mapped ? badge(b.firstMapped ? 'Primero en cartografiar' : 'Cartografiado', 'cyan') : b.interest ? badge('Cartografiar', 'amber') : '') : '',
+      b.terra ? badge('Terraformable', 'cyan') : '',
+      b.bio ? badge(`Bio ${b.bio}`, 'cyan') : '', b.geo ? badge(`Geo ${b.geo}`) : '',
+      b.landable ? badge('Aterrizable') : '',
+    ].join('');
+    const val = b.scanned ? `<span class="num ${b.interest ? 'cyan' : ''}" style="font-size:16px">${fmtCr(b.value)}</span>` : `<span class="num soft" style="font-size:15px" title="Valor si lo escaneas tú (sin primer descubrimiento)">~${fmtCr(b.valueScan)}</span>`;
+    const more = b.kind === 'planet' && !b.mapped && b.valueMapped ? `<span class="soft" style="font-size:11px">${fmtCr(b.valueMapped)} cartografiado</span>` : '';
+    return `<div class="in" style="display:grid;grid-template-columns:minmax(0,1.1fr) 90px minmax(0,1.4fr) 150px;gap:10px;align-items:center;padding:6px 12px;min-height:52px">
+      <span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:16px">${esc(shortBodyName(b.name, sysName))}</span><span class="soft nowrap" style="font-size:12px">${esc(type)}</span></span>
+      <span class="num soft" style="font-size:14px;text-align:right">${b.distLs != null ? `${nf(b.distLs)} ls` : '—'}</span>
+      <span style="display:flex;flex-wrap:wrap;gap:4px">${tags}</span>
+      <span style="display:flex;flex-direction:column;align-items:flex-end">${val}${more}</span>
+    </div>`;
+  }).join('') || `<div class="empty">${tab === 'todo' ? 'Has escaneado todos los cuerpos que se conocen.' : tab === 'interest' ? 'Ningún cuerpo de mucho valor ni con señales biológicas.' : X.spansh === 'pending' ? 'Buscando el sistema en Spansh…' : 'Escanea el sistema con el FSS para ver sus cuerpos.'}</div>`;
+  const found = sys.total != null ? `${nf(sys.found)} / ${nf(sys.total)}` : sys.scanned ? nf(sys.scanned) : '—';
+  const left = `<section class="pn card" style="min-height:0;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="ti nowrap" style="font-size:20px">${esc(sysName)}</span><span style="display:flex;gap:6px">${sys.allFound ? '<span class="eb cyan">Sistema completo</span>' : ''}${spChip}</span></div>
+    <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px">${stat('Cuerpos escaneados', found, sys.allFound ? 'cyan' : '')}${stat('Valor escaneado', sys.value ? fmtCr(sys.value) : '—')}${stat('Por cartografiar', nf(sys.mapLeft), sys.mapLeft ? 'amber' : '')}${stat('Ganas cartografiando', sys.mapGain ? `+${fmtCr(sys.mapGain)}` : '—', sys.mapGain ? 'cyan' : '')}${stat('Otras señales', sys.nonBodyCount != null ? nf(sys.nonBodyCount) : '—')}</div>
+    ${!sys.honked && X.spansh !== 'ok' ? '<span class="eb amber">Haz el escaneo de descubrimiento (claxon del FSS) para saber cuántos cuerpos hay</span>' : ''}
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="display:flex;gap:6px">${tabs.map(([k, t, n]) => `<button type="button" class="tab small ${tab === k ? 'on' : ''}" data-xtab="${k}">${t} · ${n}</button>`).join('')}</span>${pager2('xbody', ui.xBodyPage, pages)}</div>
+    <div style="display:flex;flex-direction:column;gap:5px">${rows}</div>
+    <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">Valores estimados con la fórmula de la comunidad (primer descubrimiento ×2,6; cartografiar con las sondas objetivo, +25 %). «De interés»: vale más de 300.000 CR cartografiado o tiene señales biológicas. Los cuerpos sin escanear salen de Spansh.</span>
+  </section>`;
+
+  // datos sin vender
+  const U = X.unsold;
+  const cpages = Math.max(1, Math.ceil(U.carto.systems.length / 6)); ui.xCartoPage = Math.min(ui.xCartoPage || 0, cpages - 1);
+  const bpages = Math.max(1, Math.ceil(U.bio.list.length / 4)); ui.xBioPage = Math.min(ui.xBioPage || 0, bpages - 1);
+  const cartoRows = U.carto.systems.slice(ui.xCartoPage * 6, ui.xCartoPage * 6 + 6).map((x) => `<div class="in" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:14px">${esc(x.name || '—')}</span><span class="soft" style="font-size:11px">${nf(x.bodies)} cuerpos${x.first ? ` · ${nf(x.first)} primeros` : ''}${x.mapped ? ` · ${nf(x.mapped)} cartografiados` : ''}</span></span><span class="num" style="font-size:14px">${fmtCr(x.value)}</span></div>`).join('') || '<span class="soft" style="font-size:13px">Nada pendiente de vender.</span>';
+  const bioRows = U.bio.list.slice(ui.xBioPage * 4, ui.xBioPage * 4 + 4).map((x) => `<div class="in" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:14px">${esc(x.name)}</span><span class="soft nowrap" style="font-size:11px">${esc([x.variant, x.bodyName || x.systemName].filter(Boolean).join(' · '))}</span></span><span class="num ${x.value ? '' : 'soft'}" style="font-size:14px" title="${x.value ? 'Valor base; si eres el primero en ese cuerpo, el juego paga hasta 5 veces más' : 'Aún no sé su valor: sale al venderla o si Spansh la conoce'}">${x.value ? fmtCr(x.value) : '¿?'}</span></div>`).join('') || '<span class="soft" style="font-size:13px">Ninguna muestra pendiente de vender.</span>';
+  const ls = X.lastSale;
+  const mid = `<section class="pn card" style="min-height:0;overflow:hidden">
+    <span class="ti" style="font-size:16px">Datos sin vender</span>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Cartografía', fmtCr(U.carto.value), U.carto.value ? 'cyan' : '')}${stat('Exobiología', U.bio.list.length ? fmtCr(U.bio.value) + (U.bio.unknown ? ' +¿?' : '') : '—', U.bio.value ? 'cyan' : '')}</div>
+    <span class="soft" style="font-size:12px">${U.since ? `Desde el ${fmtWhen(U.since)} UTC` : 'Sin datos pendientes'}${ls ? ` · última venta: ${ls.kind === 'bio' ? 'exobiología' : 'cartografía'}${ls.total != null ? ` por ${fmtCr(ls.total)}` : ''} (${fmtWhen(ls.at)})` : ''}</span>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span class="eb nowrap">Cartografía · ${nf(U.carto.systems.length)} sistemas</span>${pager2('xcarto', ui.xCartoPage, cpages)}</div>
+    <div style="display:flex;flex-direction:column;gap:4px">${cartoRows}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span class="eb">Exobiología · ${nf(U.bio.list.length)} muestras</span>${pager2('xbio', ui.xBioPage, bpages)}</div>
+    <div style="display:flex;flex-direction:column;gap:4px">${bioRows}</div>
+    <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">Estimación con tus diarios de los últimos 45 días. Si mueres, se pierde todo lo que no hayas vendido.</span>
+  </section>`;
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 400px 420px;gap:12px;min-height:0;height:100%">${left}${mid}${neutronCard(s, v)}</div>`;
+}
+
+function neutronCard(s, v) {
+  const N = v.neutron;
+  const busy = ui.nr && ui.nr.busy;
+  const msg = ui.nr && ui.nr.error ? `<span class="eb red">${esc(ui.nr.error)}</span>` : busy ? '<span class="eb cyan">Calculando la ruta en Spansh…</span>' : '';
+  if (!N) {
+    const sug = (ui.nrSug || []).slice(0, 5).map((r) => `<button type="button" class="pick" data-nrpick="${esc(r.name)}"><span>${esc(r.name)}</span></button>`).join('');
+    return `<section class="pn card" style="min-height:0;overflow:hidden">
+      <span class="ti" style="font-size:16px">Ruta de neutrones</span>
+      <span class="soft" style="font-size:13px;line-height:1.35">Calcula con el Neutron Plotter de Spansh una ruta que pasa por estrellas de neutrones: al cruzar su chorro, el FSD se sobrecarga y salta cuatro veces más lejos.</span>
+      <input id="nr-dest" class="search" type="text" spellcheck="false" autocomplete="off" placeholder="Sistema de destino…" value="${esc(ui.nrDest || '')}">
+      ${sug ? `<div style="display:flex;flex-direction:column;gap:4px">${sug}</div>` : ''}
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Desde', clean(s.location.system) || '—')}${stat('Alcance de salto', s.ship.maxJumpRange ? `${nf(s.ship.maxJumpRange, 2)} ly` : '—')}</div>
+      <button type="button" class="act" data-nrplot="1" ${busy || !(ui.nrDest || '').trim() ? 'disabled' : ''} style="height:56px">${busy ? 'Calculando…' : 'Calcular ruta'}</button>
+      ${msg}
+      <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">Usa el alcance de tu nave actual y una eficiencia del 60 %. La ruta se guarda hasta que la borres.</span>
+    </section>`;
+  }
+  const rest = N.jumps.slice(N.at + 1);
+  const pages = Math.max(1, Math.ceil(Math.max(0, rest.length - 1) / 6)); ui.xNrPage = Math.min(ui.xNrPage || 0, pages - 1);
+  const up = rest.slice(1).slice(ui.xNrPage * 6, ui.xNrPage * 6 + 6).map((j) => `<div class="in" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 10px"><span class="va nowrap" style="font-size:14px">${esc(j.system)}</span><span style="display:flex;gap:6px;align-items:center">${j.neutron ? '<span class="eb cyan" style="font-size:9px">Neutrones</span>' : ''}<span class="num soft" style="font-size:13px">${nf(j.jumps)} saltos</span></span></div>`).join('');
+  const nx = N.next;
+  const next = N.arrived ? '<div class="in" style="padding:14px;display:flex;flex-direction:column;gap:4px"><span class="eb cyan">Has llegado</span><span class="va" style="font-size:20px">' + esc(N.to) + '</span></div>'
+    : nx ? `<div class="in" style="padding:12px 14px;display:flex;flex-direction:column;gap:6px;border-color:var(--amber)">
+        <span class="eb amber">${N.here ? 'Siguiente punto' : 'Vas hacia'}</span>
+        <span style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="va nowrap" style="font-size:22px">${esc(nx.system)}</span><button type="button" class="nav-btn" style="width:110px" data-copy="1" data-name="${esc(nx.system)}">Copiar</button></span>
+        <span style="display:flex;gap:6px">${nx.neutron ? '<span class="eb cyan">Estrella de neutrones</span>' : '<span class="eb dim">Sin neutrones</span>'}<span class="eb dim">${nf(nx.jumps)} saltos</span>${nx.dist != null ? `<span class="eb dim">${nf(nx.dist)} ly</span>` : ''}</span>
+      </div>` : '';
+  return `<section class="pn card" style="min-height:0;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span class="ti nowrap" style="font-size:16px">Ruta a ${esc(N.to)}</span><span class="eb dim">${nf(N.range, 2)} ly</span></div>
+    ${meter('Recorrido', `${nf(N.done * 100)} %`, N.done, 'on')}
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${stat('Saltos que quedan', nf(N.jumpsLeft))}${stat('Quedan', N.left != null ? `${nf(N.left)} ly` : '—')}${stat('Punto', `${nf(N.at + 1)} / ${nf(N.jumps.length)}`)}</div>
+    ${next}
+    ${up ? `<div style="display:flex;justify-content:space-between;align-items:center"><span class="eb">Después</span>${pager2('xnr', ui.xNrPage, pages)}</div><div style="display:flex;flex-direction:column;gap:4px">${up}</div>` : ''}
+    ${msg}
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:auto"><button type="button" class="tab" data-nrreplot="1" ${busy ? 'disabled' : ''}>Recalcular</button><button type="button" class="tab" data-nrclear="1">Borrar ruta</button></div>
+  </section>`;
+}
+async function neutronPlot(to) {
+  if (!to || (ui.nr && ui.nr.busy)) return;
+  ui.nr = { busy: true }; ui.nrSug = []; render();
+  const r = await window.edbubble.neutronPlot({ to });
+  ui.nr = r.ok ? null : { error: r.error }; ui.xNrPage = 0;
+  if (r.ok) ui.nrDest = '';
+  render();
+}
+
 function screenCombate(s, v) {
   const c = v.combat || {};
   const t = c.target;
@@ -2463,6 +2593,7 @@ function screenAjustes(s, v) {
       ${setRow('jump.orbita', 'Órbita planetaria', 'Te acercas a un planeta o aterrizas', p.jump.orbita, off)}
       ${setRow('jump.mineria', 'Minería', 'Minas con el Rhino o con la nave', p.jump.mineria, off)}
       ${setRow('jump.combate', 'Combate', 'Armamento desplegado, zona de combate o te atacan', p.jump.combate !== false, off)}
+      ${setRow('jump.exploracion', 'Exploración', 'Abres el escáner FSS o lanzas sondas DSS', p.jump.exploracion !== false, off)}
       ${setRow('jump.approach', 'Vuelo · plataformas', 'Te conceden el atraque', p.jump.approach, off)}
       ${setRow('jump.docked', 'Estación', 'Atracas en una estación', p.jump.docked, off)}
       ${setRow('jump.depot', 'Colonización', 'Atracas en una construcción', p.jump.depot, off)}
@@ -2543,7 +2674,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -2567,6 +2698,13 @@ document.addEventListener('click', (ev) => {
 let searchTimer = null;
 document.addEventListener('input', (ev) => {
   if (ev.target.id === 'coord-input') { ui.coordText = ev.target.value; return; }
+  if (ev.target.id === 'nr-dest') {
+    ui.nrDest = ev.target.value; clearTimeout(searchTimer);
+    const q = ui.nrDest.trim();
+    if (q.length < 3) { ui.nrSug = []; render(); return; }
+    searchTimer = setTimeout(async () => { const r = await window.edbubble.suggest(q); if (ui.nrDest.trim() !== q) return; ui.nrSug = r.ok ? r.results : []; render(); }, 300);
+    return;
+  }
   if (ev.target.id !== 'nav-search') return;
   ui.search.q = ev.target.value;
   clearTimeout(searchTimer);
@@ -2586,6 +2724,7 @@ document.addEventListener('input', (ev) => {
 });
 document.addEventListener('keydown', (ev) => {
   if (ev.target.id === 'coord-input' && ev.key === 'Enter') { coordAction('set'); return; }
+  if (ev.target.id === 'nr-dest' && ev.key === 'Enter') { neutronPlot((ui.nrDest || '').trim()); return; }
   if (ev.target.id === 'nav-search' && ev.key === 'Enter') {
     const q = ui.search.q.trim();
     const exact = ui.search.results.find((r) => r.name.toLowerCase() === q.toLowerCase());
@@ -2675,8 +2814,17 @@ document.addEventListener('pointerdown', (ev) => {
   }
   const minTabBtn = ev.target.closest('button[data-minetab]');
   if (minTabBtn) { ev.preventDefault(); ui.mineTab = minTabBtn.dataset.minetab; render(); return; }
+  const xBtn = ev.target.closest('[data-xtab], [data-nrplot], [data-nrpick], [data-nrreplot], [data-nrclear]');
+  if (xBtn && !xBtn.disabled) {
+    ev.preventDefault(); const d = xBtn.dataset;
+    if (d.xtab) { ui.xTab = d.xtab; ui.xBodyPage = 0; render(); return; }
+    if (d.nrpick) { ui.nrDest = d.nrpick; ui.nrSug = []; neutronPlot(d.nrpick); return; }
+    if (d.nrplot) { neutronPlot((ui.nrDest || '').trim()); return; }
+    if (d.nrreplot) { const N = ui.snap && ui.snap.view.neutron; if (N) neutronPlot(N.to); return; }
+    if (d.nrclear) { window.edbubble.neutronClear(); ui.nr = null; return; }
+  }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage' }[minPgBtn.dataset.mpager];
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage' }[minPgBtn.dataset.mpager];
     if (!k && /^eq(core|hard|opt)$/.test(minPgBtn.dataset.mpager)) { const kk = minPgBtn.dataset.mpager.slice(2); ui.eqPages[kk] = Math.max(0, (ui.eqPages[kk] || 0) + Number(minPgBtn.dataset.d)); render(); return; } ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {

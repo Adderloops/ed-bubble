@@ -9,6 +9,7 @@
 
 const { computeControl } = require('../src/services/powerplay-control');
 const combat = require('./combat');
+const exploration = require('./exploration');
 
 const MAX_LOG = 40;
 
@@ -54,6 +55,8 @@ function createState() {
     // a pie (Odyssey): equipo actual, equipos y trajes/armas vistos, taquilla y mochila
     onfoot: { loadout: null, loadouts: {}, suits: {}, weapons: {}, locker: null, backpack: null },
     srv: { type: null }, // SRV desplegado (LaunchSRV): 'mev_rhino' es el Rhino de minería
+    neutron: null, // ruta de neutrones de Spansh: { from, to, range, at, jumps: [{ system, jumps, neutron, left }] }
+    exploration: exploration.create(), // sistema actual (FSS/DSS) y datos de exploración sin vender (core/exploration.js)
     combat: combat.create(), // objetivo, zona de combate, bajas, bonos por cobrar, masacres (core/combat.js)
     session: { startedAt: null, jumps: 0, distance: 0, merits: 0, bounties: 0, mined: 0, deliveredToConstruction: 0 },
     log: [],
@@ -219,6 +222,8 @@ const HANDLERS = {
       state.location.starClass = state.fsdTarget.starClass || state.location.starClass;
       state.fsdTarget = { name: null, starClass: null, remainingJumps: null };
     }
+    // ruta de neutrones: recuerda el último punto alcanzado (entre puntos hay saltos por sistemas que no salen en la ruta)
+    if (state.neutron && Array.isArray(state.neutron.jumps)) { const k = state.neutron.jumps.findIndex((j) => String(j.system).toLowerCase() === String(e.StarSystem).toLowerCase()); if (k >= 0) state.neutron.reached = k; }
     // al llegar, se quita el sistema de la ruta
     const i = state.route.findIndex((r) => r.system === e.StarSystem);
     if (i >= 0) state.route = state.route.slice(i);
@@ -549,8 +554,9 @@ function applyEvent(state, e) {
   }
   state.connection.lastEventAt = e.timestamp || state.connection.lastEventAt;
   combat.apply(state, e);
+  const xc = exploration.apply(state, e);
   const h = HANDLERS[e.event];
-  if (!h) return false;
+  if (!h) return xc;
   h(state, e);
   if (e.event === 'FSDJump' && !state.location.starClass && state.fsdTarget.starClass) {
     state.location.starClass = state.fsdTarget.starClass;
