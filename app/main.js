@@ -596,7 +596,18 @@ app.whenReady().then(() => {
   try { engine.learnBioValues(JSON.parse(fs.readFileSync(BIOVAL_FILE, 'utf8'))); } catch (e) { /* aún no hay */ }
   try { engine.setNeutronRoute(JSON.parse(fs.readFileSync(NEUTRON_FILE, 'utf8'))); } catch (e) { /* sin ruta */ }
   let bioSaved = -1; let neutronSaved = JSON.stringify(engine.state.neutron || null);
+  const SAMPLES_FILE = path.join(app.getPath('userData'), 'biosamples.json');
+  let samplesRestored = false; let samplesSaved = null;
   saveExplore = (snap) => {
+    // posiciones de las muestras biológicas: se guardan y, al reabrir en el mismo sistema, se recuperan
+    const addr = snap.state.location.systemAddress;
+    if (!samplesRestored && addr != null) {
+      samplesRestored = true;
+      try { const sv = JSON.parse(fs.readFileSync(SAMPLES_FILE, 'utf8')); if (sv && sv.address === addr) engine.restoreBioSamples(sv.bio); } catch (e) { /* no hay */ }
+    } else if (samplesRestored && addr != null) {
+      const sj = JSON.stringify({ address: addr, bio: snap.state.bio || {} });
+      if (sj !== samplesSaved) { samplesSaved = sj; try { fs.writeFileSync(SAMPLES_FILE, sj); } catch (e) { /* no se guarda */ } }
+    }
     const X = snap.state.exploration;
     if (X.bioValuesChanged !== bioSaved) { bioSaved = X.bioValuesChanged; try { fs.writeFileSync(BIOVAL_FILE, JSON.stringify(X.bioValues)); } catch (e) { /* no se guarda */ } }
     const nj = JSON.stringify(snap.state.neutron || null);

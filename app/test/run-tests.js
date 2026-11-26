@@ -858,6 +858,17 @@ test('minería: las zonas de minería del escaneo se cuentan con la misma clave 
   assert.strictEqual(s.destination.raw.includes('#index=3'), true);
 });
 
+test('exobiología: en la Nomad (LaunchVessel lander01) la app va a Exobiología', () => {
+  const m = require('../../core/model'); const d = require('../../core/derive');
+  const s = m.createState();
+  m.applyEvent(s, { timestamp: '2026-11-26T14:32:12Z', event: 'LaunchVessel', VesselType: 'lander01', VesselType_Localised: 'Nomad', Loadout: 'starter', ID: 31, PlayerControlled: true });
+  m.applyStatus(s, { Latitude: -38.1, Longitude: -43.3, BodyName: 'Pegasi Sector JN-S b4-7 C 5', PlanetRadius: 6071556 }, { isInSRV: 'true', hasLatLong: 'true' });
+  const fm = d.flightMode(s);
+  assert.strictEqual(fm.section, 'exobiologia'); assert.strictEqual(fm.label, 'En la Nomad');
+  m.applyEvent(s, { timestamp: '2026-11-26T14:40:00Z', event: 'DockVessel', ID: 31 });
+  assert.strictEqual(s.srv.type, null);
+});
+
 test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {
   const m = require('../../core/model');
   const s = m.createState();

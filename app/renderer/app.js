@@ -52,7 +52,7 @@ function setPref(key, value) {
 }
 /** ¿Se salta solo a la sección de esta situación? */
 function jumpAllowed(key) {
-  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : key === 'rhino' || key === 'mining' ? 'mineria' : key === 'combat' ? 'combate' : key === 'explore' ? 'exploracion' : key === 'exobio' ? 'exobiologia' : 'vuelo';
+  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : key === 'rhino' || key === 'mining' ? 'mineria' : key === 'combat' ? 'combate' : key === 'explore' ? 'exploracion' : key === 'exobio' || key === 'exobio-srv' ? 'exobiologia' : 'vuelo';
   return ui.prefs.jump[g] !== false;
 }
 /** Abre una sección (y la recuerda para la próxima vez). */
@@ -2789,7 +2789,7 @@ function screenAjustes(s, v) {
       ${setRow('jump.orbita', 'Órbita planetaria', 'Te acercas a un planeta o aterrizas', p.jump.orbita, off)}
       ${setRow('jump.mineria', 'Minería', 'Minas con el Rhino o con la nave', p.jump.mineria, off)}
       ${setRow('jump.combate', 'Combate', 'Armamento desplegado, zona de combate o te atacan', p.jump.combate !== false, off)}
-      ${setRow('jump.exobiologia', 'Exobiología', 'Sacas el escáner genético a pie', p.jump.exobiologia !== false, off)}
+      ${setRow('jump.exobiologia', 'Exobiología', 'Sacas el escáner genético o vas en la Nomad', p.jump.exobiologia !== false, off)}
       ${setRow('jump.exploracion', 'Exploración', 'Abres el escáner FSS o lanzas sondas DSS', p.jump.exploracion !== false, off)}
       ${setRow('jump.approach', 'Vuelo · plataformas', 'Te conceden el atraque', p.jump.approach, off)}
       ${setRow('jump.docked', 'Estación', 'Atracas en una estación', p.jump.docked, off)}

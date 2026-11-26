@@ -29,6 +29,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 18 | Vuelo › Próximo salto y Navegación: el nombre del sistema de destino salía cortado («Pegasi Sector…») | Adder (captura) | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
 | 19 | Exobiología: predecía especies en un cuerpo cuyas señales (FSS o Spansh) no tienen ninguna biológica; nombres repetidos («Roseum Sinuous Tubers Roseum Sinuous Tubers») | Adder (en HIP 109677 A 2, comparando con SrvSurvey) | desarrollo | 0.7.0-beta.5 | Corregido |
 | 20 | Minería › Superficie: frente a un planeta con 9 zonas de minería no mostraba nada hasta aterrizar; Órbita › Zonas de minería salía «—» con el cuerpo escaneado | Adder (captura en Pegasi Sector IH-V c2-28 A 1) | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
+| 21 | Exobiología: en la Nomad la app no iba a Exobiología (se quedaba en A pie, sin minimapa) | Adder (captura en Pegasi Sector JN-S b4-7 C 5) | desarrollo | 0.7.0-beta.5 | Corregido |
 
 ## Detalle
 
@@ -133,6 +134,14 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 - **Encontrado en:** 0.7.0-beta.4 · **Corregido en:** 0.7.0-beta.5
 - **Qué pasaba:** Minería › Superficie solo mostraba algo con posición en la superficie, y los sitios de la flota solo se pedían al bajar. Además, la señal `$PlanetaryMiningLocation_Name;` del diario se guardaba con una clave distinta de la de Spansh, así que Órbita › Minería no contaba las zonas de tu propio escaneo.
 - **Arreglo:** el cuerpo de minería es ahora el que pisas, al que te acercas o, en supercrucero, el que tienes fijado como destino en el sistema. La tarjeta «Zonas de minería» muestra sus zonas (1 a 9), la que tienes fijada en el juego en ámbar y, debajo de cada una, lo que la flota encontró allí (Skull Mining); al tocar una, Sitios de la flota muestra solo los suyos. Lo que contiene cada zona no sale en el diario: el juego solo lo enseña al bajar a órbita.
+
+
+### 21 · La Nomad no llevaba a Exobiología
+
+- **Informado por:** Adder (26-11-2026), muestreando Bacterium Tela en Pegasi Sector JN-S b4-7 C 5 con la Nomad.
+- **Encontrado en:** versión de desarrollo · **Corregido en:** 0.7.0-beta.5
+- **Qué pasaba:** la Nomad es un vehículo nuevo: el diario la anuncia con `LaunchVessel` (tipo `lander01`), no con `LaunchSRV`, y en Status.json cuenta como SRV. La app solo saltaba a Exobiología a pie con el escáner genético en la mano; en el vehículo iba a la sección SRV (aún sin hacer). Además, si reabrías la app a mitad de una especie, se perdían las posiciones de las muestras (el diario no las guarda).
+- **Arreglo:** en la Nomad, en otro SRV sobre un cuerpo con señales biológicas, o a pie con una especie a medias, la app va a Exobiología (minimapa y brújula funcionan igual, con la posición de Status.json). Las posiciones de las muestras se guardan en `biosamples.json` y se recuperan al reabrir en el mismo sistema.
 
 ## Revisión: el juego en otros idiomas (24-11-2026)
 

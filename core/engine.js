@@ -128,6 +128,18 @@ class Engine extends EventEmitter {
   /** Sistema de Powerplay que se sigue (se mantiene aunque saltes a otro). */
   setTrackedSystem(name) { this.state.powerplay.tracked = name || null; this.changed(); }
 
+  /** Posiciones de las muestras biológicas guardadas (el diario no las tiene): se recuperan al reabrir la app en el mismo sistema. */
+  restoreBioSamples(saved) {
+    let n = 0;
+    for (const [body, byGenus] of Object.entries(saved || {})) {
+      for (const [g, x] of Object.entries(byGenus || {})) {
+        const cur = this.state.bio[body] && this.state.bio[body][g];
+        if (cur && x && cur.speciesKey === x.speciesKey && (!cur.samples || !cur.samples.length) && Array.isArray(x.samples) && x.samples.length) { cur.samples = x.samples.slice(0, cur.step); n += 1; }
+      }
+    }
+    if (n) this.changed();
+  }
+
   /** Ruta de neutrones de Spansh (o null para quitarla). */
   setNeutronRoute(r) { this.state.neutron = r || null; this.changed(); }
 

@@ -421,6 +421,10 @@ const HANDLERS = {
   LaunchSRV(state, e) { state.srv.type = e.SRVType || null; },
   DockSRV(state, e) { state.srv.type = null; },
   SRVDestroyed(state, e) { state.srv.type = null; },
+  // vehículos nuevos (p. ej. la Nomad, «lander01»): LaunchVessel / DockVessel / VesselDestroyed
+  LaunchVessel(state, e) { state.srv.type = e.VesselType || null; state.srv.name = e.VesselType_Localised || null; },
+  DockVessel(state, e) { state.srv.type = null; state.srv.name = null; },
+  VesselDestroyed(state, e) { state.srv.type = null; state.srv.name = null; },
   ColonisationConstructionDepot(state, e) {
     const id = String(e.MarketID);
     const prev = state.colonisation.depots[id] || {};

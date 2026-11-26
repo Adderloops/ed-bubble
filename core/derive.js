@@ -21,9 +21,17 @@ function isScoopable(starClass) {
 
 function flightMode(state) {
   const f = state.status.flags || {};
-  if (f.isOnFoot && state.status.sampler) return { key: 'exobio', label: 'Muestreo biológico', section: 'exobiologia' };
+  if (f.isOnFoot && (state.status.sampler || state.bioCurrent)) return { key: 'exobio', label: 'Muestreo biológico', section: 'exobiologia' };
   if (f.isOnFoot) return { key: 'onfoot', label: 'A pie', section: 'apie' };
-  if (f.isInSRV) return state.srv && /rhino/i.test(state.srv.type || '') ? { key: 'rhino', label: 'Minando con el Rhino', section: 'mineria' } : { key: 'srv', label: 'En SRV', section: 'srv' };
+  if (f.isInSRV) {
+    const type = (state.srv && state.srv.type) || '';
+    if (/rhino/i.test(type)) return { key: 'rhino', label: 'Minando con el Rhino', section: 'mineria' };
+    // la Nomad (lander) se usa para exobiología; con otro SRV, si estás muestreando o el cuerpo tiene señales biológicas
+    const here = state.status.bodyName && state.bodies[state.status.bodyName];
+    const bio = here && (here.signals || []).some((x) => x.key === 'biological' && x.count > 0);
+    if (/lander/i.test(type) || state.bioCurrent || bio) return { key: 'exobio-srv', label: state.srv.name ? `En la ${state.srv.name}` : 'En el vehículo', section: 'exobiologia' };
+    return { key: 'srv', label: 'En SRV', section: 'srv' };
+  }
   if (f.isFSDJump) return { key: 'jump', label: 'Saltando', section: 'vuelo' };
   if (f.isDocked || state.location.docked) {
     // en una construcción, la sección es Colonización
