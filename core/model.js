@@ -443,7 +443,7 @@ const HANDLERS = {
     const required = req.reduce((a, r) => a + (r.required || 0), 0);
     const provided = req.reduce((a, r) => a + (r.provided || 0), 0);
     state.colonisation.depots[id] = {
-      marketId: id, name: prev.name || stationNameFor(state, id), system: prev.system || state.location.system,
+      marketId: id, name: (state._markets && state._markets[id]) || prev.name || stationNameFor(state, id), system: prev.system || state.location.system,
       type: prev.type || (state.location.docked && state.location.stationType) || null,
       progress: e.ConstructionProgress ?? null, complete: !!e.ConstructionComplete, failed: !!e.ConstructionFailed,
       required, provided, remaining: Math.max(0, required - provided), resources: req, at: e.timestamp || null,
@@ -569,9 +569,11 @@ function applyEvent(state, e) {
   // recordar nombre de estación por MarketID (para las construcciones de colonización)
   if (e.MarketID && e.StationName) {
     state._markets = state._markets || {};
-    state._markets[String(e.MarketID)] = e.StationName;
+    // el nombre más reciente manda: una construcción cambia de nombre cuando le pones uno (p. ej. «Watabe Depot» -> «Sisters' Pride»)
+    const nm = String(e.StationName).replace(/\s+/g, ' ').trim();
+    state._markets[String(e.MarketID)] = nm;
     const d = state.colonisation.depots[String(e.MarketID)];
-    if (d && !d.name) d.name = e.StationName;
+    if (d) d.name = nm;
   }
   if (e.event === 'FSDJump' && state._pendingStarClass) {
     state.location.starClass = state._pendingStarClass;

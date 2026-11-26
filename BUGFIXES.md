@@ -31,6 +31,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 20 | Minería › Superficie: frente a un planeta con 9 zonas de minería no mostraba nada hasta aterrizar; Órbita › Zonas de minería salía «—» con el cuerpo escaneado | Adder (captura en Pegasi Sector IH-V c2-28 A 1) | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
 | 21 | Exobiología: en la Nomad la app no iba a Exobiología (se quedaba en A pie, sin minimapa) | Adder (captura en Pegasi Sector JN-S b4-7 C 5) | desarrollo | 0.7.0-beta.5 | Corregido |
 | 22 | Exobiología: la 3.ª muestra se contaba como la 2.ª y el análisis como otra muestra en el mismo sitio | Adder (prueba con la Nomad, Bacterium Tela) | desarrollo | 0.7.0-beta.5 | Corregido |
+| 23 | Colonización: la construcción seguía con su nombre antiguo («Watabe Depot») después de ponerle uno nuevo («Sisters' Pride») | Adder | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
 
 ## Detalle
 
@@ -151,6 +152,14 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 - **Encontrado en:** versión de desarrollo · **Corregido en:** 0.7.0-beta.5
 - **Qué pasaba:** el juego escribe `Log` en la 1.ª muestra, `Sample` en la 2.ª **y en la 3.ª**, y `Analyse` unos segundos después, sin moverte. La app tomaba `Sample` siempre como la 2.ª y `Analyse` como la 3.ª, así que la 3.ª muestra salía como «2 de 3» y el análisis añadía un punto repetido en el minimapa.
 - **Arreglo:** cada `Sample` suma una muestra (hasta 3) con su posición; `Analyse` marca la especie como analizada sin añadir punto.
+
+
+### 23 · Nombre antiguo de la construcción
+
+- **Informado por:** Adder (26-11-2026), atracado en la construcción de Pegasi Sector IH-V c2-28.
+- **Encontrado en:** 0.7.0-beta.4 · **Corregido en:** 0.7.0-beta.5
+- **Qué pasaba:** el diario ya la llama «Orbital Construction Site: Sisters' Pride», pero la app guardaba el nombre de la primera vez que la vio («Watabe Depot») y no lo cambiaba nunca.
+- **Arreglo:** cada atraque (o evento con nombre y MarketID) actualiza el nombre de la construcción con el más reciente; también se quitan los espacios dobles que trae el diario.
 
 ## Revisión: el juego en otros idiomas (24-11-2026)
 

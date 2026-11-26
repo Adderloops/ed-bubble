@@ -919,6 +919,19 @@ test('comercio: coste de la bodega, margen y méritos de Powerplay al vender', (
   assert.strictEqual(T.meritFor({ kind: 'undermining', power: 'X' }, { sell: 300 }, 1000, false).ok, true, 'socavar: menos de 500 CR/t');
 });
 
+test('colonización: la construcción toma el nombre nuevo cuando lo cambias', () => {
+  const m = require('../../core/model');
+  const s = m.createState();
+  const ev = (e) => m.applyEvent(s, { timestamp: '2026-11-20T10:00:00Z', ...e });
+  ev({ event: 'Docked', StationName: 'Orbital Construction Site: Watabe Depot', StationType: 'SpaceConstructionDepot', StarSystem: 'P', MarketID: 3951365378 });
+  ev({ event: 'ColonisationConstructionDepot', MarketID: 3951365378, ConstructionProgress: 0.05, ResourcesRequired: [{ Name: '$steel_name;', RequiredAmount: 100, ProvidedAmount: 5 }] });
+  assert.ok(/Watabe/.test(s.colonisation.depots['3951365378'].name));
+  ev({ event: 'Docked', timestamp: '2026-11-26T16:07:01Z', StationName: "Orbital Construction Site: Sisters'  Pride", StationType: 'SpaceConstructionDepot', StarSystem: 'P', MarketID: 3951365378 });
+  assert.strictEqual(s.colonisation.depots['3951365378'].name, "Orbital Construction Site: Sisters' Pride");
+  ev({ event: 'ColonisationConstructionDepot', MarketID: 3951365378, ConstructionProgress: 0.08, ResourcesRequired: [{ Name: '$steel_name;', RequiredAmount: 100, ProvidedAmount: 8 }] });
+  assert.strictEqual(s.colonisation.depots['3951365378'].name, "Orbital Construction Site: Sisters' Pride");
+});
+
 test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {
   const m = require('../../core/model');
   const s = m.createState();
