@@ -2121,7 +2121,7 @@ function engTipo(e, size) {
   const t = e.tipo && ENG_TIPOS[e.tipo];
   return t ? `<span class="eb" style="font-size:${size}px;color:${t[1]};border-color:${t[1]}">${t[0]}</span>` : '';
 }
-const PORTRAITS = new Set(['baltanos', 'bill-turner', 'broo-tarquin', 'colonel-bris-dekker', 'didi-vatermann', 'domino-green', 'elvira-martuuk', 'felicity-farseer', 'hera-tani', 'hero-ferrari', 'jude-navarro', 'juri-ishmaak', 'kit-fowler', 'lei-cheung', 'liz-ryder', 'lori-jameson', 'marco-qwent', 'petra-olmanova', 'professor-palin', 'ram-tah', 'rosa-dayette', 'selene-jean', 'the-dweller', 'the-sarge', 'tiana-fortune', 'tod-the-blaster-mcquinn', 'uma-laszlo', 'wellington-beck', 'yarden-bond', 'zacariah-nemo', 'terra-velasquez', 'oden-geiger', 'eleanor-bresa', 'yi-shen', 'mel-brandon', 'chloe-sedesi', 'marsha-hicks']);
+const PORTRAITS = new Set(['baltanos', 'bill-turner', 'broo-tarquin', 'colonel-bris-dekker', 'didi-vatermann', 'domino-green', 'elvira-martuuk', 'felicity-farseer', 'hera-tani', 'hero-ferrari', 'jude-navarro', 'juri-ishmaak', 'kit-fowler', 'lei-cheung', 'liz-ryder', 'lori-jameson', 'marco-qwent', 'petra-olmanova', 'professor-palin', 'ram-tah', 'rosa-dayette', 'selene-jean', 'the-dweller', 'the-sarge', 'tiana-fortune', 'tod-the-blaster-mcquinn', 'uma-laszlo', 'wellington-beck', 'yarden-bond', 'zacariah-nemo', 'terra-velasquez', 'oden-geiger', 'eleanor-bresa', 'yi-shen', 'mel-brandon', 'chloe-sedesi', 'marsha-hicks', 'etienne-dorn']);
 const ENG_CATS = [['H', 'Anclajes'], ['U', 'Apoyo'], ['C', 'Internos principales'], ['O', 'Internos opcionales']];
 const ENG_PAGE = 15;
 function portrait(e, size) {

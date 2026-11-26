@@ -120,7 +120,7 @@ Sección del grupo Comandante, con dos pestañas:
 
 - Recetas de nave: en la ficha de un ingeniero de naves, toca un módulo para ver sus recetas (por ejemplo, FSD «Increased range») con los materiales de cada grado hasta el tope de ese ingeniero, y sus efectos experimentales. Cada material muestra lo que tienes y lo que pide; los grados que aún no puedes pedirle (por tu grado con él) salen atenuados. Tus materiales salen del diario (`Materials` al empezar la partida, y luego recogidas, descartes, intercambios, síntesis, trabajos de ingeniero y recompensas de misión). Recetas en `core/shipblueprints.js`: las de coriolis-data y, para lo que no trae (módulos guardianes, refuerzo de módulos, láser de minería, lanzamisiles de enzimas, desintegrador abrasivo y las recetas nuevas, muchas solo para módulos «Merc»), las de Inara. «Merc Coin» y los materiales thargoid no salen en el diario: se muestran con su cantidad pero sin la tuya.
 
-Datos en `core/shipengineers.js`, `core/odymods.js` y `core/shipblueprints.js`; retratos en `app/renderer/engineers/` (los que faltan salen con iniciales).
+Datos en `core/shipengineers.js`, `core/odymods.js` y `core/shipblueprints.js`; retratos de los 38 en `app/renderer/engineers/`.
 
 ## Minería
 
