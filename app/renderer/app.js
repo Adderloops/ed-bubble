@@ -1769,8 +1769,9 @@ function bioMinimap(s, E, W, H) {
     const q = P(p);
     const range = p.x.range || 0;
     const inside = pos && p.dist != null && p.dist < range;
-    const col = p.cur ? (inside ? '#ffb02e' : '#3fd5ff') : p.x.done ? 'rgba(120,200,140,.8)' : 'rgba(200,210,230,.6)';
-    return `${p.cur ? `<circle cx="${q.x}" cy="${q.y}" r="${range * sc}" fill="${inside ? 'rgba(255,176,46,.10)' : 'rgba(63,213,255,.06)'}" stroke="${col}" stroke-dasharray="6 4"/>` : ''}<circle cx="${q.x}" cy="${q.y}" r="${p.cur ? 6 : 4}" fill="${col}"/>`;
+    // especie en curso: rojo mientras estás dentro de la distancia mínima, verde fuera; otras especies en gris azulado
+    const col = p.cur ? (inside ? '#ff5a5a' : '#4be08a') : p.x.done ? 'rgba(120,160,210,.75)' : 'rgba(200,210,230,.6)';
+    return `${p.cur ? `<circle cx="${q.x}" cy="${q.y}" r="${range * sc}" fill="${inside ? 'rgba(255,90,90,.14)' : 'rgba(75,224,138,.08)'}" stroke="${col}" stroke-width="2" stroke-dasharray="7 4"/>` : ''}<circle cx="${q.x}" cy="${q.y}" r="${p.cur ? 6 : 4}" fill="${col}"/>`;
   }).join('');
   let target = '';
   if (s.surfaceTarget && (!s.surfaceTarget.body || s.surfaceTarget.body === s.status.bodyName)) {
@@ -1795,10 +1796,11 @@ function screenExobiologia(s, v) {
   let curHtml;
   if (C) {
     const val = bioValue(s, C.species);
-    curHtml = `<div class="in" style="padding:10px 14px;display:flex;flex-direction:column;gap:6px;border-color:${C.ok ? 'var(--cyan)' : 'var(--amber)'}">
+    const okCol = C.ok ? '#4be08a' : C.nearest == null ? 'var(--amber)' : '#ff5a5a';
+    curHtml = `<div class="in" style="padding:10px 14px;display:flex;flex-direction:column;gap:6px;border-color:${okCol};border-left:4px solid ${okCol}">
       <span style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="va nowrap" style="font-size:22px">${esc(C.species || C.genus)}</span>${dots(C.step)}</span>
       <span style="display:flex;gap:6px;flex-wrap:wrap"><span class="eb dim">${esc(variantColour(C.variant) || C.genus || '')}</span><span class="eb dim">Muestra ${C.step} de 3</span><span class="eb dim">Distancia mínima ${fmtM(C.range)}</span>${val ? `<span class="eb cyan">${fmtCr(val)}${firstFoot ? ' · ×5 si eres el primero' : ''}</span>` : ''}</span>
-      <span class="num ${C.ok ? 'cyan' : 'amber'}" style="font-size:26px">${C.nearest == null ? 'Sin posición' : C.ok ? 'Ya puedes tomar la siguiente' : `Aléjate ${fmtM(C.need)} más`}</span>
+      <span class="num" style="font-size:26px;color:${okCol}">${C.nearest == null ? 'Sin posición' : C.ok ? 'Ya puedes tomar la siguiente' : `Aléjate ${fmtM(C.need)} más`}</span>
       ${C.nearest != null ? `<span class="soft" style="font-size:13px">Muestra más cercana a ${fmtM(C.nearest)}</span>` : ''}
     </div>`;
   } else {
@@ -1808,7 +1810,7 @@ function screenExobiologia(s, v) {
     <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Muestreo</span><span class="eb dim">${esc(b ? b.name : E.bodyName || '')}</span></div>
     ${curHtml}
     <div style="flex:1;min-height:0;display:flex">${bioMinimap(s, E, 560, 640)}</div>
-    <span class="soft" style="font-size:12px;line-height:1.35">Círculo discontinuo: distancia mínima a cada muestra de la especie en curso (ámbar si estás dentro). Puntos verdes: especies ya analizadas. Flecha rosa: destino fijado.</span>
+    <span class="soft" style="font-size:12px;line-height:1.35">Círculo: distancia mínima a cada muestra de la especie en curso; rojo mientras estás dentro, verde cuando ya puedes tomar la siguiente. Puntos grises: especies ya analizadas. Flecha rosa: destino fijado.</span>
   </section>`;
 
   // ---- este cuerpo
