@@ -279,18 +279,20 @@ const HANDLERS = {
   },
   ScanOrganic(state, e) {
     if (e.Body == null || !e.Genus) return;
-    const step = { Log: 1, Sample: 2, Analyse: 3 }[e.ScanType] || 1;
+    // el juego escribe Log (1.ª muestra), Sample (2.ª), Sample (3.ª) y, unos segundos después, Analyse (sin moverte)
     const byBody = state.bio[e.Body] || (state.bio[e.Body] = {});
-    // posición de cada muestra (Status.json en ese momento): para la distancia mínima entre muestras y el minimapa
     const S = state.status;
     const pos = S.latitude != null && S.longitude != null ? { lat: S.latitude, lon: S.longitude } : null;
     const prev = byBody[e.Genus];
-    const restart = step === 1 || !prev || (prev.speciesKey && e.Species && prev.speciesKey !== e.Species);
-    const samples = (restart ? [] : (prev.samples || []).slice()).concat(pos ? [pos] : []);
+    const other = prev && prev.speciesKey && e.Species && prev.speciesKey !== e.Species;
+    let step; let samples;
+    if (e.ScanType === 'Analyse') { step = 3; samples = (!other && prev && prev.samples) || []; }
+    else if (e.ScanType === 'Log' || !prev || other || prev.step >= 3) { step = e.ScanType === 'Log' ? 1 : 2; samples = pos ? [pos] : []; }
+    else { step = Math.min(3, (prev.step || 1) + 1); samples = (prev.samples || []).concat(pos ? [pos] : []); }
     byBody[e.Genus] = { genus: e.Genus_Localised || e.Genus, species: e.Species_Localised || e.Species || null, variant: e.Variant_Localised || null, step,
-      genusKey: e.Genus, speciesKey: e.Species || null, samples, at: e.timestamp || null };
+      analysed: e.ScanType === 'Analyse', genusKey: e.Genus, speciesKey: e.Species || null, samples, at: e.timestamp || null };
     state.bioCurrent = step < 3 ? { body: e.Body, genus: e.Genus, bodyName: S.bodyName || null } : null;
-    pushLog(state, e, 'Exobiología', `${e.Species_Localised || e.Genus_Localised || ''} · ${step}/3`);
+    pushLog(state, e, 'Exobiología', `${e.Species_Localised || e.Genus_Localised || ''} · ${e.ScanType === 'Analyse' ? 'analizada' : `${step}/3`}`);
   },
   DockingRequested(state, e) { pushLog(state, e, 'Atraque solicitado', e.StationName); },
   DockingGranted(state, e) {

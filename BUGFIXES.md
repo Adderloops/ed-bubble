@@ -30,6 +30,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 19 | Exobiología: predecía especies en un cuerpo cuyas señales (FSS o Spansh) no tienen ninguna biológica; nombres repetidos («Roseum Sinuous Tubers Roseum Sinuous Tubers») | Adder (en HIP 109677 A 2, comparando con SrvSurvey) | desarrollo | 0.7.0-beta.5 | Corregido |
 | 20 | Minería › Superficie: frente a un planeta con 9 zonas de minería no mostraba nada hasta aterrizar; Órbita › Zonas de minería salía «—» con el cuerpo escaneado | Adder (captura en Pegasi Sector IH-V c2-28 A 1) | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
 | 21 | Exobiología: en la Nomad la app no iba a Exobiología (se quedaba en A pie, sin minimapa) | Adder (captura en Pegasi Sector JN-S b4-7 C 5) | desarrollo | 0.7.0-beta.5 | Corregido |
+| 22 | Exobiología: la 3.ª muestra se contaba como la 2.ª y el análisis como otra muestra en el mismo sitio | Adder (prueba con la Nomad, Bacterium Tela) | desarrollo | 0.7.0-beta.5 | Corregido |
 
 ## Detalle
 
@@ -140,8 +141,16 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 
 - **Informado por:** Adder (26-11-2026), muestreando Bacterium Tela en Pegasi Sector JN-S b4-7 C 5 con la Nomad.
 - **Encontrado en:** versión de desarrollo · **Corregido en:** 0.7.0-beta.5
-- **Qué pasaba:** la Nomad es un vehículo nuevo: el diario la anuncia con `LaunchVessel` (tipo `lander01`), no con `LaunchSRV`, y en Status.json cuenta como SRV. La app solo saltaba a Exobiología a pie con el escáner genético en la mano; en el vehículo iba a la sección SRV (aún sin hacer). Además, si reabrías la app a mitad de una especie, se perdían las posiciones de las muestras (el diario no las guarda).
+- **Qué pasaba:** la Nomad es un vehículo nuevo: el diario la anuncia con `LaunchVessel` (tipo `lander01`), no con `LaunchSRV`, la recoge con `DockSRV` (tipo `lander01`) y en Status.json cuenta como SRV. La app solo saltaba a Exobiología a pie con el escáner genético en la mano; en el vehículo iba a la sección SRV (aún sin hacer). Además, si reabrías la app a mitad de una especie, se perdían las posiciones de las muestras (el diario no las guarda).
 - **Arreglo:** en la Nomad, en otro SRV sobre un cuerpo con señales biológicas, o a pie con una especie a medias, la app va a Exobiología (minimapa y brújula funcionan igual, con la posición de Status.json). Las posiciones de las muestras se guardan en `biosamples.json` y se recuperan al reabrir en el mismo sistema.
+
+
+### 22 · La tercera muestra contaba mal
+
+- **Informado por:** Adder (26-11-2026), al completar Bacterium Tela con la Nomad.
+- **Encontrado en:** versión de desarrollo · **Corregido en:** 0.7.0-beta.5
+- **Qué pasaba:** el juego escribe `Log` en la 1.ª muestra, `Sample` en la 2.ª **y en la 3.ª**, y `Analyse` unos segundos después, sin moverte. La app tomaba `Sample` siempre como la 2.ª y `Analyse` como la 3.ª, así que la 3.ª muestra salía como «2 de 3» y el análisis añadía un punto repetido en el minimapa.
+- **Arreglo:** cada `Sample` suma una muestra (hasta 3) con su posición; `Analyse` marca la especie como analizada sin añadir punto.
 
 ## Revisión: el juego en otros idiomas (24-11-2026)
 

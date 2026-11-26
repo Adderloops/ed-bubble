@@ -834,8 +834,12 @@ test('exobiología: posición de cada muestra, distancia mínima por género y s
   assert.ok(Math.abs(E.current.nearest - 261.8) < 1, `más cercana a ~262 m: ${E.current.nearest}`);
   assert.strictEqual(E.current.ok, false); assert.ok(E.current.need > 230 && E.current.need < 245);
   assert.strictEqual(require('../../core/derive').flightMode(s).section, 'exobiologia');
-  at(0, 0.03); org('Analyse');
-  assert.strictEqual(require('../../core/derive').view(s).exobio.current, null, 'analizada: sin muestreo en curso');
+  at(0, 0.03); org('Sample');
+  assert.strictEqual(s.bio[5]['$Codex_Ent_Stratum_Genus_Name;'].step, 3, 'la 3.ª muestra es otro «Sample»');
+  assert.strictEqual(require('../../core/derive').view(s).exobio.current, null, 'tres muestras: sin muestreo en curso');
+  org('Analyse');
+  assert.strictEqual(s.bio[5]['$Codex_Ent_Stratum_Genus_Name;'].samples.length, 3, '«Analyse» no es una muestra nueva');
+  assert.ok(s.bio[5]['$Codex_Ent_Stratum_Genus_Name;'].analysed);
   org('Log');
   assert.strictEqual(s.bio[5]['$Codex_Ent_Stratum_Genus_Name;'].samples.length, 1, 'una nueva especie empieza de cero');
   assert.strictEqual(require('../../core/exobio').colonyRange('$Codex_Ent_Osseus_Genus_Name;'), 800);
