@@ -1269,18 +1269,40 @@ function screenOrbita(s, v) {
 }
 
 /* ---------- A pie ---------- */
+// Nombres del juego en español (los mismos que core/odymods.js).
 const SUIT_MODS = {
-  suit_increasedmeleedamage: 'Más daño cuerpo a cuerpo', suit_improvedmeleedamage: 'Más daño cuerpo a cuerpo', suit_adsmovementspeed: 'Movilidad en combate',
-  suit_improvedarmourrating: 'Resistencia al daño', suit_improvedradar: 'Seguimiento mejorado', suit_enhancedtracking: 'Seguimiento mejorado',
-  suit_quieterfootsteps: 'Pasos silenciosos', suit_increasedammoreserves: 'Más munición', suit_backpackcapacity: 'Mochila ampliada',
-  suit_improvedbatterycapacity: 'Batería ampliada', suit_increasedbatterycapacity: 'Batería ampliada', suit_increasedshieldregen: 'Escudo más rápido',
-  suit_reducedtoolbatteryconsumption: 'Herramientas con menos consumo', suit_improvedjumpassist: 'Salto asistido mejorado', suit_increasedo2capacity: 'Más reserva de aire',
-  suit_increasedsprintduration: 'Sprint más largo', suit_nightvision: 'Visión nocturna',
+  suit_increasedmeleedamage: 'Daño cuerpo a cuerpo añadido',
+  suit_adsmovementspeed: 'Movimiento de velocidad de Combate',
+  suit_improvedarmourrating: 'Resistencia al daño',
+  suit_improvedradar: 'Seguimiento Mejorado',
+  suit_quieterfootsteps: 'Pasos Silenciosos',
+  suit_increasedammoreserves: 'Capacidad de munición adicional',
+  suit_backpackcapacity: 'Capacidad De Mochila Adicional',
+  suit_improvedbatterycapacity: 'Mejora de capacidad de Batería',
+  suit_increasedshieldregen: 'Regeneración de escudo rápida',
+  suit_reducedtoolbatteryconsumption: 'Consumo De Batería Reducido',
+  suit_improvedjumpassist: 'Mejora de asistencia de salto',
+  suit_increasedo2capacity: 'Reservas de oxígeno aumentadas',
+  suit_increasedsprintduration: 'Aumento de duración del sprint',
+  suit_nightvision: 'Visión Nocturna',
+  suit_improvedmeleedamage: 'Daño cuerpo a cuerpo añadido',
+  suit_enhancedtracking: 'Seguimiento Mejorado',
+  suit_increasedbatterycapacity: 'Mejora de capacidad de Batería',
 };
 const WEAPON_MODS = {
-  weapon_headshotdamage: 'Daño en la cabeza', weapon_clipsize: 'Cargador ampliado', weapon_backpackreloading: 'Recarga guardada', weapon_stowedreloading: 'Recarga guardada',
-  weapon_scope: 'Mira', weapon_suppression_pressurised: 'Silenciador', weapon_suppression_unpressurised: 'Sonido amortiguado', weapon_audiomasking: 'Sonido amortiguado',
-  weapon_handling: 'Manejo rápido', weapon_range: 'Más alcance', weapon_reloadspeed: 'Recarga rápida', weapon_stability: 'Estabilidad', weapon_accuracy: 'Precisión sin apuntar',
+  weapon_headshotdamage: 'Daño a la cabeza',
+  weapon_clipsize: 'Tamaño de cargador',
+  weapon_backpackreloading: 'Recarga guardada',
+  weapon_scope: 'Visor',
+  weapon_suppression_pressurised: 'Silenciador',
+  weapon_suppression_unpressurised: 'Enmascaramiento de Audio',
+  weapon_handling: 'Manejo rápido',
+  weapon_range: 'Mayor Alcance',
+  weapon_reloadspeed: 'Velocidad de recarga',
+  weapon_stability: 'Estabilidad',
+  weapon_accuracy: 'Precisión desde la cadera mejorada',
+  weapon_stowedreloading: 'Recarga guardada',
+  weapon_audiomasking: 'Enmascaramiento de Audio',
 };
 const modName = (m) => SUIT_MODS[m] || WEAPON_MODS[m] || String(m).replace(/^(suit|weapon)_/, '').replace(/_/g, ' ');
 const SLOT_NAME = { PrimaryWeapon1: 'Principal 1', PrimaryWeapon2: 'Principal 2', SecondaryWeapon: 'Secundaria' };
