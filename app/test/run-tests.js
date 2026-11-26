@@ -869,6 +869,18 @@ test('exobiología: en la Nomad (LaunchVessel lander01) la app va a Exobiología
   assert.strictEqual(s.srv.type, null);
 });
 
+test('minería: con el Rhino siempre es Minería, aunque el cuerpo tenga biología', () => {
+  const m = require('../../core/model'); const d = require('../../core/derive');
+  const s = m.createState();
+  m.applyEvent(s, { timestamp: '2026-11-26T15:00:00Z', event: 'SAASignalsFound', BodyName: 'B 1', BodyID: 3, SystemAddress: 1, Signals: [{ Type: '$SAA_SignalType_Biological;', Count: 3 }, { Type: '$PlanetaryMiningLocation_Name;', Count: 5 }] });
+  m.applyEvent(s, { timestamp: '2026-11-26T15:01:00Z', event: 'LaunchSRV', SRVType: 'mev_rhino', SRVType_Localised: 'SRV Rhino', Loadout: 'starter', ID: 26, PlayerControlled: true });
+  m.applyStatus(s, { Latitude: 1, Longitude: 2, BodyName: 'B 1', PlanetRadius: 1000000 }, { isInSRV: 'true', hasLatLong: 'true' });
+  assert.strictEqual(d.flightMode(s).section, 'mineria');
+  m.applyEvent(s, { timestamp: '2026-11-26T15:02:00Z', event: 'DockSRV', ID: 26 });
+  m.applyEvent(s, { timestamp: '2026-11-26T15:03:00Z', event: 'LaunchSRV', SRVType: 'testbuggy', SRVType_Localised: 'SRV Scarab', ID: 13 });
+  assert.strictEqual(d.flightMode(s).section, 'exobiologia', 'Scarab en un cuerpo con biología');
+});
+
 test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {
   const m = require('../../core/model');
   const s = m.createState();
