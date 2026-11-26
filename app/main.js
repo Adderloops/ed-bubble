@@ -636,7 +636,15 @@ app.whenReady().then(() => {
   });
   // mercancías por tipo de construcción de colonización (datos fijos de SrvSurvey / Raven Colonial)
   ipcMain.handle('ed:colcosts', () => require('../core/colcosts').costList());
-  ipcMain.handle('ed:recipes', () => { const b = require('../core/shipblueprints'); return { mats: b.MATS, blueprints: b.BLUEPRINTS, specials: b.SPECIALS, modules: b.MODULE_RECIPES }; });
+  ipcMain.handle('ed:recipes', () => {
+    const b = require('../core/shipblueprints');
+    // Nombres del juego en español y máximo que se puede llevar (core/data/materials.json); por símbolo y, si falta, por nombre en inglés.
+    const M = require('../core/data/materials.json').materials;
+    const byEn = {}; for (const v of Object.values(M)) byEn[String(v.en).toLowerCase()] = v;
+    const mats = {};
+    for (const [k, m] of Object.entries(b.MATS)) { const x = M[k] || byEn[String(m.name).toLowerCase()]; mats[k] = x ? { ...m, es: x.es, max: x.max } : m; }
+    return { mats, blueprints: b.BLUEPRINTS, specials: b.SPECIALS, modules: b.MODULE_RECIPES };
+  });
   ipcMain.handle('ed:here', () => hereInfo);
   // Minería (Skull Mining)
   ipcMain.handle('ed:skull', () => { skullRead(); return skullInfo(); });

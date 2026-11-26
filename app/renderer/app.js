@@ -28,7 +28,7 @@ const ui = {
   lockTab: 'items', lockPage: 0, lockSrc: 'locker', // a pie: taquilla
   modTarget: 'suit', modPage: 0, modOpen: null, // a pie: mejoras de ingeniero
   engKind: 'ship', engCat: null, engModule: null, engPage: 0, engOpen: null, // pantalla Ingenieros
-  recipes: null, engRecipe: null, engBp: null, engExp: false, // recetas de ingeniería de nave
+  recipes: null, engRecipe: null, engBp: null, engExp: false, engExpPage: 0, // recetas de ingeniería de nave
   colMode: null, colCosts: null, planLoc: 'all', planPage: 0, planSel: null, // Colonización: planificar por tipo
   shipData: null, builds: null, buildSel: null, buildDel: null, wishSel: null, buy: null, buyDist: 0, buySort: 'dist', buyLarge: false, eqMsg: null, eqTab: 'mine', eqShipPage: 0, eqShip: null, eqCat: 'standard', eqGrpPage: 0, eqGrp: null, eqPages: {}, // Equipo: tu nave, naves y módulos
   skull: null, mineTab: null, sitesPage: 0, prospPage: 0, skullMsg: null, // minería
@@ -2141,7 +2141,17 @@ function loadRecipes() {
   window.edbubble.recipes().then((r) => { ui.recipes = r; render(); }).catch(() => { ui.recipes = null; });
 }
 const matHave = (k, n, have, R) => ((R.mats[k] || {}).untracked ? true : ((have && have[k]) || 0) >= n);
-const matChip = (k, need, have, R) => { const m = R.mats[k] || {}; if (m.untracked) return `<span class="upm" title="No sale en el diario de materiales: compruébalo en el juego">${esc(m.name || k)} <b>×${need}</b></span>`; const h = (have && have[k]) || 0; return `<span class="upm ${h >= need ? 'ok' : ''}" title="${esc(m.name || k)} · ${esc({ Raw: 'bruto', Manufactured: 'fabricado', Encoded: 'codificado' }[m.type] || '')} G${m.grade || '?'}">${esc(m.name || k)} <b>${h}/${need}</b></span>`; };
+const MAT_TYPE_ES = { Raw: 'elemento', Manufactured: 'fabricado', Encoded: 'codificado' };
+/** Material de una receta: nombre del juego en español, lo que tienes / lo que pide, y aviso si estás al máximo. */
+const matChip = (k, need, have, R) => {
+  const m = R.mats[k] || {}; const name = m.es || m.name || k;
+  const info = [m.es && m.name ? m.name : '', MAT_TYPE_ES[m.type] ? `${MAT_TYPE_ES[m.type]} G${m.grade || '?'}` : '', m.max ? `caben ${m.max}` : ''].filter(Boolean).join(' · ');
+  if (m.untracked) return `<span class="upm" title="${esc(info)}${info ? ' · ' : ''}No sale en el diario de materiales: compruébalo en el juego">${esc(name)} <b>×${need}</b></span>`;
+  const h = (have && have[k]) || 0; const full = m.max && h >= m.max;
+  return `<span class="upm ${h >= need ? 'ok' : ''}" title="${esc(info)}${full ? ' · Estás al máximo: lo que recojas de más se pierde' : ''}">${esc(name)} <b>${h}/${need}</b>${full ? ' <span class="eb amber" style="font-size:9px;padding:0 4px">máx.</span>' : ''}</span>`;
+};
+/** Cuántas veces puedes hacer una receta con lo que llevas (null si no se sabe). */
+const recipeRolls = (pairs, have, R) => { if (!have) return null; let n = Infinity; for (const [k, need] of pairs) { if ((R.mats[k] || {}).untracked) continue; n = Math.min(n, Math.floor(((have[k]) || 0) / need)); } return n === Infinity ? null : n; };
 /** Recetas de un módulo con el tope de grado del ingeniero y lo que tienes. */
 function recipePanel(s, e, module) {
   const R = ui.recipes;
@@ -2154,21 +2164,27 @@ function recipePanel(s, e, module) {
   const bpId = mr.bp.includes(ui.engBp) ? ui.engBp : mr.bp[0];
   const tabs = `<div style="display:flex;gap:6px;flex-wrap:wrap">${mr.bp.map((id) => `<button type="button" class="tab small ${!ui.engExp && id === bpId ? 'on' : ''}" data-engbp="${esc(id)}">${esc(R.blueprints[id].name)}</button>`).join('')}${mr.sp.length ? `<button type="button" class="tab small ${ui.engExp ? 'on' : ''}" data-engexp="1">Experimentales</button>` : ''}</div>`;
   let body;
+  let expPager = '';
   if (ui.engExp) {
-    body = mr.sp.map((id) => { const sp = R.specials[id]; const ok = sp.m.every(([k, n]) => matHave(k, n, have, R));
-      return `<div class="in" style="padding:7px 10px;display:flex;flex-direction:column;gap:4px"><span style="display:flex;justify-content:space-between;gap:8px"><span class="va nowrap">${esc(sp.name)}</span>${have ? `<span class="eb ${ok ? 'cyan' : 'dim'}" style="font-size:10px">${ok ? 'Listo' : ''}</span>` : ''}</span><span style="display:flex;flex-wrap:wrap;gap:4px">${sp.m.map(([k, n]) => matChip(k, n, have, R)).join('')}</span></div>`; }).join('');
+    const EXP_PAGE = 4;
+    const pages = Math.max(1, Math.ceil(mr.sp.length / EXP_PAGE));
+    ui.engExpPage = Math.min(ui.engExpPage || 0, pages - 1);
+    expPager = pager2('engexp', ui.engExpPage, pages);
+    body = mr.sp.slice(ui.engExpPage * EXP_PAGE, (ui.engExpPage + 1) * EXP_PAGE).map((id) => { const sp = R.specials[id]; const ok = sp.m.every(([k, n]) => matHave(k, n, have, R)); const rolls = recipeRolls(sp.m, have, R);
+      return `<div class="in" style="padding:7px 10px;display:flex;flex-direction:column;gap:4px"><span style="display:flex;justify-content:space-between;gap:8px"><span class="va nowrap">${esc(sp.name)}</span>${have ? `<span class="eb ${ok ? 'cyan' : 'dim'}" style="font-size:10px">${ok ? `Listo · ×${rolls}` : 'Te falta material'}</span>` : ''}</span><span style="display:flex;flex-wrap:wrap;gap:4px">${sp.m.map(([k, n]) => matChip(k, n, have, R)).join('')}</span></div>`; }).join('');
   } else {
     const bp = R.blueprints[bpId];
     const rank = e.status === 'unlocked' ? (e.rank || 0) : 0;
     body = Object.keys(bp.g).map(Number).filter((g) => g <= mod.grade).sort((a, b) => a - b).map((g) => { const ok = bp.g[g].every(([k, n]) => matHave(k, n, have, R));
-      return `<div class="in" style="padding:7px 10px;display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px;align-items:center;${g > rank ? 'opacity:.6' : ''}"><span class="num ${have && ok ? 'cyan' : ''}" style="font-size:18px">G${g}</span><span style="display:flex;flex-wrap:wrap;gap:4px">${bp.g[g].map(([k, n]) => matChip(k, n, have, R)).join('')}${g > rank ? `<span class="eb amber" style="font-size:9px;align-self:center">${rank ? `Necesitas grado ${g} con ${esc(e.name)}` : 'Aún no lo tienes desbloqueado'}</span>` : ''}</span></div>`; }).join('');
+      return `<div class="in" style="padding:7px 10px;display:grid;grid-template-columns:38px minmax(0,1fr);gap:8px;align-items:center;${g > rank ? 'opacity:.6' : ''}"><span style="display:flex;flex-direction:column;align-items:center;line-height:1"><span class="num ${have && ok ? 'cyan' : ''}" style="font-size:18px">G${g}</span>${have ? `<span class="soft" style="font-size:10px;margin-top:2px" title="Tiradas que puedes hacer con lo que llevas">×${recipeRolls(bp.g[g], have, R)}</span>` : ''}</span><span style="display:flex;flex-wrap:wrap;gap:4px">${bp.g[g].map(([k, n]) => matChip(k, n, have, R)).join('')}${g > rank ? `<span class="eb amber" style="font-size:9px;align-self:center">${rank ? `Necesitas grado ${g} con ${esc(e.name)}` : 'Aún no lo tienes desbloqueado'}</span>` : ''}</span></div>`; }).join('');
   }
   return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:17px">${esc(mod.name)}</span><span class="eb dim" style="font-size:10px">${esc(e.name)} lo hace hasta G${mod.grade}</span></span>${back}</div>
     ${tabs}
     ${have ? '' : '<span class="eb amber">Aún no sé tus materiales: el juego los guarda al empezar la partida</span>'}
     ${!ui.engExp && R.blueprints[bpId].merc ? '<span class="eb amber">Solo para módulos Merc · pide Merc Coin</span>' : ''}
     <div style="display:flex;flex-direction:column;gap:4px">${body}</div>
-    <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">Cada tirada gasta la receta de su grado. Los materiales son los mismos con cualquier ingeniero; él solo pone el grado máximo.</span>`;
+    ${expPager ? `<span style="display:flex;justify-content:flex-end">${expPager}</span>` : ''}
+    <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">Cada tirada gasta la receta de su grado; «×N» son las que puedes hacer con lo que llevas. «máx.»: ese material está lleno. Los materiales son los mismos con cualquier ingeniero; él solo pone el grado máximo.</span>`;
 }
 function screenIngenieros(s, v) {
   const E = v.engineers || { ship: [], suit: [], modules: {} };
@@ -2632,7 +2648,7 @@ document.addEventListener('pointerdown', (ev) => {
     ev.preventDefault(); const d = recBtn.dataset;
     if (d.engrecipe != null) { ui.engRecipe = d.engrecipe || null; ui.engBp = null; ui.engExp = false; }
     else if (d.engbp != null) { ui.engBp = d.engbp; ui.engExp = false; }
-    else ui.engExp = true;
+    else { ui.engExp = true; ui.engExpPage = 0; }
     render(); return;
   }
   const engBtn = ev.target.closest('[data-engkind], [data-engcat], [data-engmodule], [data-engopen]');
@@ -2660,7 +2676,7 @@ document.addEventListener('pointerdown', (ev) => {
   const minTabBtn = ev.target.closest('button[data-minetab]');
   if (minTabBtn) { ev.preventDefault(); ui.mineTab = minTabBtn.dataset.minetab; render(); return; }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage' }[minPgBtn.dataset.mpager];
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage' }[minPgBtn.dataset.mpager];
     if (!k && /^eq(core|hard|opt)$/.test(minPgBtn.dataset.mpager)) { const kk = minPgBtn.dataset.mpager.slice(2); ui.eqPages[kk] = Math.max(0, (ui.eqPages[kk] || 0) + Number(minPgBtn.dataset.d)); render(); return; } ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {
