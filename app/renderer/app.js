@@ -38,7 +38,7 @@ const ui = {
   extOk: null, // última consulta a Spansh: true / false
   prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true, exploracion: true, exobiologia: true, comercio: true }, rigMin: 75, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
   exoBodyPage: 0, exoKnownPage: 0, exoSysPage: 0, // Exobiología
-  trTab: 'cargo', trPage: 0, trWhere: null, trWherePage: 0, trRoute: null, trRoutePage: null, // Comercio
+  trTab: 'cargo', trPage: 0, trWhere: null, trWherePage: 0, trRoute: null, trRoutePage: null, trSide: 'route', trBuy: { q: '', sel: null, large: null, surface: true, carriers: false, cargo: false, page: 0 }, trBuyPage: 0, // Comercio
   xTab: 'all', xBodyPage: 0, xCartoPage: 0, xBioPage: 0, xNrPage: 0, nrDest: '', nrSug: [], nr: null, // Exploración
   displays: null, info: null, // Ajustes: pantallas conectadas y datos de la app
 };
@@ -879,7 +879,7 @@ function screenColObras(s, v) {
 }
 
 /* ---------- Colonización: dónde comprar (Spansh) ---------- */
-const LARGE_SHIPS = new Set(['anaconda', 'cutter', 'federation_corvette', 'type9', 'type9_military', 'type7', 'belugaliner', 'panthermkii']);
+const LARGE_SHIPS = new Set(['anaconda', 'anacondamkii', 'cutter', 'federation_corvette', 'type9', 'type9_military', 'type7', 'belugaliner', 'panthermkii', 'empire_trader', 'orca', 'explorer_nx']);
 const MK_PAGE = 7;
 const daysAgo = (iso) => (iso ? Math.floor((Date.now() - Date.parse(iso)) / 86400000) : null);
 const ageText = (n) => (n == null ? '—' : n < 1 ? 'hoy' : n === 1 ? 'ayer' : n < 60 ? `hace ${n} d` : `hace ${Math.round(n / 30)} meses`);
@@ -1803,7 +1803,7 @@ function screenComercio(s, v) {
       <span class="soft" style="font-size:12px;margin-top:auto">Desde que iniciaste el juego. Ganancia = venta − lo que pagaste (dato del juego).</span>
     </section>
   </div>`;
-  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 400px 460px;gap:12px;min-height:0;height:100%">${left}${mid}${ui.trWhere ? tradeWhereCard(s, v) : tradeRouteCard(s, v)}</div>`;
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 400px 460px;gap:12px;min-height:0;height:100%">${left}${mid}${ui.trWhere ? tradeWhereCard(s, v) : ui.trSide === 'buy' ? tradeBuyCard(s, v) : tradeRouteCard(s, v)}</div>`;
 }
 
 function tradeWhereCard(s, v) {
@@ -1830,7 +1830,7 @@ function tradeRouteCard(s, v) {
   const msg = ui.trRoute && ui.trRoute.error ? `<span class="eb red">${esc(ui.trRoute.error)}</span>` : busy ? '<span class="eb cyan">Calculando la ruta en Spansh…</span>' : '';
   if (!R) {
     return `<section class="pn card" style="min-height:0;overflow:hidden">
-      <span class="ti" style="font-size:16px">Ruta de comercio</span>
+      ${trSideTabs()}
       <span style="font-size:14px;line-height:1.35">El planificador de comercio de Spansh busca, desde esta estación, una cadena de compras y ventas con la mayor ganancia.</span>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Bodega', s.ship.cargoCapacity ? `${nf(s.ship.cargoCapacity)} t` : '—')}${stat('Alcance', s.ship.maxJumpRange ? `${nf(s.ship.maxJumpRange, 1)} al` : '—')}${stat('Dinero', s.cmdr.credits != null ? fmtCr(s.cmdr.credits) : '—')}${statName('Desde', clean(s.location.station) || '—', 16)}</div>
       <button type="button" class="act" data-trroute="1" ${busy || !v.trade.docked ? 'disabled' : ''} style="height:56px">${busy ? 'Calculando…' : v.trade.docked ? 'Calcular ruta (4 tramos)' : 'Atraca para calcular'}</button>
@@ -1852,11 +1852,77 @@ function tradeRouteCard(s, v) {
   }).join('');
   const total = R.hops.reduce((n, h) => n + (h.profit || 0), 0);
   return `<section class="pn card" style="min-height:0;overflow:hidden">
-    <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Ruta de comercio</span>${pager2('trroute', ui.trRoutePage, pages)}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center">${trSideTabs()}${pager2('trroute', ui.trRoutePage, pages)}</div>
     <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${stat('Ganancia total', fmtCr(total), 'cyan')}${stat('Tramos', nf(R.hops.length))}${stat('Calculada', ageIso(R.at) || '—')}</div>
     <div style="display:flex;flex-direction:column;gap:4px">${rows}</div>
     ${msg}
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:auto"><button type="button" class="tab" data-trroute="1" ${busy || !v.trade.docked ? 'disabled' : ''}>Recalcular</button><button type="button" class="tab" data-trrouteclear="1">Borrar ruta</button></div>
+  </section>`;
+}
+function trSideTabs() {
+  return `<span style="display:flex;gap:6px">${[['route', 'Ruta de comercio'], ['buy', 'Dónde comprar']].map(([k, t]) => `<button type="button" class="tab small ${ui.trSide === k ? 'on' : ''}" data-trside="${k}">${t}</button>`).join('')}</span>`;
+}
+const foldText = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+/** Mercancías que coinciden con lo escrito (nombre del juego o en inglés); primero las que empiezan así. */
+function commodityMatches(q, n = 8) {
+  const f = foldText(q);
+  if (f.length < 2 || !ui.comList) return [];
+  const score = (c) => { const a = foldText(c.es); const b = foldText(c.en); return a.startsWith(f) || b.startsWith(f) ? 0 : a.includes(f) || b.includes(f) ? 1 : 9; };
+  return ui.comList.map((c) => [score(c), c]).filter(([k]) => k < 9).sort((x, y) => x[0] - y[0] || (x[1].es || x[1].en).localeCompare(y[1].es || y[1].en)).slice(0, n).map(([, c]) => c);
+}
+const BUY_PAGE = 7;
+function buyQuery(s) {
+  const B = ui.trBuy;
+  const large = B.large != null ? B.large : LARGE_SHIPS.has(String(s.ship.type || '').toLowerCase());
+  const minSupply = B.cargo && s.ship.cargoCapacity ? s.ship.cargoCapacity : 1;
+  return { commodity: B.sel.en, symbol: B.sel.key, minSupply, largePad: large, key: `${B.sel.key}|${minSupply}|${large}|${s.location.system || ''}` };
+}
+async function loadBuy(q) {
+  const B = ui.trBuy;
+  B.res = { key: q.key, busy: true }; ui.trBuyPage = 0; render();
+  const r = await window.edbubble.markets(q);
+  if (!ui.trBuy.res || ui.trBuy.res.key !== q.key) return;
+  ui.extOk = r.ok;
+  ui.trBuy.res = r.ok ? { key: q.key, list: r.list } : { key: q.key, error: r.error };
+  render();
+}
+function tradeBuyCard(s, v) {
+  const B = ui.trBuy;
+  if (!ui.comList && !ui.comListLoading) { ui.comListLoading = true; window.edbubble.commodityList().then((l) => { ui.comList = l || []; render(); }); }
+  const label = (c) => c.es || c.en;
+  const typing = B.q.trim() && (!B.sel || foldText(B.q) !== foldText(label(B.sel)));
+  const input = `<input id="tr-buy" class="search" type="text" spellcheck="false" autocomplete="off" placeholder="Mercancía (ej. Torio o Thorium)…" value="${esc(B.q)}">`;
+  let body = '';
+  if (typing || !B.sel) {
+    const m = commodityMatches(B.q);
+    body = m.length ? `<div style="display:flex;flex-direction:column;gap:4px">${m.map((c) => `<button type="button" class="pick" data-trbuypick="${esc(c.key)}"><span class="nowrap">${esc(label(c))}</span><span class="soft nowrap">${c.es && c.es !== c.en ? esc(c.en) : ''}</span></button>`).join('')}</div>`
+      : `<div class="empty" style="flex-direction:column;gap:6px;font-size:14px">${B.q.trim().length >= 2 ? 'Ninguna mercancía con ese nombre.' : 'Escribe el nombre de la mercancía y elígela de la lista: verás las estaciones más cercanas que la venden, con existencias y precio.'}</div>`;
+    if (!ui.comList) body = '<div class="empty">Cargando mercancías…</div>';
+  } else {
+    const q = buyQuery(s);
+    if (!B.res || B.res.key !== q.key) { if (!B.res || !B.res.busy) setTimeout(() => loadBuy(q), 0); }
+    const chip = (k, on, t) => `<button type="button" class="tab small ${on ? 'on' : ''}" data-trbuyf="${k}">${t}</button>`;
+    const chips = `<div style="display:flex;gap:6px;flex-wrap:wrap">${chip('large', q.largePad, 'Plataforma L')}${chip('surface', B.surface, 'Superficie')}${chip('carriers', B.carriers, 'Carriers')}${s.ship.cargoCapacity ? chip('cargo', B.cargo, `Stock ≥ ${nf(s.ship.cargoCapacity)} t`) : ''}</div>`;
+    let list = '';
+    if (!B.res || B.res.busy || B.res.key !== q.key) list = '<div class="empty">Buscando en Spansh…</div>';
+    else if (B.res.error) list = `<div class="empty red">${esc(B.res.error)}</div>`;
+    else {
+      const all = B.res.list.filter((m) => (B.surface || !m.planetary) && (B.carriers || !m.carrier));
+      const pages = Math.max(1, Math.ceil(all.length / BUY_PAGE)); ui.trBuyPage = Math.min(ui.trBuyPage || 0, pages - 1);
+      const rows = all.slice(ui.trBuyPage * BUY_PAGE, (ui.trBuyPage + 1) * BUY_PAGE).map((x) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:6px 10px">
+        <span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:14px">${esc(x.station)}</span><span class="soft nowrap" style="font-size:11px">${esc(x.system)} · ${nf(x.distance, 1)} al · ${x.ls != null ? `${nf(x.ls)} ls · ` : ''}${x.pad || '?'}${x.carrier ? ' · carrier' : x.planetary ? ' · superficie' : ''} · ${ageIso(x.updatedAt)}</span></span>
+        <span style="display:flex;flex-direction:column;align-items:flex-end"><span class="num cyan" style="font-size:15px">${x.price ? fmtCr(x.price) : '—'}</span><span class="soft" style="font-size:11px">stock ${nf(x.supply)}</span></span>
+        <button type="button" class="tab small" data-copy="1" data-name="${esc(x.system)}">Copiar</button>
+      </div>`).join('');
+      list = rows ? `<div style="display:flex;flex-direction:column;gap:4px">${rows}</div><span style="display:flex;justify-content:flex-end">${pager2('trbuy', ui.trBuyPage, pages)}</span>` : '<div class="empty" style="font-size:14px">Ninguna estación cercana la vende con estos filtros. Prueba a quitar alguno.</div>';
+    }
+    body = `<span class="ti nowrap" style="font-size:20px">${esc(label(B.sel))}${B.sel.es && B.sel.es !== B.sel.en ? ` <span class="soft" style="font-size:13px">${esc(B.sel.en)}</span>` : ''}</span>${chips}${list}`;
+  }
+  return `<section class="pn card" style="min-height:0;overflow:hidden">
+    ${trSideTabs()}
+    ${input}
+    ${body}
+    <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">De la más cercana a ${esc(s.location.system || 'tu sistema')}. Precios y existencias de Spansh: fíjate en la antigüedad. «Copiar» copia el sistema para pegarlo en el mapa galáctico.</span>
   </section>`;
 }
 async function tradeWhere(key, name, min, merits) {
@@ -3052,6 +3118,7 @@ document.addEventListener('click', (ev) => {
 let searchTimer = null;
 document.addEventListener('input', (ev) => {
   if (ev.target.id === 'coord-input') { ui.coordText = ev.target.value; return; }
+  if (ev.target.id === 'tr-buy') { ui.trBuy.q = ev.target.value; render(); return; }
   if (ev.target.id === 'nr-dest') {
     ui.nrDest = ev.target.value; clearTimeout(searchTimer);
     const q = ui.nrDest.trim();
@@ -3078,6 +3145,7 @@ document.addEventListener('input', (ev) => {
 });
 document.addEventListener('keydown', (ev) => {
   if (ev.target.id === 'coord-input' && ev.key === 'Enter') { coordAction('set'); return; }
+  if (ev.target.id === 'tr-buy' && ev.key === 'Enter') { const c = commodityMatches(ui.trBuy.q, 1)[0]; if (c) { ui.trBuy.sel = c; ui.trBuy.q = c.es || c.en; ui.trBuy.res = null; render(); } return; }
   if (ev.target.id === 'nr-dest' && ev.key === 'Enter') { neutronPlot((ui.nrDest || '').trim()); return; }
   if (ev.target.id === 'nav-search' && ev.key === 'Enter') {
     const q = ui.search.q.trim();
@@ -3168,13 +3236,16 @@ document.addEventListener('pointerdown', (ev) => {
   }
   const minTabBtn = ev.target.closest('button[data-minetab]');
   if (minTabBtn) { ev.preventDefault(); ui.mineTab = minTabBtn.dataset.minetab; render(); return; }
-  const trB = ev.target.closest('[data-trtab], [data-trwhere], [data-trwhereclose], [data-trmerits], [data-trroute], [data-trrouteclear]');
+  const trB = ev.target.closest('[data-trtab], [data-trwhere], [data-trwhereclose], [data-trmerits], [data-trroute], [data-trrouteclear], [data-trside], [data-trbuypick], [data-trbuyf]');
   if (trB && !trB.disabled) {
     ev.preventDefault(); const d = trB.dataset;
     if (d.trtab) { ui.trTab = d.trtab; ui.trPage = 0; render(); return; }
     if (d.trwhere) { tradeWhere(d.trwhere, d.trname, Number(d.trmin) || 1, false); return; }
     if (d.trwhereclose) { ui.trWhere = null; render(); return; }
     if (d.trmerits && ui.trWhere) { const W = ui.trWhere; const c = ((ui.snap && ui.snap.view.trade.cargo) || []).find((x) => x.key === W.key); const min = d.trmerits === '1' ? Math.round((c && c.paid ? c.paid : W.min) * 1.4) : (c && c.sell) || W.min; tradeWhere(W.key, W.name, min, d.trmerits === '1'); return; }
+    if (d.trside) { ui.trSide = d.trside; ui.trWhere = null; render(); return; }
+    if (d.trbuypick) { const c = (ui.comList || []).find((x) => x.key === d.trbuypick); if (c) { ui.trBuy.sel = c; ui.trBuy.q = c.es || c.en; ui.trBuy.res = null; } render(); return; }
+    if (d.trbuyf) { const B = ui.trBuy; if (d.trbuyf === 'large') { const s0 = ui.snap && ui.snap.state; B.large = !(B.large != null ? B.large : LARGE_SHIPS.has(String((s0 && s0.ship.type) || '').toLowerCase())); } else B[d.trbuyf] = !B[d.trbuyf]; ui.trBuyPage = 0; render(); return; }
     if (d.trroute) { tradeRoutePlot(); return; }
     if (d.trrouteclear) { window.edbubble.tradeRouteClear(); ui.trRoute = null; return; }
   }
@@ -3188,7 +3259,7 @@ document.addEventListener('pointerdown', (ev) => {
     if (d.nrclear) { window.edbubble.neutronClear(); ui.nr = null; return; }
   }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage', trade: 'trPage', trwhere: 'trWherePage', trroute: 'trRoutePage' }[minPgBtn.dataset.mpager];
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage', trade: 'trPage', trwhere: 'trWherePage', trroute: 'trRoutePage', trbuy: 'trBuyPage' }[minPgBtn.dataset.mpager];
     if (!k && /^eq(core|hard|opt)$/.test(minPgBtn.dataset.mpager)) { const kk = minPgBtn.dataset.mpager.slice(2); ui.eqPages[kk] = Math.max(0, (ui.eqPages[kk] || 0) + Number(minPgBtn.dataset.d)); render(); return; } ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {

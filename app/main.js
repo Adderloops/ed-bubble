@@ -286,6 +286,8 @@ async function lookBioValues(snap) {
 /** Exploración: cuerpos del sistema actual según Spansh (los que aún no has escaneado y si alguien lo ha subido). */
 let exploreLooked = null;
 let saveExplore = () => {};
+let commNames = {};
+let learnCommodityNames = () => {};
 async function lookExplore(snap) {
   const addr = snap.state.exploration && snap.state.exploration.system.address;
   if (addr == null || addr === exploreLooked) return;
@@ -592,6 +594,33 @@ app.whenReady().then(() => {
   });
   // Exploración: valores de especies aprendidos (ventas, Spansh) y ruta de neutrones, guardados entre sesiones
   const BIOVAL_FILE = path.join(app.getPath('userData'), 'biovalues.json');
+  // Nombres de las mercancías en el idioma del juego, aprendidos de los mercados y la bodega
+  const CNAMES_FILE = path.join(app.getPath('userData'), 'commnames.json');
+  commNames = readJson(CNAMES_FILE) || {};
+  learnCommodityNames = (st) => {
+    let changed = false;
+    const add = (key, name) => { if (key && name && commodities.NAMES[key] && commNames[key] !== name && !/^\$/.test(name)) { commNames[key] = name; changed = true; } };
+    for (const i of (st.market && st.market.items) || []) add(i.key, i.name);
+    for (const i of (st.cargo && st.cargo.inventory) || []) add(i.key, i.name);
+    if (changed) { try { fs.writeFileSync(CNAMES_FILE, JSON.stringify(commNames)); } catch (e) { /* no se guarda */ } }
+  };
+  // y de los diarios (compras, ventas, bodega, recogidas): una sola pasada al arrancar, en segundo plano
+  setTimeout(() => {
+    try {
+      const dir = engine.folder;
+      const files = fs.readdirSync(dir).filter((f) => /^Journal\..*\.log$/.test(f)).sort().slice(-80);
+      const re = /"(?:Type|Name)":"\$?([A-Za-z0-9_]+?)(?:_name;)?",\s*"(?:Type|Name)_Localised":"([^"]+)"/g;
+      let changed = false;
+      for (const f of files) {
+        const txt = fs.readFileSync(path.join(dir, f), 'utf8');
+        for (const m of txt.matchAll(re)) {
+          const key = m[1].toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (commodities.NAMES[key] && !commNames[key]) { commNames[key] = m[2]; changed = true; }
+        }
+      }
+      if (changed) fs.writeFileSync(CNAMES_FILE, JSON.stringify(commNames));
+    } catch (e) { logLine(`[mercancías] nombres: ${e.message}`); }
+  }, 4000);
   const NEUTRON_FILE = path.join(app.getPath('userData'), 'neutron.json');
   try { engine.learnBioValues(JSON.parse(fs.readFileSync(BIOVAL_FILE, 'utf8'))); } catch (e) { /* aún no hay */ }
   try { engine.setNeutronRoute(JSON.parse(fs.readFileSync(NEUTRON_FILE, 'utf8'))); } catch (e) { /* sin ruta */ }
@@ -610,6 +639,7 @@ app.whenReady().then(() => {
     }
     const X = snap.state.exploration;
     if (X.bioValuesChanged !== bioSaved) { bioSaved = X.bioValuesChanged; try { fs.writeFileSync(BIOVAL_FILE, JSON.stringify(X.bioValues)); } catch (e) { /* no se guarda */ } }
+    learnCommodityNames(snap.state);
     const nj = JSON.stringify(snap.state.neutron || null);
     if (nj !== neutronSaved) { neutronSaved = nj; try { if (snap.state.neutron) fs.writeFileSync(NEUTRON_FILE, nj); else fs.unlinkSync(NEUTRON_FILE); } catch (e) { /* no se guarda */ } }
   };
@@ -643,6 +673,8 @@ app.whenReady().then(() => {
       return { ok: true, list, commodity: name };
     } catch (e) { logLine(`[spansh] dónde vender ${name}: ${e.message}`); return { ok: false, error: e.message }; }
   });
+  // Comercio · comprar: lista de mercancías (inglés para Spansh + el nombre del juego que hayas visto en mercados y bodega)
+  ipcMain.handle('ed:commodity-list', () => Object.entries(commodities.NAMES).map(([key, en]) => ({ key, en, es: commNames[key] || null })));
   ipcMain.handle('ed:trade-route', async (_e, q) => {
     const st = (last || engine.snapshot()).state;
     const L = st.location;

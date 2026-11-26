@@ -56,4 +56,5 @@ contextBridge.exposeInMainWorld('edbubble', {
   tradeSell: (q) => ipcRenderer.invoke('ed:trade-sell', q),
   tradeRoute: (q) => ipcRenderer.invoke('ed:trade-route', q),
   tradeRouteClear: () => ipcRenderer.invoke('ed:trade-route-clear'),
+  commodityList: () => ipcRenderer.invoke('ed:commodity-list'),
 });
