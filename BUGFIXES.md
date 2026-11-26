@@ -26,6 +26,8 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 15 | Combate › Tu nave: el casco marcaba 100 % con la nave al 53 % | Adder (captura del juego) | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado (limitación del juego) |
 | 16 | Minería › Sitios de la flota: «Usar la conexión de Skull Mining (EDMC)» no encuentra la URL ni la clave | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado |
 | 17 | Órbita planetaria › Cuerpo: sin gravedad, temperatura ni radio | Specter A.G. (captura vía Adder) | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado |
+| 18 | Vuelo › Próximo salto y Navegación: el nombre del sistema de destino salía cortado («Pegasi Sector…») | Adder (captura) | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
+| 19 | Exobiología: predecía especies en un cuerpo cuyas señales (FSS o Spansh) no tienen ninguna biológica; nombres repetidos («Roseum Sinuous Tubers Roseum Sinuous Tubers») | Adder (en HIP 109677 A 2, comparando con SrvSurvey) | desarrollo | 0.7.0-beta.5 | Corregido |
 
 ## Detalle
 
@@ -107,6 +109,21 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 - **Encontrado en:** 0.7.0-beta.2 · **Corregido en:** 0.7.0-beta.3
 - **Qué pasaba:** la tarjeta de Estación contaba como desbloqueados solo los de estado «Unlocked».
 - **Causa:** en los ingenieros de Odyssey, «Invited» en el diario ya significa que tienes acceso; «Unlocked» solo añade que ya los has visitado. Ahora cuentan los dos (en naves, «Invited» sigue pidiendo el contrato inicial).
+
+
+### 18 · Destino cortado
+
+- **Informado por:** Adder (26-11-2026), con captura en HIP 109677.
+- **Encontrado en:** 0.7.0-beta.4 · **Corregido en:** 0.7.0-beta.5
+- **Qué pasaba:** en la tarjeta Próximo salto (Vuelo) el destino ocupaba un tercio del ancho y los nombres de sistema largos se cortaban con «…». En Navegación › Ruta trazada pasaba lo mismo.
+- **Arreglo:** en Vuelo el destino ocupa ahora toda la fila; en Navegación, el doble de ancho que las otras cifras. En los dos, la letra se reduce si el nombre es muy largo y el nombre completo sale al pasar el ratón.
+
+### 19 · Especies predichas en un cuerpo sin biología
+
+- **Informado por:** Adder (26-11-2026), al aterrizar en HIP 109677 A 2 y ver en SrvSurvey «Bio signals: 5».
+- **Encontrado en:** versión de desarrollo (sección Exobiología) · **Corregido en:** 0.7.0-beta.5
+- **Qué pasaba:** las 5 señales biológicas de SrvSurvey son de todo el sistema (B 5 y B 6 a), no de A 2. Spansh tiene las señales de A 2 (3 geológicas y 3 humanas, ninguna biológica), pero la app las ignoraba y predecía Sinuous Tubers en A 2. Además, en las especies cuyo nombre ya incluye el género (Sinuous Tubers, Anemone) el nombre salía repetido.
+- **Arreglo:** si las señales del cuerpo (tu FSS o Spansh) no incluyen ninguna biológica, no se predice nada y la app dice en qué cuerpos del sistema sí hay. Exobiología › Este sistema muestra el valor posible de cada cuerpo con biología (con HIP 109677 coincide con SrvSurvey: B 6 a hasta 6,9 M, B 5 hasta 1,7 M). Los nombres de especie ya no repiten el género.
 
 ## Revisión: el juego en otros idiomas (24-11-2026)
 

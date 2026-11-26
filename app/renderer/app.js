@@ -306,6 +306,12 @@ function meter(label, value, ratio, cls) {
 function stat(label, value, cls = '') {
   return `<div class="in stat"><span class="eb" style="font-size:10px">${esc(label)}</span><span class="num ${cls}" style="font-size:18px">${esc(value)}</span></div>`;
 }
+/** Como stat, para nombres largos (sistemas): la letra se ajusta para que quepa entero y el nombre completo sale al pasar el ratón. */
+function statName(label, value, chars = 18, style = '') {
+  const v = String(value || '—');
+  const size = Math.max(12, Math.min(18, Math.floor((18 * chars) / Math.max(v.length, 1))));
+  return `<div class="in stat" title="${esc(v)}" style="${style}"><span class="eb" style="font-size:10px">${esc(label)}</span><span class="num" style="font-size:${size}px">${esc(v)}</span></div>`;
+}
 function nowText(s, v) {
   const st = clean(s.location.station);
   switch (v.mode.key) {
@@ -409,8 +415,8 @@ function screenVuelo(s, v) {
       </div>
       ${r.legs.length ? `<div style="display:flex;flex-direction:column;gap:2px"><span class="eb amber" style="font-size:11px">${esc(routeProgressText(r))}</span>${routeGraph(r, 516, false)}</div>` : ''}
       ${fuelBlock(s, v)}
-      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
-        ${stat('Distancia', nextLeg && nextLeg.distance != null ? `${nf(nextLeg.distance, 2)} al` : '—')}${stat('Saltos restantes', r.legs.length ? nf(r.jumps) : or(s.fsdTarget.remainingJumps))}${stat('Destino', r.destination ? esc(r.destination) : esc(tgtName))}
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+        ${stat('Distancia', nextLeg && nextLeg.distance != null ? `${nf(nextLeg.distance, 2)} al` : '—')}${stat('Saltos restantes', r.legs.length ? nf(r.jumps) : or(s.fsdTarget.remainingJumps))}${statName('Destino', r.destination || tgtName, 32, 'grid-column:1/-1')}
       </div>${finalStrip(s)}` : `<div class="empty" style="flex-direction:column;gap:6px;padding:18px"><span class="va" style="font-size:18px;color:var(--soft)">Sin objetivo de salto</span><span style="font-size:14px">Fija un sistema o traza una ruta en el mapa galáctico.</span></div>`}
     </section>`;
 
@@ -584,8 +590,8 @@ function screenNavegacion(s, v) {
         ${routeGraph(r, 920, true)}
       </div>
       ${fp && !fp.ok ? fuelBlock(s, v) : ''}
-      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
-        ${stat('Saltos', nf(r.jumps))}${stat('Distancia', `${nf(r.distance, 1)} al`)}${stat('No recogibles', nf(noScoop), noScoop ? 'amber' : 'cyan')}${stat('Destino', esc(r.destination))}
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,2fr);gap:8px">
+        ${stat('Saltos', nf(r.jumps))}${stat('Distancia', `${nf(r.distance, 1)} al`)}${stat('No recogibles', nf(noScoop), noScoop ? 'amber' : 'cyan')}${statName('Destino', r.destination, 21)}
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span class="eb dim" style="display:grid;grid-template-columns:52px 44px minmax(0,1fr) 150px;width:calc(100% - 330px)"><span style="padding-left:12px">#</span><span>Estr.</span><span>Sistema</span><span>${fp ? 'Combustible al llegar' : ''}</span></span>${pager}
@@ -1946,7 +1952,7 @@ function neutronCard(s, v) {
       <span class="soft" style="font-size:13px;line-height:1.35">Calcula con el Neutron Plotter de Spansh una ruta que pasa por estrellas de neutrones: al cruzar su chorro, el FSD se sobrecarga y salta cuatro veces más lejos.</span>
       <input id="nr-dest" class="search" type="text" spellcheck="false" autocomplete="off" placeholder="Sistema de destino…" value="${esc(ui.nrDest || '')}">
       ${sug ? `<div style="display:flex;flex-direction:column;gap:4px">${sug}</div>` : ''}
-      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Desde', clean(s.location.system) || '—')}${stat('Alcance de salto', s.ship.maxJumpRange ? `${nf(s.ship.maxJumpRange, 2)} ly` : '—')}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${statName('Desde', clean(s.location.system) || '—', 16)}${stat('Alcance de salto', s.ship.maxJumpRange ? `${nf(s.ship.maxJumpRange, 2)} al` : '—')}</div>
       <button type="button" class="act" data-nrplot="1" ${busy || !(ui.nrDest || '').trim() ? 'disabled' : ''} style="height:56px">${busy ? 'Calculando…' : 'Calcular ruta'}</button>
       ${msg}
       <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">Usa el alcance de tu nave actual y una eficiencia del 60 %. La ruta se guarda hasta que la borres.</span>
@@ -1960,12 +1966,12 @@ function neutronCard(s, v) {
     : nx ? `<div class="in" style="padding:12px 14px;display:flex;flex-direction:column;gap:6px;border-color:var(--amber)">
         <span class="eb amber">${N.here ? 'Siguiente punto' : 'Vas hacia'}</span>
         <span style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="va nowrap" style="font-size:22px">${esc(nx.system)}</span><button type="button" class="nav-btn" style="width:110px" data-copy="1" data-name="${esc(nx.system)}">Copiar</button></span>
-        <span style="display:flex;gap:6px">${nx.neutron ? '<span class="eb cyan">Estrella de neutrones</span>' : '<span class="eb dim">Sin neutrones</span>'}<span class="eb dim">${nf(nx.jumps)} saltos</span>${nx.dist != null ? `<span class="eb dim">${nf(nx.dist)} ly</span>` : ''}</span>
+        <span style="display:flex;gap:6px">${nx.neutron ? '<span class="eb cyan">Estrella de neutrones</span>' : '<span class="eb dim">Sin neutrones</span>'}<span class="eb dim">${nf(nx.jumps)} saltos</span>${nx.dist != null ? `<span class="eb dim">${nf(nx.dist)} al</span>` : ''}</span>
       </div>` : '';
   return `<section class="pn card" style="min-height:0;overflow:hidden">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span class="ti nowrap" style="font-size:16px">Ruta a ${esc(N.to)}</span><span class="eb dim">${nf(N.range, 2)} ly</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span class="ti nowrap" style="font-size:16px">Ruta a ${esc(N.to)}</span><span class="eb dim">${nf(N.range, 2)} al</span></div>
     ${meter('Recorrido', `${nf(N.done * 100)} %`, N.done, 'on')}
-    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${stat('Saltos que quedan', nf(N.jumpsLeft))}${stat('Quedan', N.left != null ? `${nf(N.left)} ly` : '—')}${stat('Punto', `${nf(N.at + 1)} / ${nf(N.jumps.length)}`)}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${stat('Saltos que quedan', nf(N.jumpsLeft))}${stat('Quedan', N.left != null ? `${nf(N.left)} al` : '—')}${stat('Punto', `${nf(N.at + 1)} / ${nf(N.jumps.length)}`)}</div>
     ${next}
     ${up ? `<div style="display:flex;justify-content:space-between;align-items:center"><span class="eb">Después</span>${pager2('xnr', ui.xNrPage, pages)}</div><div style="display:flex;flex-direction:column;gap:4px">${up}</div>` : ''}
     ${msg}
@@ -2283,7 +2289,7 @@ function eqMine(s, v, D) {
   const hero = `<section class="pn card" style="gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px">
         <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span class="eb">${esc(sh ? sh.n : S.typeLocalised || S.type)}${S.ident ? ` · ${esc(S.ident)}` : ''}${sh && sh.spec ? ` · ${esc(sh.spec.manufacturer)}` : ''}</span><span class="ti nowrap" style="font-size:30px">${esc(or(S.name, sh ? sh.n : S.type))}</span></span>
-        <div style="display:grid;grid-template-columns:repeat(6,auto);gap:8px">${stat('Salto máx.', S.maxJumpRange ? `${nf(S.maxJumpRange, 2)} ly` : '—', 'cyan')}${stat('Carga', S.cargoCapacity != null ? `${nf(S.cargoCapacity)} t` : '—')}${stat('Casco · último dato', S.hull != null ? `${nf(S.hull * 100)} %` : '—')}${stat('Reembolso', S.rebuy != null ? `${nf(S.rebuy)} cr` : '—')}${stat('Ingeniería', `${engN} / ${mods.length}`)}${stat('Ranuras libres', nf(free), free ? 'amber' : '')}</div>
+        <div style="display:grid;grid-template-columns:repeat(6,auto);gap:8px">${stat('Salto máx.', S.maxJumpRange ? `${nf(S.maxJumpRange, 2)} al` : '—', 'cyan')}${stat('Carga', S.cargoCapacity != null ? `${nf(S.cargoCapacity)} t` : '—')}${stat('Casco · último dato', S.hull != null ? `${nf(S.hull * 100)} %` : '—')}${stat('Reembolso', S.rebuy != null ? `${nf(S.rebuy)} cr` : '—')}${stat('Ingeniería', `${engN} / ${mods.length}`)}${stat('Ranuras libres', nf(free), free ? 'amber' : '')}</div>
       </div></section>`;
   const PER = 13;
   const col = (title, list, key) => {
@@ -2368,7 +2374,7 @@ function engText(e) {
   const ex = e.exp ? (R && R.specials[e.exp] ? R.specials[e.exp].name : e.exp) : '';
   return `${bp} G${e.level ?? '?'}${ex ? ` · ${ex}` : ''}`;
 }
-const BUY_DIST = [[0, 'Todas'], [20, '20 ly'], [50, '50 ly'], [100, '100 ly']];
+const BUY_DIST = [[0, 'Todas'], [20, '20 al'], [50, '50 al'], [100, '100 al']];
 function wishBuy(s, D, b, it) {
   const box = (inner) => `<section class="pn card" style="min-height:0;overflow:hidden">${inner}</section>`;
   if (!it) return box('<div class="empty">Elige un cambio de la lista.</div>');
@@ -2400,7 +2406,7 @@ function wishBuy(s, D, b, it) {
     list = `<div style="display:flex;justify-content:space-between;align-items:center"><span class="eb">${nf(r.length)} estaciones${B.ref ? ` · desde ${esc(B.ref)}` : ''}${best ? ` · <span class="cyan">hasta −${best} %</span>` : ''}</span>${pager}</div>
       <div style="display:flex;flex-direction:column;gap:4px">${items.map((x) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) 120px 150px;gap:10px;align-items:center;padding:6px 12px">
         <span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap">${esc(x.station)} <span class="soft" style="font-size:12px">· ${esc(x.pad || '?')}${x.carrier ? ' · carrier' : x.planetary ? ' · superficie' : ''}</span></span><span class="eb dim nowrap" style="font-size:10px">${esc(x.system)}${x.ls != null ? ` · ${nf(x.ls)} ls` : ''}${x.power ? ` · ${esc(x.power)}${x.powerState ? ` (${esc(x.powerState)})` : ''}` : ''}</span></span>
-        <span class="num soft" style="text-align:right">${x.distance != null ? `${nf(x.distance, 1)} ly` : '—'}</span>
+        <span class="num soft" style="text-align:right">${x.distance != null ? `${nf(x.distance, 1)} al` : '—'}</span>
         <span style="display:flex;flex-direction:column;align-items:flex-end"><span class="num ${x.discount ? 'cyan' : ''}">${x.price != null ? fmtCr(x.price) : '—'}</span>${x.discount ? `<span class="eb cyan" style="font-size:10px">−${x.discount} %${x.power ? ' · Powerplay' : ''}</span>` : ''}</span></div>`).join('') || '<span class="soft" style="font-size:14px">Ninguna estación con estos filtros entre las 100 más cercanas que lo venden.</span>'}</div>`;
   }
   const base = B.results && B.results[0] ? B.results[0].base : (D.modules[it.item] && D.modules[it.item].s ? D.modules[it.item].s.cost : null);
@@ -2535,7 +2541,7 @@ function screenIngenieros(s, v) {
           <span style="display:flex;gap:8px;align-items:center"><span class="va" style="font-size:15px">${esc(open.system)}</span><button type="button" class="tab small" data-copy="1" data-name="${esc(open.system)}">Copiar</button></span>
         </span></div>
       <span style="display:flex;gap:6px;flex-wrap:wrap"><span class="eb ${cls}">${status}</span>${engTipo(open, 11)}</span>
-      ${open.permit ? '<span class="eb red">Su sistema pide permiso</span>' : ''}${open.colonia ? '<span class="eb dim">Está en Colonia, a unos 22.000 ly de la Burbuja</span>' : ''}
+      ${open.permit ? '<span class="eb red">Su sistema pide permiso</span>' : ''}${open.colonia ? '<span class="eb dim">Está en Colonia, a unos 22.000 al de la Burbuja</span>' : ''}
       ${open.unlock && open.status !== 'unlocked' ? `<div class="in" style="padding:8px 12px;display:flex;flex-direction:column;gap:4px"><span class="eb amber" style="font-size:10px">Cómo desbloquearlo</span><span style="font-size:13px;line-height:1.35">${esc(open.unlock).replace(/\. (?=(Conocer|Acceso|Desbloqueo):)/g, '.<br>')}</span></div>` : ''}
       ${open.presenta && open.presenta.length ? `<span class="soft" style="font-size:12px">Te presenta a: ${open.presenta.map(esc).join(', ')}</span>` : ''}
       ${open.rep && !(open.status === 'unlocked' && open.rank >= 5) ? `<span class="soft" style="font-size:12px">Sube la reputación con: ${open.rep.map((r) => ENG_REP[r] || r).join(' · ')}</span>` : ''}
