@@ -2121,7 +2121,7 @@ function engTipo(e, size) {
   const t = e.tipo && ENG_TIPOS[e.tipo];
   return t ? `<span class="eb" style="font-size:${size}px;color:${t[1]};border-color:${t[1]}">${t[0]}</span>` : '';
 }
-const PORTRAITS = new Set(['baltanos', 'bill-turner', 'broo-tarquin', 'colonel-bris-dekker', 'didi-vatermann', 'domino-green', 'elvira-martuuk', 'felicity-farseer', 'hera-tani', 'hero-ferrari', 'jude-navarro', 'juri-ishmaak', 'kit-fowler', 'lei-cheung', 'liz-ryder', 'lori-jameson', 'marco-qwent', 'petra-olmanova', 'professor-palin', 'ram-tah', 'rosa-dayette', 'selene-jean', 'the-dweller', 'the-sarge', 'tiana-fortune', 'tod-the-blaster-mcquinn', 'uma-laszlo', 'wellington-beck', 'yarden-bond', 'zacariah-nemo', 'terra-velasquez', 'oden-geiger', 'eleanor-bresa', 'yi-shen']);
+const PORTRAITS = new Set(['baltanos', 'bill-turner', 'broo-tarquin', 'colonel-bris-dekker', 'didi-vatermann', 'domino-green', 'elvira-martuuk', 'felicity-farseer', 'hera-tani', 'hero-ferrari', 'jude-navarro', 'juri-ishmaak', 'kit-fowler', 'lei-cheung', 'liz-ryder', 'lori-jameson', 'marco-qwent', 'petra-olmanova', 'professor-palin', 'ram-tah', 'rosa-dayette', 'selene-jean', 'the-dweller', 'the-sarge', 'tiana-fortune', 'tod-the-blaster-mcquinn', 'uma-laszlo', 'wellington-beck', 'yarden-bond', 'zacariah-nemo', 'terra-velasquez', 'oden-geiger', 'eleanor-bresa', 'yi-shen', 'mel-brandon', 'chloe-sedesi', 'marsha-hicks']);
 const ENG_CATS = [['H', 'Anclajes'], ['U', 'Apoyo'], ['C', 'Internos principales'], ['O', 'Internos opcionales']];
 const ENG_PAGE = 15;
 function portrait(e, size) {
@@ -2225,6 +2225,7 @@ function screenIngenieros(s, v) {
       <span style="display:flex;gap:6px;flex-wrap:wrap"><span class="eb ${cls}">${status}</span>${engTipo(open, 11)}</span>
       ${open.permit ? '<span class="eb red">Su sistema pide permiso</span>' : ''}${open.colonia ? '<span class="eb dim">Está en Colonia, a unos 22.000 ly de la Burbuja</span>' : ''}
       ${open.unlock && open.status !== 'unlocked' ? `<div class="in" style="padding:8px 12px;display:flex;flex-direction:column;gap:4px"><span class="eb amber" style="font-size:10px">Cómo desbloquearlo</span><span style="font-size:13px;line-height:1.35">${esc(open.unlock).replace(/\. (?=(Conocer|Acceso|Desbloqueo):)/g, '.<br>')}</span></div>` : ''}
+      ${open.presenta && open.presenta.length ? `<span class="soft" style="font-size:12px">Te presenta a: ${open.presenta.map(esc).join(', ')}</span>` : ''}
       ${open.rep && !(open.status === 'unlocked' && open.rank >= 5) ? `<span class="soft" style="font-size:12px">Sube la reputación con: ${open.rep.map((r) => ENG_REP[r] || r).join(' · ')}</span>` : ''}
       <div style="display:flex;flex-direction:column;gap:2px">${groups}</div>
       ${kind === 'ship' ? '<span class="eb dim" style="font-size:10px;margin-top:auto">Toca un módulo para ver sus recetas y lo que te falta</span>' : ''}`;
