@@ -6,7 +6,7 @@ const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate', built: true }, { id: 'equipo', label: 'Equipo', built: true }, { id: 'srv', label: 'SRV' },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración', built: true }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie', built: true },
-  { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería', built: true }, { id: 'exobiologia', label: 'Exobiología', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
+  { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio', built: true }, { id: 'mineria', label: 'Minería', built: true }, { id: 'exobiologia', label: 'Exobiología', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
   { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
@@ -36,8 +36,9 @@ const ui = {
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
   plot: null, // { running, target, text, ok, error }
   extOk: null, // última consulta a Spansh: true / false
-  prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true, exploracion: true, exobiologia: true }, rigMin: 75, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
+  prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true, exploracion: true, exobiologia: true, comercio: true }, rigMin: 75, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
   exoBodyPage: 0, exoKnownPage: 0, exoSysPage: 0, // Exobiología
+  trTab: 'cargo', trPage: 0, trWhere: null, trWherePage: 0, trRoute: null, trRoutePage: null, // Comercio
   xTab: 'all', xBodyPage: 0, xCartoPage: 0, xBioPage: 0, xNrPage: 0, nrDest: '', nrSug: [], nr: null, // Exploración
   displays: null, info: null, // Ajustes: pantallas conectadas y datos de la app
 };
@@ -52,7 +53,7 @@ function setPref(key, value) {
 }
 /** ¿Se salta solo a la sección de esta situación? */
 function jumpAllowed(key) {
-  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : key === 'rhino' || key === 'mining' ? 'mineria' : key === 'combat' ? 'combate' : key === 'explore' ? 'exploracion' : key === 'exobio' || key === 'exobio-srv' ? 'exobiologia' : 'vuelo';
+  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : key === 'rhino' || key === 'mining' ? 'mineria' : key === 'combat' ? 'combate' : key === 'explore' ? 'exploracion' : key === 'exobio' || key === 'exobio-srv' ? 'exobiologia' : key === 'docked-market' ? 'comercio' : 'vuelo';
   return ui.prefs.jump[g] !== false;
 }
 /** Abre una sección (y la recuerda para la próxima vez). */
@@ -1632,10 +1633,20 @@ function screenPowerplay(s, v) {
           ${p.pinned ? '<button type="button" class="nav-btn" style="width:150px" data-pptrack="">Dejar de fijar</button>' : ''}
         </div>
       </section>
+      ${(() => {
+        const T = v.trade; const P = T.pp;
+        const kind = P.kind ? PP_KIND[P.kind][0] : '—';
+        const line = !P.power ? 'Sin potencia jurada.' : !T.market ? 'Al atracar y abrir el mercado, la app marca qué mercancías de tu bodega dan méritos aquí.' : T.pp.meritCount ? `${nf(T.pp.meritCount)} mercancía${T.pp.meritCount === 1 ? '' : 's'} de tu bodega dan méritos en esta estación.` : 'Nada de tu bodega da méritos en esta estación.';
+        return `<section class="pn card">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Méritos por comercio</span><button type="button" class="tab small" data-goto="comercio">Abrir en Comercio</button></div>
+          <span style="display:flex;gap:6px;flex-wrap:wrap"><span class="eb ${P.kind === 'reinforcement' ? 'cyan' : P.kind === 'undermining' ? 'amber' : 'dim'}">Aquí: ${kind}</span>${P.finance ? '<span class="eb cyan">Finanzas +50 %</span>' : ''}</span>
+          <span style="font-size:14px;line-height:1.35">${line}</span>
+        </section>`;
+      })()}
       <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
         <span class="ti" style="font-size:16px">Sistemas con datos</span>
         <div style="display:flex;flex-direction:column;gap:4px">
-          ${Object.entries(s.powerplay.systems).map(([name, list]) => ({ name, x: list[list.length - 1] })).sort((a, b) => String(b.x.at).localeCompare(String(a.x.at))).slice(0, 7).map(({ name, x }) => `<button type="button" class="pick ${name === p.tracked ? 'on' : ''}" data-pptrack="${esc(name)}" title="Seguir este sistema"><span class="nowrap">${esc(name)}</span><span class="num soft" style="font-size:13px">${esc(PP_STATE[x.control.state] || x.control.state)} · ${nf(x.control.progress * 100, 1)} %</span></button>`).join('') || '<span class="soft" style="font-size:14px">Entra en un sistema con Powerplay para ver sus datos.</span>'}
+          ${Object.entries(s.powerplay.systems).map(([name, list]) => ({ name, x: list[list.length - 1] })).sort((a, b) => String(b.x.at).localeCompare(String(a.x.at))).slice(0, 4).map(({ name, x }) => `<button type="button" class="pick ${name === p.tracked ? 'on' : ''}" data-pptrack="${esc(name)}" title="Seguir este sistema"><span class="nowrap">${esc(name)}</span><span class="num soft" style="font-size:13px">${esc(PP_STATE[x.control.state] || x.control.state)} · ${nf(x.control.progress * 100, 1)} %</span></button>`).join('') || '<span class="soft" style="font-size:14px">Entra en un sistema con Powerplay para ver sus datos.</span>'}
         </div>
         <span class="note" style="margin-top:auto">Topes: Explotado 350.000 · Fortificado 650.000 · Stronghold 1.000.000 PC. El Journal solo da estos datos al entrar en el sistema.</span>
       </section>
@@ -1719,6 +1730,149 @@ function cbAct(id, label, extra = '') {
   return `<button type="button" class="act${a.cls || ''} ${extra}" data-act="${id}" ${a.dis} title="${esc(a.title)}">${label}${a.key ? `<span class="k">${esc(a.key)}</span>` : ''}</button>`;
 }
 const FIGHTER = [['f_focus', 'Atacar mi objetivo'], ['f_attack', 'Atacar a discreción'], ['f_defend', 'Defenderme'], ['f_hold', 'Alto el fuego'], ['f_pos', 'Mantener posición'], ['f_follow', 'Seguirme'], ['f_dock', 'Volver a la nave'], ['f_orders', 'Abrir órdenes']];
+/* ---------- Comercio: mercado de la estación, bodega, Powerplay, sesión y ruta de comercio ---------- */
+const PP_KIND = { reinforcement: ['Refuerzo', 'Sistema de tu potencia'], undermining: ['Socavar', 'Sistema de otra potencia'], acquisition: ['Adquisición', 'Sin potencia que lo controle'] };
+const TRADE_PAGE = 9;
+const fmtPct = (x) => (x == null || !isFinite(x) ? '—' : `${x >= 0 ? '+' : ''}${nf(x * 100, 0)} %`);
+const ageIso = (iso) => { const t = Date.parse(iso || ''); if (!t) return ''; const h = (Date.now() - t) / 3600000; return h < 1 ? 'hace <1 h' : h < 48 ? `hace ${nf(h, 0)} h` : `hace ${nf(h / 24, 0)} días`; };
+
+function screenComercio(s, v) {
+  const T = v.trade;
+  const M = T.market;
+  // ---- mercado: pestañas
+  const tabs = [['cargo', 'Tu bodega', T.cargo.length], ['cheap', 'Barato para comprar', M ? M.cheap.length : 0], ['demand', 'Mucha demanda', M ? M.demand.length : 0]];
+  if (M && T.pp.kind === 'undermining') tabs.push(['ppcheap', 'Para socavar', M.cheapPP.length]);
+  const tab = tabs.some(([k]) => k === ui.trTab) ? ui.trTab : 'cargo';
+  let rows = [];
+  if (tab === 'cargo') {
+    rows = T.cargo.map((c) => {
+      const margin = c.paid > 0 && c.sell != null ? c.sell / c.paid - 1 : null;
+      const why = c.merit && c.merit.why ? c.merit.why : '';
+      const sub = [c.mined ? `Minado en ${c.mined.system || '?'}` : c.stolen ? 'Robado' : c.mission ? 'De misión' : '', c.merit && c.merit.ok ? `Méritos: ${why}` : c.merit && c.merit.ok === null ? why : ''].filter(Boolean).join(' · ');
+      return `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) 56px 96px 108px 64px auto;gap:10px;align-items:center;padding:6px 12px;${c.merit && c.merit.ok ? 'border-left:3px solid var(--cyan)' : ''}">
+        <span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:15px">${esc(c.name)}</span><span class="nowrap ${c.merit && c.merit.ok ? 'cyan' : 'soft'}" style="font-size:11px" title="${esc(why)}">${esc(sub)}</span></span>
+        <span class="num" style="font-size:15px;text-align:right">${nf(c.count)} t</span>
+        <span style="display:flex;flex-direction:column;align-items:flex-end"><span class="eb dim" style="font-size:9px">Pagaste</span><span class="num" style="font-size:14px">${c.paid != null ? fmtCr(Math.round(c.paid)) : c.mined ? 'minado' : '—'}</span></span>
+        <span style="display:flex;flex-direction:column;align-items:flex-end"><span class="eb dim" style="font-size:9px">Aquí${c.total ? ` · ${fmtCr(c.total)}` : ''}</span><span class="num" style="font-size:14px">${c.sell ? fmtCr(c.sell) : '—'}</span></span>
+        <span class="num ${margin == null ? 'soft' : margin >= 0.4 ? 'cyan' : margin < 0 ? 'red' : ''}" style="font-size:14px;text-align:right">${fmtPct(margin)}</span>
+        <button type="button" class="tab small" data-trwhere="${esc(c.key)}" data-trname="${esc(c.name)}" data-trmin="${Math.round(Math.max(c.sell || 0, c.paid || 0))}">Dónde vender</button>
+      </div>`;
+    });
+  } else {
+    const list = tab === 'cheap' ? M.cheap : tab === 'demand' ? M.demand : M.cheapPP;
+    rows = list.map((i) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1.3fr) 110px 110px 110px 100px auto;gap:10px;align-items:center;padding:6px 12px">
+      <span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:15px">${esc(i.name)}</span><span class="soft nowrap" style="font-size:11px">${esc(i.category || '')}</span></span>
+      <span style="display:flex;flex-direction:column;align-items:flex-end"><span class="eb dim" style="font-size:9px">${tab === 'demand' ? 'Te pagan' : 'Compra'}</span><span class="num" style="font-size:14px">${fmtCr(tab === 'demand' ? i.sell : i.buy)}</span></span>
+      <span style="display:flex;flex-direction:column;align-items:flex-end"><span class="eb dim" style="font-size:9px">Media galaxia</span><span class="num soft" style="font-size:14px">${fmtCr(i.mean)}</span></span>
+      <span class="num ${tab === 'demand' ? 'cyan' : 'cyan'}" style="font-size:15px;text-align:right">${tab === 'demand' ? fmtPct(i.over) : tab === 'cheap' ? fmtPct(-i.off) : ''}</span>
+      <span style="display:flex;flex-direction:column;align-items:flex-end"><span class="eb dim" style="font-size:9px">${tab === 'demand' ? 'Demanda' : 'Existencias'}</span><span class="num" style="font-size:14px">${nf(tab === 'demand' ? i.demand : i.stock)}</span></span>
+      ${tab === 'demand' ? '<span></span>' : `<button type="button" class="tab small" data-trwhere="${esc(i.key)}" data-trname="${esc(i.name)}" data-trmin="${Math.round(i.buy * 1.4)}" title="Dónde venderlo con al menos un 40 % de margen">Dónde vender</button>`}
+    </div>`);
+  }
+  const pages = Math.max(1, Math.ceil(rows.length / TRADE_PAGE)); ui.trPage = Math.min(ui.trPage || 0, pages - 1);
+  const empty = tab === 'cargo' ? 'La bodega está vacía.' : 'Nada destacable en este mercado.';
+  const head = M ? `${esc(M.station || T.station || '')} · ${nf(M.count)} mercancías · ${ageIso(M.at)}` : T.docked ? 'Abre el mercado de mercancías en el juego para ver sus precios' : 'Atraca y abre el mercado para ver precios';
+  const left = `<section class="pn card" style="min-height:0;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="ti nowrap" style="font-size:16px">Mercado</span><span class="eb ${M ? 'dim' : 'amber'} nowrap">${head}</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">${stat('En la bodega', `${nf(T.cargo.reduce((n, c) => n + c.count, 0))} t`)}${stat('Valor aquí', M ? fmtCr(T.cargoValue) : '—', T.cargoValue ? 'cyan' : '')}${stat('Ganancia si vendes aquí', M ? fmtCr(T.cargo.reduce((n, c) => n + (c.profit || 0), 0)) : '—')}${stat('Dan méritos aquí', T.pp.kind ? nf(T.pp.meritCount) : '—', T.pp.meritCount ? 'cyan' : '')}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="display:flex;gap:6px">${tabs.map(([k, t, n]) => `<button type="button" class="tab small ${tab === k ? 'on' : ''}" data-trtab="${k}" ${k !== 'cargo' && !M ? 'disabled' : ''}>${t} · ${n}</button>`).join('')}</span>${pager2('trade', ui.trPage, pages)}</div>
+    <div style="display:flex;flex-direction:column;gap:4px">${rows.slice(ui.trPage * TRADE_PAGE, (ui.trPage + 1) * TRADE_PAGE).join('') || `<div class="empty">${empty}</div>`}</div>
+    <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">«Pagaste»: precio medio de tus compras (diarios de los últimos 45 días). Margen sobre lo que pagaste. «Barato»: al menos un 15 % por debajo de la media de la galaxia; «Mucha demanda»: al menos un 10 % por encima.</span>
+  </section>`;
+
+  // ---- Powerplay y sesión
+  const P = T.pp;
+  const kind = P.kind ? PP_KIND[P.kind] : null;
+  const rule = P.kind === 'reinforcement' ? 'Vende con al menos un 40 % de margen sobre lo que pagaste (se puede comprar en cualquier sitio). Los minerales cuentan si los minaste en este sistema.'
+    : P.kind === 'undermining' ? 'Vende mercancías de menos de 500 CR/t para socavar. Los minerales cuentan si los minaste en este sistema.'
+    : P.kind === 'acquisition' ? 'Solo cuentan los minerales minados en un sistema fortificado (a 20 al) o bastión (a 30 al) de tu potencia.'
+    : P.power ? 'Este sistema no es de ninguna potencia: aquí el comercio no da méritos.' : 'Júrate a una potencia para ganar méritos comerciando.';
+  const S = T.session;
+  const mid = `<div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+    <section class="pn card" style="min-height:0">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Powerplay</span>${P.power ? `<span class="eb dim nowrap">${esc(P.power)}</span>` : ''}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Este sistema', kind ? kind[0] : '—', P.kind === 'reinforcement' ? 'cyan' : P.kind === 'undermining' ? 'amber' : '')}${stat('Estado', P.state || '—')}</div>
+      ${P.finance ? '<span class="eb cyan">Ética Finanzas: +50 % de méritos (estimado) por comerciar aquí</span>' : ''}
+      <span style="font-size:14px;line-height:1.35">${rule}</span>
+      <span class="soft" style="font-size:12px;line-height:1.35">En «Tu bodega», «Dónde vender» busca también estaciones de sistemas de refuerzo de tu potencia (méritos). Reglas de la guía de Powerplay 2.0 de Inara (orientativas).</span>
+    </section>
+    <section class="pn card" style="min-height:0">
+      <span class="ti" style="font-size:16px">Sesión</span>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Ganancia', fmtCr(Math.round(S.profit)), S.profit > 0 ? 'cyan' : S.profit < 0 ? 'red' : '')}${stat('Vendido', fmtCr(S.sold))}${stat('Comprado', fmtCr(S.bought))}${stat('Toneladas vendidas', `${nf(S.tons)} t`)}</div>
+      ${T.rankName ? meter(`Rango de comercio · ${T.rankName}`, T.progress != null ? `${nf(T.progress)} %` : '', (T.progress || 0) / 100, 'on') : ''}
+      <span class="soft" style="font-size:12px;margin-top:auto">Desde que iniciaste el juego. Ganancia = venta − lo que pagaste (dato del juego).</span>
+    </section>
+  </div>`;
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 400px 460px;gap:12px;min-height:0;height:100%">${left}${mid}${ui.trWhere ? tradeWhereCard(s, v) : tradeRouteCard(s, v)}</div>`;
+}
+
+function tradeWhereCard(s, v) {
+  const W = ui.trWhere;
+  const list = (W.list || []).slice().sort((a, b) => (b.sell || 0) - (a.sell || 0));
+  const pages = Math.max(1, Math.ceil(list.length / 7)); ui.trWherePage = Math.min(ui.trWherePage || 0, pages - 1);
+  const rows = list.slice(ui.trWherePage * 7, ui.trWherePage * 7 + 7).map((x) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:6px 10px">
+    <span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:14px">${esc(x.station)}</span><span class="soft nowrap" style="font-size:11px">${esc(x.system)} · ${nf(x.distance, 1)} al · ${x.ls != null ? `${nf(x.ls)} ls · ` : ''}${x.pad || '?'}${x.power ? ` · ${esc(x.powerState || '')}` : ''} · ${ageIso(x.updatedAt)}</span></span>
+    <span style="display:flex;flex-direction:column;align-items:flex-end"><span class="num cyan" style="font-size:15px">${fmtCr(x.sell)}</span><span class="soft" style="font-size:11px">demanda ${nf(x.demand)}</span></span>
+    <button type="button" class="tab small" data-copy="1" data-name="${esc(x.system)}">Copiar</button>
+  </div>`).join('');
+  return `<section class="pn card" style="min-height:0;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="ti nowrap" style="font-size:16px">Dónde vender · ${esc(W.name)}</span><button type="button" class="tab small" data-trwhereclose="1">Volver</button></div>
+    <div style="display:flex;gap:6px"><button type="button" class="tab small ${W.merits ? '' : 'on'}" data-trmerits="0">Mejor precio</button><button type="button" class="tab small ${W.merits ? 'on' : ''}" data-trmerits="1" ${v.trade.pp.power ? '' : 'disabled'}>Para méritos${v.trade.pp.power ? ` (${esc(v.trade.pp.power)})` : ''}</button></div>
+    <span class="soft" style="font-size:12px">${W.merits ? `Sistemas de refuerzo de tu potencia que pagan al menos ${fmtCr(W.min)} (40 % sobre lo que pagaste)` : `Estaciones que pagan al menos ${fmtCr(W.min)}`}, de la más cara a la más barata.</span>
+    ${W.busy ? '<div class="empty">Buscando en Spansh…</div>' : W.error ? `<div class="empty red">${esc(W.error)}</div>` : rows ? `<div style="display:flex;flex-direction:column;gap:4px">${rows}</div><span style="display:flex;justify-content:flex-end">${pager2('trwhere', ui.trWherePage, pages)}</span>` : '<div class="empty">Nadie compra esto cerca a ese precio.</div>'}
+    <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">Precios de Spansh (los sube quien juega con EDMC u otras herramientas): fíjate en la antigüedad. Sin portanaves; plataforma según tu nave.</span>
+  </section>`;
+}
+
+function tradeRouteCard(s, v) {
+  const R = s.tradeRoute;
+  const busy = ui.trRoute && ui.trRoute.busy;
+  const msg = ui.trRoute && ui.trRoute.error ? `<span class="eb red">${esc(ui.trRoute.error)}</span>` : busy ? '<span class="eb cyan">Calculando la ruta en Spansh…</span>' : '';
+  if (!R) {
+    return `<section class="pn card" style="min-height:0;overflow:hidden">
+      <span class="ti" style="font-size:16px">Ruta de comercio</span>
+      <span style="font-size:14px;line-height:1.35">El planificador de comercio de Spansh busca, desde esta estación, una cadena de compras y ventas con la mayor ganancia.</span>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Bodega', s.ship.cargoCapacity ? `${nf(s.ship.cargoCapacity)} t` : '—')}${stat('Alcance', s.ship.maxJumpRange ? `${nf(s.ship.maxJumpRange, 1)} al` : '—')}${stat('Dinero', s.cmdr.credits != null ? fmtCr(s.cmdr.credits) : '—')}${statName('Desde', clean(s.location.station) || '—', 16)}</div>
+      <button type="button" class="act" data-trroute="1" ${busy || !v.trade.docked ? 'disabled' : ''} style="height:56px">${busy ? 'Calculando…' : v.trade.docked ? 'Calcular ruta (4 tramos)' : 'Atraca para calcular'}</button>
+      ${msg}
+      <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">Usa tu nave actual (bodega, alcance y tamaño de plataforma), todo tu dinero y precios de menos de 3 días. Sin portanaves; incluye puertos planetarios.</span>
+    </section>`;
+  }
+  const here = String(s.location.station || '').toLowerCase();
+  const at = R.hops.findIndex((h) => String(h.from.station).toLowerCase() === here);
+  const pages = Math.max(1, Math.ceil(R.hops.length / 3)); ui.trRoutePage = Math.min(ui.trRoutePage ?? Math.max(0, Math.floor(at / 3)), pages - 1);
+  const rows = R.hops.slice(ui.trRoutePage * 3, ui.trRoutePage * 3 + 3).map((h, j) => {
+    const i = ui.trRoutePage * 3 + j;
+    return `<div class="in" style="display:flex;flex-direction:column;gap:4px;padding:8px 12px;${i === at ? 'border-color:var(--amber);border-left:4px solid var(--amber)' : ''}">
+      <span style="display:flex;justify-content:space-between;gap:8px"><span class="eb ${i === at ? 'amber' : 'dim'}">Tramo ${i + 1}${i === at ? ' · estás aquí' : ''}</span><span class="num cyan" style="font-size:15px">+${fmtCr(h.profit)}</span></span>
+      <span class="soft nowrap" style="font-size:12px">${esc(h.from.station)} (${esc(h.from.system)})</span>
+      <span style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="va nowrap" style="font-size:14px">→ ${esc(h.to.station)} · ${esc(h.to.system)}</span><button type="button" class="tab small" data-copy="1" data-name="${esc(h.to.system)}">Copiar</button></span>
+      <span class="soft" style="font-size:12px">${h.goods.map((g) => `${esc(g.name)} ×${nf(g.amount)} (${fmtCr(g.buy)} → ${fmtCr(g.sell)})`).join(' · ')} · ${nf(h.distance, 1)} al${h.to.ls != null ? ` · ${nf(h.to.ls)} ls` : ''}</span>
+    </div>`;
+  }).join('');
+  const total = R.hops.reduce((n, h) => n + (h.profit || 0), 0);
+  return `<section class="pn card" style="min-height:0;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Ruta de comercio</span>${pager2('trroute', ui.trRoutePage, pages)}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${stat('Ganancia total', fmtCr(total), 'cyan')}${stat('Tramos', nf(R.hops.length))}${stat('Calculada', ageIso(R.at) || '—')}</div>
+    <div style="display:flex;flex-direction:column;gap:4px">${rows}</div>
+    ${msg}
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:auto"><button type="button" class="tab" data-trroute="1" ${busy || !v.trade.docked ? 'disabled' : ''}>Recalcular</button><button type="button" class="tab" data-trrouteclear="1">Borrar ruta</button></div>
+  </section>`;
+}
+async function tradeWhere(key, name, min, merits) {
+  ui.trWhere = { key, name, min, merits, busy: true }; ui.trWherePage = 0; render();
+  const r = await window.edbubble.tradeSell({ key, name, minPrice: min, merits });
+  if (!ui.trWhere || ui.trWhere.key !== key || ui.trWhere.merits !== merits) return;
+  ui.trWhere = r.ok ? { key, name, min, merits, list: r.list } : { key, name, min, merits, error: r.error };
+  render();
+}
+async function tradeRoutePlot() {
+  if (ui.trRoute && ui.trRoute.busy) return;
+  ui.trRoute = { busy: true }; render();
+  const r = await window.edbubble.tradeRoute({});
+  ui.trRoute = r.ok ? null : { error: r.error }; ui.trRoutePage = null; render();
+}
+
 /* ---------- Exobiología: muestreo en curso con minimapa, este cuerpo, este sistema y lo que llevas ---------- */
 const BIO_GENUS = { Bacterial: 'Bacterium', Fonticulus: 'Fonticulua', Shrubs: 'Frutexa', Tussocks: 'Tussock', Cactoid: 'Cactoida', Clypeus: 'Clypeus', Conchas: 'Concha', Electricae: 'Electricae', Fumerolas: 'Fumerola', Fungoids: 'Fungoida', Osseus: 'Osseus', Recepta: 'Recepta', Stratum: 'Stratum', Tubus: 'Tubus', Aleoids: 'Aleoida', Vents: 'Amphora Plant', Sphere: 'Luteolum Anemone', Cone: 'Bark Mounds', Brancae: 'Brain Trees', Ground_Struct_Ice: 'Crystalline Shards', Tubers: 'Roseum Sinuous Tubers' };
 const BIO_RANGE = { Bacterial: 500, Fonticulus: 500, Shrubs: 150, Tussocks: 200, Cactoid: 300, Clypeus: 150, Conchas: 150, Electricae: 1000, Fumerolas: 100, Fungoids: 300, Osseus: 800, Recepta: 150, Stratum: 500, Tubus: 800, Aleoids: 150, Vents: 100, Sphere: 100, Cone: 100, Brancae: 100, Ground_Struct_Ice: 100, Tubers: 100 };
@@ -2795,6 +2949,7 @@ function screenAjustes(s, v) {
       ${setRow('jump.exploracion', 'Exploración', 'Abres el escáner FSS o lanzas sondas DSS', p.jump.exploracion !== false, off)}
       ${setRow('jump.approach', 'Vuelo · plataformas', 'Te conceden el atraque', p.jump.approach, off)}
       ${setRow('jump.docked', 'Estación', 'Atracas en una estación', p.jump.docked, off)}
+      ${setRow('jump.comercio', 'Comercio', 'Abres el mercado de mercancías', p.jump.comercio !== false, off)}
       ${setRow('jump.depot', 'Colonización', 'Atracas en una construcción', p.jump.depot, off)}
       </div>
     </section>`;
@@ -2873,7 +3028,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : ui.section === 'exobiologia' ? screenExobiologia(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : ui.section === 'exobiologia' ? screenExobiologia(s, v) : ui.section === 'comercio' ? screenComercio(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -3013,6 +3168,16 @@ document.addEventListener('pointerdown', (ev) => {
   }
   const minTabBtn = ev.target.closest('button[data-minetab]');
   if (minTabBtn) { ev.preventDefault(); ui.mineTab = minTabBtn.dataset.minetab; render(); return; }
+  const trB = ev.target.closest('[data-trtab], [data-trwhere], [data-trwhereclose], [data-trmerits], [data-trroute], [data-trrouteclear]');
+  if (trB && !trB.disabled) {
+    ev.preventDefault(); const d = trB.dataset;
+    if (d.trtab) { ui.trTab = d.trtab; ui.trPage = 0; render(); return; }
+    if (d.trwhere) { tradeWhere(d.trwhere, d.trname, Number(d.trmin) || 1, false); return; }
+    if (d.trwhereclose) { ui.trWhere = null; render(); return; }
+    if (d.trmerits && ui.trWhere) { const W = ui.trWhere; const c = ((ui.snap && ui.snap.view.trade.cargo) || []).find((x) => x.key === W.key); const min = d.trmerits === '1' ? Math.round((c && c.paid ? c.paid : W.min) * 1.4) : (c && c.sell) || W.min; tradeWhere(W.key, W.name, min, d.trmerits === '1'); return; }
+    if (d.trroute) { tradeRoutePlot(); return; }
+    if (d.trrouteclear) { window.edbubble.tradeRouteClear(); ui.trRoute = null; return; }
+  }
   const xBtn = ev.target.closest('[data-xtab], [data-nrplot], [data-nrpick], [data-nrreplot], [data-nrclear]');
   if (xBtn && !xBtn.disabled) {
     ev.preventDefault(); const d = xBtn.dataset;
@@ -3023,7 +3188,7 @@ document.addEventListener('pointerdown', (ev) => {
     if (d.nrclear) { window.edbubble.neutronClear(); ui.nr = null; return; }
   }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage' }[minPgBtn.dataset.mpager];
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage', trade: 'trPage', trwhere: 'trWherePage', trroute: 'trRoutePage' }[minPgBtn.dataset.mpager];
     if (!k && /^eq(core|hard|opt)$/.test(minPgBtn.dataset.mpager)) { const kk = minPgBtn.dataset.mpager.slice(2); ui.eqPages[kk] = Math.max(0, (ui.eqPages[kk] || 0) + Number(minPgBtn.dataset.d)); render(); return; } ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {

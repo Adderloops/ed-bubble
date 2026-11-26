@@ -232,6 +232,59 @@ function outfitting({ item, info, reference }) {
   });
 }
 
+/**
+ * Dónde vender una mercancía cerca: estaciones con demanda y precio de venta mínimo, de la más cercana a
+ * la más lejana (sin portanaves). Con power, solo sistemas de refuerzo de esa potencia (méritos de Powerplay).
+ */
+function sellSearch({ commodity, reference, minPrice = 1, power = null, largePad = false }) {
+  const c = String(commodity || '').trim();
+  if (!c || !reference) return Promise.resolve([]);
+  const min = Math.max(1, Math.round(minPrice));
+  return cached(`s:${c.toLowerCase()}|${reference}|${min}|${power}|${largePad}`, async () => {
+    const filters = { market: [{ name: c, sell_price: { value: [String(min), '999999999'], comparison: '<=>' }, demand: { value: ['1', '999999999'], comparison: '<=>' } }] };
+    if (largePad) filters.has_large_pad = { value: true };
+    if (power) { filters.system_controlling_power = { value: [power] }; filters.system_power_state = { value: ['Exploited', 'Fortified', 'Stronghold'] }; }
+    const d = await getJson('https://spansh.co.uk/api/stations/search', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filters, sort: [{ distance: { direction: 'asc' } }], reference_system: reference, size: 40, page: 0 }),
+    });
+    return (d.results || []).filter((r) => !/carrier/i.test(r.type || '')).map((r) => {
+      const m = (r.market || []).find((x) => String(x.commodity).toLowerCase() === c.toLowerCase()) || {};
+      const kind = stationKind(r.type, r.name);
+      return { station: r.name, system: r.system_name, ...kind, distance: r.distance ?? null, ls: r.distance_to_arrival ?? null, pad: padSize(r),
+        sell: m.sell_price ?? null, demand: m.demand ?? null, power: r.system_controlling_power || null, powerState: r.system_power_state || null,
+        updatedAt: r.market_updated_at || r.updated_at || null };
+    });
+  });
+}
+
+/**
+ * Ruta de comercio (planificador de Spansh) desde una estación: tramos con qué comprar, dónde venderlo y la ganancia.
+ */
+async function tradeRoute({ system, station, capital, cargo, range, hops = 4, largePad = false, planetary = true, maxWaitMs = 90000 }) {
+  const form = new URLSearchParams({ max_hops: String(hops), max_hop_distance: String(range), starting_capital: String(Math.round(capital)), max_cargo: String(cargo),
+    system, station, requires_large_pad: largePad ? '1' : '0', allow_prohibited: '0', allow_planetary: planetary ? '1' : '0', allow_player_owned: '0',
+    unique: '0', permit: '0', max_price_age: String(3 * 24 * 3600), max_system_distance: '5000' });
+  const start = await getJson('https://spansh.co.uk/api/trade/route', { method: 'POST', body: form.toString(), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+  if (start.error) throw new Error(start.error);
+  if (!start.job) throw new Error('Spansh no devolvió el trabajo');
+  const t0 = Date.now();
+  for (;;) {
+    await new Promise((r) => setTimeout(r, 1500));
+    const d = await getJson(`https://spansh.co.uk/api/results/${encodeURIComponent(start.job)}`);
+    if (d.error) throw new Error(d.error);
+    if (d.status === 'ok' && d.result) {
+      return (d.result || []).map((h) => ({
+        from: { system: h.source.system, station: h.source.station, ls: h.source.distance_to_arrival ?? null },
+        to: { system: h.destination.system, station: h.destination.station, ls: h.destination.distance_to_arrival ?? null },
+        distance: h.distance ?? null, profit: h.total_profit ?? null, cumulative: h.cumulative_profit ?? null,
+        goods: (h.commodities || []).map((c) => ({ name: c.name, amount: c.amount, buy: c.source_commodity && c.source_commodity.buy_price, sell: c.destination_commodity && c.destination_commodity.sell_price, profit: c.total_profit })),
+      }));
+    }
+    if (Date.now() - t0 > maxWaitMs) throw new Error('Spansh tarda demasiado en calcular la ruta');
+  }
+}
+
 /** Valor base de una especie biológica («Stratum Tectonicas»): lo da cualquier cuerpo de Spansh donde se haya visto. */
 function speciesValue(name) {
   const n = String(name || '').trim();
@@ -266,4 +319,4 @@ async function neutronRoute({ from, to, range, efficiency = 60, maxWaitMs = 9000
   }
 }
 
-module.exports = { body, dump, neutronRoute, speciesValue, bodyId64, markets, outfitting, setFetch, suggest, system, normalise, stationKind, padSize };
+module.exports = { body, dump, neutronRoute, speciesValue, sellSearch, tradeRoute, bodyId64, markets, outfitting, setFetch, suggest, system, normalise, stationKind, padSize };

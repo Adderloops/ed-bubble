@@ -106,3 +106,7 @@ SOFTWARE.
 Los cuerpos de un sistema que aún no has escaneado salen del volcado de sistemas de Spansh (https://spansh.co.uk/api/dump/) y la ruta de neutrones, del Neutron Plotter de Spansh (https://spansh.co.uk/plotter); ED BUBBLE solo los consulta y muestra el resultado. El valor estimado de los datos de exploración usa la fórmula publicada por la comunidad de jugadores (constantes por tipo de cuerpo, masa y multiplicadores de descubrimiento y cartografía de Odyssey), reescrita en `core/exploration.js`; son datos del juego (Frontier Developments).
 
 En Exobiología, el valor de cada especie y las ubicaciones de plantas que han subido otros comandantes salen de Spansh (búsqueda de cuerpos y ficha de cada cuerpo); la distancia mínima entre muestras de cada género es un dato del juego (Códice).
+
+## Comercio
+
+Los precios de otras estaciones (Dónde vender) salen de la búsqueda de estaciones de Spansh y la ruta de comercio, de su planificador de comercio (https://spansh.co.uk/trade); ED BUBBLE solo los consulta. Las reglas de méritos de Powerplay por comercio (40 % de margen en refuerzo, menos de 500 CR/t al socavar, minerales minados en el mismo sistema, ética Finanzas) están resumidas, con palabras propias, de la guía de Powerplay 2.0 publicada en Inara (https://inara.cz/elite/logbook/84502/); no se copia texto ni datos de Inara.

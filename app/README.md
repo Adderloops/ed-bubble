@@ -80,6 +80,16 @@ Sección del grupo Viaje (Odyssey):
 
 Al acercarte a un planeta, la tarjeta Exobiología predice qué especies puede haber (`core/biopredict.js`), con las reglas de SrvSurvey (`core/data/bio-criteria`). Usa los datos del cuerpo de tu diario (escaneo FSS o sondas) y, si no lo has escaneado, los del volcado de Spansh del sistema (`/api/dump`), la estrella que más lo ilumina, la región de la galaxia, la distancia a la nebulosa más cercana y si estás en una burbuja guardiana. Si ya se conocen los géneros (tu DSS o los que otros subieron a Spansh), solo predice especies de esos géneros, y debajo de cada género sin muestras pone la especie posible. «Posible ?» (ámbar) indica que faltó algún dato del cuerpo para comprobar todas las reglas. Comprobado con 63 cuerpos con vida de los diarios de Adder: acierta el 95 % de los géneros que hay de verdad. Si Spansh no tenía la ficha del cuerpo, la gravedad, la temperatura y el radio salen también del volcado.
 
+## Comercio
+
+Grupo Actividades. La app salta aquí al abrir el mercado de mercancías en una estación (se queda hasta que despegas; se puede desactivar en Ajustes).
+
+- **Mercado** (Market.json): pestañas Tu bodega · Barato para comprar (al menos un 15 % por debajo de la media de la galaxia) · Mucha demanda (al menos un 10 % por encima) · Para socavar (en sistemas de otra potencia: mercancías de menos de 500 CR/t). En la bodega, cada mercancía con lo que pagaste (precio medio de tus `MarketBuy` de los diarios de los últimos 45 días; lo minado, con el sistema donde lo minaste), lo que pagan aquí, el margen y si da méritos de Powerplay aquí.
+- **Dónde vender** (Spansh, búsqueda de estaciones): estaciones cercanas con demanda que pagan al menos lo de aquí, de la más cara a la más barata, con plataforma según tu nave y sin portanaves. «Para méritos»: solo sistemas de refuerzo de tu potencia que paguen al menos un 40 % más de lo que te costó.
+- **Powerplay:** qué es el sistema para tu potencia (refuerzo, socavar, adquisición), la regla de méritos por comercio de ese tipo de sistema y si tu potencia tiene la ética Finanzas ahí (+50 % estimado). Reglas de la guía de Powerplay 2.0 de Inara (logbook 84502), orientativas. En Powerplay hay un resumen («Méritos por comercio») con botón a Comercio.
+- **Sesión:** ganancia (venta − precio medio pagado, del propio `MarketSell`), vendido, comprado, toneladas y rango de comercio con su progreso.
+- **Ruta de comercio** (planificador de comercio de Spansh): desde la estación en la que estás, con la bodega, el alcance y el tamaño de plataforma de tu nave, todo tu dinero y precios de menos de 3 días; 4 tramos con qué comprar, dónde venderlo y la ganancia, el tramo en el que estás y botón Copiar. Se guarda en `traderoute.json` hasta que la borres. Código en `core/trade.js`.
+
 ## Exobiología
 
 Grupo Actividades. La app salta aquí al sacar el escáner genético a pie, mientras tienes una especie a medias o al ir en la Nomad (`LaunchVessel` al sacarla y `DockSRV` al recogerla, tipo `lander01`), o en otro SRV si el cuerpo tiene señales biológicas (se puede desactivar en Ajustes). Las posiciones de las muestras se guardan en `biosamples.json` y se recuperan si reabres la app en el mismo sistema. En Órbita planetaria queda el resumen, con un botón «Abrir».
@@ -204,6 +214,13 @@ El instalador no pide permisos de administrador: instala en `%LOCALAPPDATA%\Prog
 No está firmado: la primera vez Windows SmartScreen avisa («Windows protegió su PC» › Más información › Ejecutar de todas formas).
 
 ## Pendiente
+
+- **Powerplay, ideas de la guía de Inara (logbook 84502) para la página Powerplay** (lo siguiente):
+  - Puntos de control: tus méritos se convierten en puntos de control del sistema (méritos ÷ 4; exploración ÷ 6). Mostrar cuánto aporta lo que haces.
+  - Adquisición: hacen falta 120.000 puntos de control para reclamar un sistema; con 35.000 de dos potencias queda disputado; los puntos se arrastran entre ciclos hasta que alguien lo reclama.
+  - Tabla de qué actividades dan méritos en el sistema actual (refuerzo, socavar, adquisición) y cuáles tienen el +50 % de la ética de tu potencia.
+  - Socavar: rinde menos cuanto más fuerte es el sistema y más lejos está de los de tu potencia.
+  - Revisar los topes de la tarjeta «Sistemas con datos» (Explotado 350.000 · Fortificado 650.000 · Stronghold 1.000.000): la guía da unos 333.333 para fortificado y 1.000.000 para bastión.
 
 - `core/data/materials.json`: falta el símbolo del diario de 9 materiales thargoides recientes (marcados «verificar»); en las recetas salen ya en español, buscados por su nombre en inglés.
 

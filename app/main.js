@@ -55,7 +55,7 @@ function defaultBounds() {
 // Ajustes del comandante (settings.json en la carpeta de datos de la app)
 const DEFAULT_PREFS = {
   autoJump: true,
-  jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true, exploracion: true, exobiologia: true }, // a qué secciones salta solo
+  jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true, exploracion: true, exobiologia: true, comercio: true }, // a qué secciones salta solo
   startSection: 'puente', lastSection: 'puente', // al abrir: Puente o la última sección vista
   alerts: { dock: true, fuelRoute: true }, // avisos opcionales en la cabecera
   fullscreen: false,
@@ -69,7 +69,7 @@ function prefs() {
   delete p.ppTracked; delete p.skull; delete p.bindsFile; // datos internos, no son ajustes de la ventana
   return p;
 }
-const SECTION_IDS = ['puente', 'vuelo', 'orbita', 'combate', 'exploracion', 'exobiologia', 'equipo', 'mineria', 'apie', 'ingenieros', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
+const SECTION_IDS = ['puente', 'vuelo', 'orbita', 'combate', 'exploracion', 'exobiologia', 'comercio', 'equipo', 'mineria', 'apie', 'ingenieros', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
 /** Valida un ajuste que llega de la ventana; devuelve el valor limpio o undefined. */
 function cleanPref(key, value) {
   const bool = (x) => (typeof x === 'boolean' ? x : undefined);
@@ -629,6 +629,39 @@ app.whenReady().then(() => {
     } catch (e) { logLine(`[spansh] ruta de neutrones: ${e.message}`); return { ok: false, error: /400|422/.test(e.message) ? 'Spansh no conoce ese sistema' : e.message }; }
   });
   ipcMain.handle('ed:neutron-clear', () => { engine.setNeutronRoute(null); return true; });
+  // Comercio: dónde vender (Spansh) y ruta de comercio (planificador de Spansh)
+  const TRADE_FILE = path.join(app.getPath('userData'), 'traderoute.json');
+  try { engine.setTradeRoute(JSON.parse(fs.readFileSync(TRADE_FILE, 'utf8'))); } catch (e) { /* sin ruta */ }
+  const shipPad = (st) => { try { const sd = require('../core/data/shipdata.json').ships[st.ship.type]; return sd && sd.spec && sd.spec.class === 3 ? 'L' : 'M'; } catch (e) { return 'M'; } };
+  ipcMain.handle('ed:trade-sell', async (_e, q) => {
+    const st = (last || engine.snapshot()).state;
+    const here = st.location.system;
+    if (!here) return { ok: false, error: 'Aún no sé en qué sistema estás' };
+    const name = commodities.englishName(q && q.key) || String((q && q.name) || '').slice(0, 80);
+    try {
+      const list = await spansh.sellSearch({ commodity: name, reference: here, minPrice: Number(q && q.minPrice) || 1, power: q && q.merits ? st.powerplay.power : null, largePad: shipPad(st) === 'L' });
+      return { ok: true, list, commodity: name };
+    } catch (e) { logLine(`[spansh] dónde vender ${name}: ${e.message}`); return { ok: false, error: e.message }; }
+  });
+  ipcMain.handle('ed:trade-route', async (_e, q) => {
+    const st = (last || engine.snapshot()).state;
+    const L = st.location;
+    if (!L.docked || !L.station) return { ok: false, error: 'Atraca en una estación para calcular desde ella' };
+    const cargo = Number(q && q.cargo) || st.ship.cargoCapacity;
+    const range = Number(q && q.range) || st.ship.maxJumpRange;
+    const capital = Number(q && q.capital) || st.cmdr.credits || 0;
+    if (!cargo) return { ok: false, error: 'Tu nave no tiene bodega' };
+    if (!range) return { ok: false, error: 'Aún no sé el alcance de salto de tu nave' };
+    try {
+      const hops = await spansh.tradeRoute({ system: L.system, station: L.station, capital, cargo, range: Math.floor(range * 10) / 10, hops: Number(q && q.hops) || 4, largePad: shipPad(st) === 'L', planetary: !(q && q.noPlanetary) });
+      if (!hops.length) return { ok: false, error: 'Spansh no encontró ninguna ruta con beneficio' };
+      const r = { at: new Date().toISOString(), params: { cargo, range, capital, pad: shipPad(st) }, hops };
+      engine.setTradeRoute(r);
+      try { fs.writeFileSync(TRADE_FILE, JSON.stringify(r)); } catch (e) { /* no se guarda */ }
+      return { ok: true };
+    } catch (e) { logLine(`[spansh] ruta de comercio: ${e.message}`); return { ok: false, error: e.message }; }
+  });
+  ipcMain.handle('ed:trade-route-clear', () => { engine.setTradeRoute(null); try { fs.unlinkSync(TRADE_FILE); } catch (e) { /* no había */ } return true; });
   engine.on('warning', (msg) => { console.warn('[engine]', msg); logLine(`[motor] ${msg}`); });
   engine.start();
   ipcMain.handle('ed:snapshot', () => last || engine.snapshot());

@@ -316,7 +316,8 @@ test('historial: recupera obras y última estación de Journals anteriores, sin 
   fs.writeFileSync(path.join(dir, 'Journal.2026-11-23T100000.01.log'), L({ timestamp: '2026-11-23T10:00:00Z', event: 'Fileheader' }));
   const e = new Engine({ folder: dir });
   const n = e.loadHistory();
-  assert.strictEqual(n, 2);
+  assert.strictEqual(n, 3, 'la venta antigua cuenta para el coste de la bodega');
+  assert.strictEqual(e.state.trade.session.sold, 0, 'pero no para la sesión');
   assert.strictEqual(e.state.colonisation.depots['9'].remaining, 60);
   assert.strictEqual(e.state.station.name, 'Obra X');
   assert.strictEqual(e.state.log.length, 0); assert.strictEqual(e.state.location.docked, false);
@@ -883,6 +884,39 @@ test('minería: con el Rhino siempre es Minería, aunque el cuerpo tenga biolog�
   m.applyEvent(s, { timestamp: '2026-11-26T15:02:00Z', event: 'DockSRV', ID: 26 });
   m.applyEvent(s, { timestamp: '2026-11-26T15:03:00Z', event: 'LaunchSRV', SRVType: 'testbuggy', SRVType_Localised: 'SRV Scarab', ID: 13 });
   assert.strictEqual(d.flightMode(s).section, 'exobiologia', 'Scarab en un cuerpo con biología');
+});
+
+test('comercio: coste de la bodega, margen y méritos de Powerplay al vender', () => {
+  const m = require('../../core/model'); const T = require('../../core/trade');
+  const s = m.createState();
+  const ev = (e) => m.applyEvent(s, { timestamp: '2026-11-26T16:00:00Z', ...e });
+  ev({ event: 'LoadGame', timestamp: '2026-11-26T15:00:00Z' });
+  ev({ event: 'Powerplay', Power: 'Li Yong-Rui', Rank: 265, Merits: 1 });
+  ev({ event: 'Location', StarSystem: 'Mio', SystemAddress: 1, ControllingPower: 'Li Yong-Rui', PowerplayState: 'Stronghold', Docked: false });
+  ev({ event: 'MarketBuy', Type: 'gold', Type_Localised: 'Gold', Count: 10, BuyPrice: 40000, TotalCost: 400000 });
+  ev({ event: 'MarketBuy', Type: 'biowaste', Count: 10, BuyPrice: 50, TotalCost: 500 });
+  ev({ event: 'MiningRefined', Type: '$painite_name;', Type_Localised: 'Painite' });
+  m.applyCargo(s, { Count: 21, Inventory: [{ Name: 'gold', Name_Localised: 'Gold', Count: 10 }, { Name: 'biowaste', Count: 10 }, { Name: 'painite', Name_Localised: 'Painite', Count: 1 }] });
+  ev({ event: 'Docked', StationName: 'Puerto', StationType: 'Coriolis', StarSystem: 'Mio', SystemAddress: 1, MarketID: 5 });
+  m.applyMarket(s, { MarketID: 5, StationName: 'Puerto', StarSystem: 'Mio', Items: [
+    { Name: '$gold_name;', Name_Localised: 'Gold', BuyPrice: 0, SellPrice: 57000, MeanPrice: 47000, Stock: 0, Demand: 500 },
+    { Name: '$biowaste_name;', Name_Localised: 'Biowaste', BuyPrice: 0, SellPrice: 60, MeanPrice: 400, Stock: 0, Demand: 50 },
+    { Name: '$painite_name;', Name_Localised: 'Painite', BuyPrice: 0, SellPrice: 60000, MeanPrice: 50000, Stock: 0, Demand: 50 },
+    { Name: '$tea_name;', Name_Localised: 'Tea', BuyPrice: 1000, SellPrice: 900, MeanPrice: 1800, Stock: 900, Demand: 0 } ] });
+  let v = require('../../core/derive').view(s).trade;
+  assert.strictEqual(v.pp.kind, 'reinforcement'); assert.strictEqual(v.pp.finance, true, 'Li Yong-Rui: Finanzas en refuerzo');
+  const by = Object.fromEntries(v.cargo.map((c) => [c.key, c]));
+  assert.strictEqual(by.gold.paid, 40000); assert.strictEqual(by.gold.merit.ok, true, 'oro: 42 % de margen');
+  assert.strictEqual(by.biowaste.merit.ok, false, 'residuos: 20 %');
+  assert.strictEqual(by.painite.merit.ok, true, 'minado aquí');
+  assert.strictEqual(v.market.cheap[0].name, 'Tea');
+  ev({ event: 'MarketSell', Type: 'gold', Count: 10, SellPrice: 57000, TotalSale: 570000, AvgPricePaid: 40000 });
+  v = require('../../core/derive').view(s).trade;
+  assert.strictEqual(v.session.profit, 170000); assert.strictEqual(s.trade.costs.gold, undefined);
+  s.status.flags = {}; s.location.docked = true; s.station = s.station || {};
+  ev({ event: 'Market', StationName: 'Puerto', MarketID: 5 });
+  assert.strictEqual(require('../../core/derive').flightMode(s).section, 'comercio');
+  assert.strictEqual(T.meritFor({ kind: 'undermining', power: 'X' }, { sell: 300 }, 1000, false).ok, true, 'socavar: menos de 500 CR/t');
 });
 
 test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {

@@ -36,6 +36,9 @@ function flightMode(state) {
   if (f.isDocked || state.location.docked) {
     // en una construcción, la sección es Colonización
     const atDepot = /construction/i.test(state.location.stationType || '') || /construction site/i.test(state.location.station || '');
+    // has abierto el mercado de mercancías en este atraque: Comercio (hasta que despegues)
+    const mk = state.marketOpenedAt && state.marketOpenedStation === state.location.station && (!state.dockedAt || state.marketOpenedAt >= state.dockedAt);
+    if (!atDepot && mk) return { key: 'docked-market', label: 'Mercado', section: 'comercio' };
     return { key: atDepot ? 'docked-depot' : 'docked', label: 'Atracado', section: atDepot ? 'colonizacion' : 'estacion' };
   }
   // minería con la nave: hubo prospección, dron o refinado hace menos de 5 minutos
@@ -273,6 +276,7 @@ function view(state) {
     combat: require('./combat').view(state),
     exploration: require('./exploration').view(state),
     exobio: require('./exobio').view(state),
+    trade: require('./trade').view(state),
     neutron: neutronView(state),
     shipLayout: state.ship && state.ship.type ? require('./builds').layout(state.ship.type, state.ship.modules) : null,
     alerts: alerts(state),

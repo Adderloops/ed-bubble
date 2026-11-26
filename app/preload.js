@@ -53,4 +53,7 @@ contextBridge.exposeInMainWorld('edbubble', {
   buySearch: (item) => ipcRenderer.invoke('ed:buy-search', item),
   neutronPlot: (opts) => ipcRenderer.invoke('ed:neutron-plot', opts),
   neutronClear: () => ipcRenderer.invoke('ed:neutron-clear'),
+  tradeSell: (q) => ipcRenderer.invoke('ed:trade-sell', q),
+  tradeRoute: (q) => ipcRenderer.invoke('ed:trade-route', q),
+  tradeRouteClear: () => ipcRenderer.invoke('ed:trade-route-clear'),
 });
