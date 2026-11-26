@@ -233,7 +233,7 @@ function view(state) {
     ship: se.shipList(ranks, null),
     modules: se.moduleIndex(),
     suit: om.ENGINEERS.map((e) => ({
-      name: e.name, slug: se.slug(e.name), site: e.site, system: e.system, colonia: !!e.colonia, unlock: e.unlock || null,
+      name: e.name, slug: se.slug(e.name), site: e.site, system: e.system, colonia: !!e.colonia, tipo: e.tipo || null, unlock: e.unlock || null,
       status: om.access(ranks, e.name) === 'yes' ? 'unlocked' : om.access(ranks, e.name) === 'known' ? 'known' : 'none',
       suitMods: e.suit.map((id) => om.modInfo(id).es), weaponMods: e.weapon.map((id) => om.modInfo(id).es),
     })),

@@ -2092,7 +2092,13 @@ function wishBuy(s, D, b, it) {
 
 /* ---------- Ingenieros (naves y a pie) ---------- */
 // Retratos recortados de la ficha de ingenieros (los que el usuario tiene a la vista); el resto, iniciales.
-const PORTRAITS = new Set(['baltanos', 'bill-turner', 'broo-tarquin', 'colonel-bris-dekker', 'didi-vatermann', 'domino-green', 'elvira-martuuk', 'felicity-farseer', 'hera-tani', 'hero-ferrari', 'jude-navarro', 'juri-ishmaak', 'kit-fowler', 'lei-cheung', 'liz-ryder', 'lori-jameson', 'marco-qwent', 'petra-olmanova', 'professor-palin', 'ram-tah', 'rosa-dayette', 'selene-jean', 'the-dweller', 'the-sarge', 'tiana-fortune', 'tod-the-blaster-mcquinn', 'uma-laszlo', 'wellington-beck', 'yarden-bond', 'zacariah-nemo']);
+// Clase del ingeniero de a pie (estratégico, de fuerza o dinámico), con el color de sus fichas.
+const ENG_TIPOS = { estrategico: ['Estratégico', '#7ed321'], fuerza: ['De fuerza', '#ff6a1a'], dinamico: ['Dinámico', '#e040d8'] };
+function engTipo(e, size) {
+  const t = e.tipo && ENG_TIPOS[e.tipo];
+  return t ? `<span class="eb" style="font-size:${size}px;color:${t[1]};border-color:${t[1]}">${t[0]}</span>` : '';
+}
+const PORTRAITS = new Set(['baltanos', 'bill-turner', 'broo-tarquin', 'colonel-bris-dekker', 'didi-vatermann', 'domino-green', 'elvira-martuuk', 'felicity-farseer', 'hera-tani', 'hero-ferrari', 'jude-navarro', 'juri-ishmaak', 'kit-fowler', 'lei-cheung', 'liz-ryder', 'lori-jameson', 'marco-qwent', 'petra-olmanova', 'professor-palin', 'ram-tah', 'rosa-dayette', 'selene-jean', 'the-dweller', 'the-sarge', 'tiana-fortune', 'tod-the-blaster-mcquinn', 'uma-laszlo', 'wellington-beck', 'yarden-bond', 'zacariah-nemo', 'terra-velasquez', 'oden-geiger', 'eleanor-bresa', 'yi-shen']);
 const ENG_CATS = [['H', 'Anclajes'], ['U', 'Apoyo'], ['C', 'Internos principales'], ['O', 'Internos opcionales']];
 const ENG_PAGE = 15;
 function portrait(e, size) {
@@ -2173,7 +2179,7 @@ function screenIngenieros(s, v) {
       <span style="display:flex;flex-direction:column;gap:3px;min-width:0;flex:1">
         <span style="display:flex;justify-content:space-between;gap:6px;align-items:baseline"><span class="va nowrap" style="font-size:16px">${esc(e.name)}</span><span class="eb ${cls}" style="font-size:10px">${txt}</span></span>
         <span class="soft nowrap" style="font-size:12px">${esc(e.site)} · ${esc(e.system)}</span>
-        <span style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="display:flex;gap:4px">${e.permit ? '<span class="eb red" style="font-size:9px">Permiso</span>' : ''}${e.colonia ? '<span class="eb dim" style="font-size:9px">Colonia</span>' : ''}</span>${extra}</span>
+        <span style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="display:flex;gap:4px">${e.permit ? '<span class="eb red" style="font-size:9px">Permiso</span>' : ''}${e.colonia ? '<span class="eb dim" style="font-size:9px">Colonia</span>' : ''}${engTipo(e, 9)}</span>${extra}</span>
       </span>
     </button>`;
   }).join('') || '<div class="empty">Ningún ingeniero mejora ese módulo.</div>';
@@ -2193,7 +2199,7 @@ function screenIngenieros(s, v) {
           <span class="soft" style="font-size:14px">${esc(open.site)}</span>
           <span style="display:flex;gap:8px;align-items:center"><span class="va" style="font-size:15px">${esc(open.system)}</span><button type="button" class="tab small" data-copy="1" data-name="${esc(open.system)}">Copiar</button></span>
         </span></div>
-      <span class="eb ${cls}">${status}</span>
+      <span style="display:flex;gap:6px;flex-wrap:wrap"><span class="eb ${cls}">${status}</span>${engTipo(open, 11)}</span>
       ${open.permit ? '<span class="eb red">Su sistema pide permiso</span>' : ''}${open.colonia ? '<span class="eb dim">Está en Colonia, a unos 22.000 ly de la Burbuja</span>' : ''}
       ${open.unlock && open.status !== 'unlocked' ? `<div class="in" style="padding:8px 12px;display:flex;flex-direction:column;gap:4px"><span class="eb amber" style="font-size:10px">Cómo desbloquearlo</span><span style="font-size:13px;line-height:1.35">${esc(open.unlock).replace(/\. (?=(Conocer|Acceso|Desbloqueo):)/g, '.<br>')}</span></div>` : ''}
       <div style="display:flex;flex-direction:column;gap:2px">${groups}</div>
