@@ -28,6 +28,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 17 | Órbita planetaria › Cuerpo: sin gravedad, temperatura ni radio | Specter A.G. (captura vía Adder) | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado |
 | 18 | Vuelo › Próximo salto y Navegación: el nombre del sistema de destino salía cortado («Pegasi Sector…») | Adder (captura) | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
 | 19 | Exobiología: predecía especies en un cuerpo cuyas señales (FSS o Spansh) no tienen ninguna biológica; nombres repetidos («Roseum Sinuous Tubers Roseum Sinuous Tubers») | Adder (en HIP 109677 A 2, comparando con SrvSurvey) | desarrollo | 0.7.0-beta.5 | Corregido |
+| 20 | Minería › Superficie: frente a un planeta con 9 zonas de minería no mostraba nada hasta aterrizar; Órbita › Zonas de minería salía «—» con el cuerpo escaneado | Adder (captura en Pegasi Sector IH-V c2-28 A 1) | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
 
 ## Detalle
 
@@ -124,6 +125,14 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 - **Encontrado en:** versión de desarrollo (sección Exobiología) · **Corregido en:** 0.7.0-beta.5
 - **Qué pasaba:** las 5 señales biológicas de SrvSurvey son de todo el sistema (B 5 y B 6 a), no de A 2. Spansh tiene las señales de A 2 (3 geológicas y 3 humanas, ninguna biológica), pero la app las ignoraba y predecía Sinuous Tubers en A 2. Además, en las especies cuyo nombre ya incluye el género (Sinuous Tubers, Anemone) el nombre salía repetido.
 - **Arreglo:** si las señales del cuerpo (tu FSS o Spansh) no incluyen ninguna biológica, no se predice nada y la app dice en qué cuerpos del sistema sí hay. Exobiología › Este sistema muestra el valor posible de cada cuerpo con biología (con HIP 109677 coincide con SrvSurvey: B 6 a hasta 6,9 M, B 5 hasta 1,7 M). Los nombres de especie ya no repiten el género.
+
+
+### 20 · Zonas de minería antes de bajar
+
+- **Informado por:** Adder (26-11-2026), en supercrucero frente a Pegasi Sector IH-V c2-28 A 1 tras escanearlo con sondas (9 zonas de minería).
+- **Encontrado en:** 0.7.0-beta.4 · **Corregido en:** 0.7.0-beta.5
+- **Qué pasaba:** Minería › Superficie solo mostraba algo con posición en la superficie, y los sitios de la flota solo se pedían al bajar. Además, la señal `$PlanetaryMiningLocation_Name;` del diario se guardaba con una clave distinta de la de Spansh, así que Órbita › Minería no contaba las zonas de tu propio escaneo.
+- **Arreglo:** el cuerpo de minería es ahora el que pisas, al que te acercas o, en supercrucero, el que tienes fijado como destino en el sistema. La tarjeta «Zonas de minería» muestra sus zonas (1 a 9), la que tienes fijada en el juego en ámbar y, debajo de cada una, lo que la flota encontró allí (Skull Mining); al tocar una, Sitios de la flota muestra solo los suyos. Lo que contiene cada zona no sale en el diario: el juego solo lo enseña al bajar a órbita.
 
 ## Revisión: el juego en otros idiomas (24-11-2026)
 

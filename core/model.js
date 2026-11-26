@@ -463,7 +463,10 @@ function bodySignals(state, name, id, signals) {
   if (!Array.isArray(signals)) return b;
   b.signals = signals.map((x) => {
     const m = /^\$SAA_SignalType_(\w+);?$/.exec(x.Type || '');
-    return { key: m ? m[1].toLowerCase() : String(x.Type || '').toLowerCase(), name: x.Type_Localised || (m ? m[1] : x.Type), count: x.Count || 0 };
+    // «$PlanetaryMiningLocation_Name;» -> «planetary mining location» (la misma clave que las señales de Spansh)
+    const n = /^\$(\w+?)_Name;?$/.exec(x.Type || '');
+    const key = m ? m[1].toLowerCase() : n ? n[1].replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase() : String(x.Type || '').toLowerCase();
+    return { key, name: x.Type_Localised || (m ? m[1] : x.Type), count: x.Count || 0 };
   });
   return b;
 }
@@ -600,7 +603,7 @@ function applyStatus(state, raw, decoded) {
   if (raw.Balance !== undefined) state.cmdr.credits = raw.Balance;
   state.cmdr.legalState = raw.LegalState || 'Clean';
   state.destination = raw.Destination
-    ? { name: raw.Destination.Name_Localised || raw.Destination.Name || null, body: raw.Destination.Body ?? null, system: raw.Destination.System ?? null }
+    ? { name: raw.Destination.Name_Localised || raw.Destination.Name || null, raw: raw.Destination.Name || null, body: raw.Destination.Body ?? null, system: raw.Destination.System ?? null }
     : { name: null, body: null, system: null };
   if (flags.isDocked !== undefined) state.location.docked = flags.isDocked;
   if (flags.isLanded !== undefined) state.location.landed = flags.isLanded;

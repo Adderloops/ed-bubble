@@ -847,6 +847,17 @@ test('exobiología: nombres de especie sin repetir el género (Sinuous Tubers, A
   for (const p of all) assert.ok(!/(\b\w+ \w+ \w+)\s+\1/.test(p.species) && !/Tubers .*Tubers/.test(p.species), `nombre repetido: ${p.species}`);
 });
 
+test('minería: las zonas de minería del escaneo se cuentan con la misma clave que Spansh', () => {
+  const m = require('../../core/model');
+  const s = m.createState();
+  m.applyEvent(s, { timestamp: '2026-11-26T14:04:01Z', event: 'SAASignalsFound', BodyName: 'Pegasi Sector IH-V c2-28 A 1', BodyID: 6, SystemAddress: 7780098314962, Signals: [{ Type: '$PlanetaryMiningLocation_Name;', Type_Localised: 'Planetary Mining Location', Count: 9 }, { Type: '$SAA_SignalType_Human;', Type_Localised: 'Human', Count: 1 }] });
+  const sig = s.bodies['Pegasi Sector IH-V c2-28 A 1'].signals;
+  assert.strictEqual(sig.find((x) => x.key === 'planetary mining location').count, 9);
+  assert.strictEqual(sig.find((x) => x.key === 'human').count, 1);
+  m.applyStatus(s, { Destination: { System: 7780098314962, Body: 6, Name: '$SAA_Unknown_Signal:#type=$SAA_SignalType_PlanetaryMiningLocation;:#index=3;', Name_Localised: 'Planetary Mining Location 3' } }, {});
+  assert.strictEqual(s.destination.raw.includes('#index=3'), true);
+});
+
 test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {
   const m = require('../../core/model');
   const s = m.createState();

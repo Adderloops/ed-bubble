@@ -31,7 +31,7 @@ const ui = {
   recipes: null, engRecipe: null, engBp: null, engExp: false, engExpPage: 0, // recetas de ingeniería de nave
   colMode: null, colCosts: null, planLoc: 'all', planPage: 0, planSel: null, // Colonización: planificar por tipo
   shipData: null, builds: null, buildSel: null, buildDel: null, wishSel: null, buy: null, buyDist: 0, buySort: 'dist', buyLarge: false, eqMsg: null, eqTab: 'mine', eqShipPage: 0, eqShip: null, eqCat: 'standard', eqGrpPage: 0, eqGrp: null, eqPages: {}, // Equipo: tu nave, naves y módulos
-  skull: null, mineTab: null, sitesPage: 0, prospPage: 0, skullMsg: null, // minería
+  skull: null, mineTab: null, mineZone: null, sitesPage: 0, prospPage: 0, skullMsg: null, // minería
   coordText: '', coordMsg: null, // coordenadas en planeta: texto escrito y aviso
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
   plot: null, // { running, target, text, ok, error }
@@ -1478,7 +1478,31 @@ function mineSurface(s, v) {
       <div style="display:flex;flex-direction:column;gap:4px">${live.byType.slice(0, 4).map((x) => `<div class="in" style="display:flex;justify-content:space-between;padding:8px 12px"><span class="va">${esc(x.name)}</span><span class="num">${nf(x.tonnes)} t</span></div>`).join('') || '<span class="soft" style="font-size:14px">Aún no has refinado nada.</span>'}</div>
       <span class="eb dim" style="font-size:10px;margin-top:auto">Skull Mining · ${live.perCollection ? `${nf(live.perCollection, 1)} t por recogida · ` : ''}${live.ageS != null ? `actualizado hace ${live.ageS < 60 ? `${Math.round(live.ageS)} s` : fmtDur(live.ageS)}` : ''}</span>`;
   }
-  const sessCard = `<section class="pn card" style="min-height:0"><span class="ti" style="font-size:16px">Sesión con el Rhino</span>${sess}</section>`;
+  let sessCard = `<section class="pn card" style="min-height:0"><span class="ti" style="font-size:16px">Sesión con el Rhino</span>${sess}</section>`;
+  // --- Zonas de minería del cuerpo (antes de bajar: el que tienes fijado o al que te acercas)
+  const T = mv.target;
+  const zoneSites = {};
+  for (const x of mv.sites || []) if (x.zone != null) (zoneSites[x.zone] = zoneSites[x.zone] || []).push(x);
+  if (T && (!live || live.body !== T.body)) {
+    const n = T.count || 0;
+    if (ui.mineZone != null && ui.mineZone > n) ui.mineZone = null;
+    const tiles = Array.from({ length: n }, (_, i) => i + 1).map((z) => {
+      const list = zoneSites[z] || [];
+      const minerals = [...new Set(list.filter((x) => x.usable).map((x) => x.mineral || x.type).filter(Boolean))];
+      const sel = T.selected === z; const pick = ui.mineZone === z;
+      return `<button type="button" class="in" data-minezone="${z}" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;text-align:left;cursor:pointer;color:var(--va, #e6eef8);${sel ? 'border-color:var(--amber);' : pick ? 'border-color:var(--cyan);' : ''}">
+        <span style="display:flex;justify-content:space-between;width:100%"><span class="va ${sel ? 'amber' : ''}" style="font-size:17px">Zona ${z}</span>${sel ? '<span class="eb amber" style="font-size:9px">Fijada</span>' : ''}</span>
+        <span class="soft nowrap" style="font-size:11px;max-width:100%;overflow:hidden;text-overflow:ellipsis">${list.length ? esc(minerals.join(' · ') || 'Agotada o no rentable') : 'Sin datos de la flota'}</span>
+      </button>`;
+    }).join('');
+    sessCard = `<section class="pn card" style="min-height:0">
+      <span class="ti" style="font-size:16px">Zonas de minería</span>
+      <span class="va nowrap" style="font-size:20px">${esc(T.body)}</span>
+      ${T.count == null ? '<span class="eb amber">Escanea el cuerpo (FSS o sondas) para saber cuántas zonas tiene</span>' : n ? `<span class="eb dim">${n} zona${n === 1 ? '' : 's'} · la que fijes en el juego sale en ámbar</span>` : '<span class="eb dim">Este cuerpo no tiene zonas de minería</span>'}
+      ${n ? `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">${tiles}</div>` : ''}
+      <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">Debajo de cada zona: lo que la flota ha encontrado allí (Skull Mining). Toca una para ver sus sitios. Lo que contiene cada zona solo lo dice el juego al bajar a órbita.</span>
+    </section>`;
+  }
 
   // --- Guía de taladros
   const g = mv.guide;
@@ -1510,14 +1534,14 @@ function mineSurface(s, v) {
   let sitesBody;
   if (!web.configured) {
     sitesBody = `<div class="empty" style="flex-direction:column;gap:10px"><span style="font-size:14px">Para ver los sitios de la flota, ED BUBBLE usa la misma URL y clave que tienes en Skull Mining.</span><button type="button" class="tab" data-skull="connect">Usar la conexión de Skull Mining (EDMC)</button>${ui.skullMsg ? `<span class="red" style="font-size:13px">${esc(ui.skullMsg)}</span>` : ''}</div>`;
-  } else if (!pos) {
-    sitesBody = '<div class="empty">Aparecen al bajar a un planeta.</div>';
+  } else if (!pos && !T) {
+    sitesBody = '<div class="empty">Aparecen al acercarte a un planeta o al fijarlo como destino.</div>';
   } else if (web.status) {
     sitesBody = `<div class="empty" style="flex-direction:column;gap:8px"><span class="red">${esc(web.status)}</span><button type="button" class="tab small" data-skull="refresh">Reintentar</button></div>`;
   } else if (!mv.sites) {
     sitesBody = '<div class="empty">Buscando los sitios de la flota…</div>';
   } else {
-    const list = mv.sites;
+    const list = ui.mineZone != null ? mv.sites.filter((x) => x.zone === ui.mineZone) : mv.sites;
     const pages = Math.max(1, Math.ceil(list.length / SKULL_PAGE));
     ui.sitesPage = Math.min(ui.sitesPage, pages - 1);
     sitesBody = list.length ? list.slice(ui.sitesPage * SKULL_PAGE, (ui.sitesPage + 1) * SKULL_PAGE).map((x) => `
@@ -1528,7 +1552,7 @@ function mineSurface(s, v) {
       </div>`).join('') + `<span style="display:flex;justify-content:flex-end">${pager2('sites', ui.sitesPage, pages)}</span>` : '<div class="empty">La flota no tiene sitios en este cuerpo todavía.</div>';
   }
   const sitesCard = `<section class="pn card" style="min-height:0">
-      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Sitios de la flota</span>${web.configured ? '<button type="button" class="tab small" data-skull="web">Web Skullmining</button>' : ''}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Sitios de la flota${ui.mineZone != null ? ` · zona ${ui.mineZone}` : ''}</span>${ui.mineZone != null ? '<button type="button" class="tab small" data-minezone="0">Todas</button>' : ''}${web.configured ? '<button type="button" class="tab small" data-skull="web">Web Skullmining</button>' : ''}</div>
       <div style="display:flex;flex-direction:column;gap:4px;min-height:0">${sitesBody}</div>
       ${web.configured ? '<button type="button" class="tab small" data-skull="disconnect" style="margin-top:auto;align-self:flex-start">Desconectar</button>' : ''}
     </section>`;
@@ -3006,6 +3030,8 @@ document.addEventListener('pointerdown', (ev) => {
   }
   const rigMinBtn = ev.target.closest('button[data-rigmin]');
   if (rigMinBtn) { ev.preventDefault(); setPref('rigMin', Math.max(30, Math.min(200, (ui.prefs.rigMin || 75) + Number(rigMinBtn.dataset.rigmin)))); return; }
+  const mz = ev.target.closest('[data-minezone]');
+  if (mz) { ev.preventDefault(); const z = Number(mz.dataset.minezone); ui.mineZone = !z || ui.mineZone === z ? null : z; ui.sitesPage = 0; render(); return; }
   const skullBtn = ev.target.closest('button[data-skull]');
   if (skullBtn) { ev.preventDefault(); skullAction(skullBtn.dataset.skull); return; }
   const spot = ev.target.closest('button[data-spot]');

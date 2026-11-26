@@ -123,8 +123,41 @@ function skullInfo() {
 function sendSkull() { if (win && !win.isDestroyed()) win.webContents.send('ed:skull', skullInfo()); }
 
 /** Sitios de la flota del cuerpo actual, de la web Skullmining (la misma consulta que hace el plugin). */
+/**
+ * Cuerpo en el que vas a minar: en el que estás, al que te acercas o, en supercrucero, el que tienes
+ * fijado como destino en este sistema (así se ven las zonas y los sitios antes de bajar).
+ */
+function mineBody(st) {
+  const here = clean(st.status.bodyName) || (st.location.approach && st.location.approach.body);
+  if (here) return here;
+  const d = st.destination || {};
+  if (d.body == null || d.system == null || d.system !== st.location.systemAddress) return null;
+  const hit = Object.entries(st.bodies || {}).find(([, b]) => b.id === d.body);
+  if (hit) return hit[0];
+  const sp = ((st.exploration && st.exploration.spansh && st.exploration.spansh.bodies) || []).find((b) => b.bodyId === d.body);
+  return sp ? sp.name : clean(d.name);
+}
+/** Zonas de minería de un cuerpo: cuántas hay (tu escaneo o Spansh) y cuál tienes fijada en el juego. */
+function mineZones(st, body) {
+  if (!body) return null;
+  const jb = (st.bodies || {})[body] || {};
+  let count = ((jb.signals || []).find((x) => x.key === 'planetary mining location') || {}).count ?? null;
+  if (count == null) {
+    const sp = ((st.exploration && st.exploration.spansh && st.exploration.spansh.bodies) || []).find((b) => b.name === body);
+    const sig = sp && sp.signals && sp.signals.signals;
+    if (sig) count = sig['$PlanetaryMiningLocation_Name;'] || 0;
+  }
+  // zona fijada como destino: la que lee Skull Mining o, si no, el nombre del destino del juego
+  let selected = null;
+  const zt = skull.zones && skull.zones.zone_target;
+  if (zt && zt.body === body && zt.index != null) selected = Number(zt.index);
+  const d = st.destination || {};
+  const m = /MiningLocation[^#]*#index=(\d+)/i.exec(String(d.raw || '')) || (/MiningLocation/i.test(String(d.raw || '')) ? /(\d+)\s*$/.exec(String(d.name || '')) : null);
+  if (m) selected = Number(m[1]);
+  return { body, count, selected };
+}
 async function skullSites(snap, force) {
-  const st = snap.state; const body = clean(st.status.bodyName) || (st.location.approach && st.location.approach.body);
+  const st = snap.state; const body = mineBody(st);
   const sys = st.location.system; const cmdr = st.cmdr.name;
   const conf = settings.skull || {};
   if (!body || !sys || !conf.url || !conf.token || !cmdr) return;
@@ -161,13 +194,15 @@ function mineView(snap) {
   if (pos && rigs.body !== pos.body) rigs = { body: pos.body, list: [] };
   const live = mining.liveView(skull.live);
   const known = live && pos && live.body === pos.body ? live.rigList : [];
-  const sameBody = pos && skull.sitesKey && skull.sitesKey.endsWith(`|${pos.body}`);
+  const target = pos ? pos.body : mineBody(snap.state);
+  const sameBody = target && skull.sitesKey && skull.sitesKey.endsWith(`|${target}`);
   return {
+    target: mineZones(snap.state, target),
     pos: pos ? { lat: pos.lat, lon: pos.lon, body: pos.body } : null,
     marked: rigs.list.length, known: known.length,
     guide: pos ? mining.rigGuide([...rigs.list, ...known], pos, pos.radius, settings.rigMin || 75) : null,
     zone: pos && live ? mining.zoneAt(skull.zones && skull.zones.zone_anchors, pos.body, pos.lat, pos.lon, pos.radius) : null,
-    sites: sameBody && skull.sites ? mining.sitesView(skull.sites, pos, pos.radius) : null,
+    sites: sameBody && skull.sites ? mining.sitesView(skull.sites, pos, pos ? pos.radius : null) : null,
   };
 }
 
