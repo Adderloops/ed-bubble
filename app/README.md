@@ -80,6 +80,16 @@ Sección del grupo Viaje (Odyssey):
 
 Al acercarte a un planeta, la tarjeta Exobiología predice qué especies puede haber (`core/biopredict.js`), con las reglas de SrvSurvey (`core/data/bio-criteria`). Usa los datos del cuerpo de tu diario (escaneo FSS o sondas) y, si no lo has escaneado, los del volcado de Spansh del sistema (`/api/dump`), la estrella que más lo ilumina, la región de la galaxia, la distancia a la nebulosa más cercana y si estás en una burbuja guardiana. Si ya se conocen los géneros (tu DSS o los que otros subieron a Spansh), solo predice especies de esos géneros, y debajo de cada género sin muestras pone la especie posible. «Posible ?» (ámbar) indica que faltó algún dato del cuerpo para comprobar todas las reglas. Comprobado con 63 cuerpos con vida de los diarios de Adder: acierta el 95 % de los géneros que hay de verdad. Si Spansh no tenía la ficha del cuerpo, la gravedad, la temperatura y el radio salen también del volcado.
 
+## Exobiología
+
+Grupo Actividades. La app salta aquí al sacar el escáner genético a pie (se puede desactivar en Ajustes). En Órbita planetaria queda el resumen, con un botón «Abrir».
+
+- **Muestreo:** la especie que estás muestreando, en qué muestra vas, su valor y si el cuerpo no lo ha pisado nadie (el juego paga hasta 5 veces más). Con la posición de cada muestra (`ScanOrganic` + Status.json) calcula la distancia a la más cercana y avisa de cuánto alejarte o de que ya puedes tomar la siguiente. Distancia mínima por género (dato del juego): Bacterium, Fonticulua y Stratum 500 m; Osseus y Tubus 800 m; Electricae 1 km; Cactoida y Fungoida 300 m; Tussock 200 m; Aleoida, Clypeus, Concha, Frutexa y Recepta 150 m; el resto 100 m.
+- **Minimapa** (norte arriba, tú en el centro con tu rumbo): las muestras de la especie en curso con su círculo de distancia mínima (ámbar si estás dentro), las especies ya analizadas en verde y la dirección del destino fijado en rosa.
+- **Este cuerpo:** especies muestreadas y géneros del DSS con las especies posibles (reglas de SrvSurvey) y su valor, de más a menos. **Ubicaciones de otros comandantes** (Spansh): de cada especie conocida, la más cercana a ti, con «Fijar» para llevarla a la brújula y al minimapa; debajo, distancia y giro hasta el destino.
+- **Este sistema:** cuerpos con señales biológicas, sus géneros y cuántos has analizado. **Lo que llevas:** muestras sin vender y su valor.
+- **Valores:** se piden a Spansh por especie (búsqueda de cuerpos con esa especie) y se guardan en `biovalues.json`, junto con los de tus ventas. Código en `core/exobio.js`.
+
 ## Exploración
 
 Grupo Viaje. La app salta aquí al abrir el escáner FSS o lanzar sondas DSS (se puede desactivar en Ajustes).

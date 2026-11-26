@@ -819,6 +819,28 @@ test('exploración: valor de cuerpos, datos sin vender, venta y muerte', () => {
   assert.strictEqual(require('../../core/derive').flightMode(s).section, 'exploracion');
 });
 
+test('exobiología: posición de cada muestra, distancia mínima por género y salto con el escáner genético', () => {
+  const m = require('../../core/model');
+  const s = m.createState();
+  const at = (lat, lon) => m.applyStatus(s, { Latitude: lat, Longitude: lon, BodyName: 'B 1', PlanetRadius: 1000000, SelectedWeapon: '$humanoid_sampletool_name;' }, { isOnFoot: 'true' });
+  const org = (type) => m.applyEvent(s, { timestamp: '2026-11-20T10:00:00Z', event: 'ScanOrganic', ScanType: type, Genus: '$Codex_Ent_Stratum_Genus_Name;', Genus_Localised: 'Stratum', Species: '$Codex_Ent_Stratum_07_Name;', Species_Localised: 'Stratum Tectonicas', SystemAddress: 1, Body: 5 });
+  s.bodies['B 1'] = { id: 5 };
+  at(0, 0); org('Log');
+  at(0, 0.01); org('Sample');
+  at(0, 0.025);
+  const E = require('../../core/derive').view(s).exobio;
+  assert.strictEqual(E.current.range, 500, 'Stratum: 500 m');
+  assert.strictEqual(E.current.points.length, 2);
+  assert.ok(Math.abs(E.current.nearest - 261.8) < 1, `más cercana a ~262 m: ${E.current.nearest}`);
+  assert.strictEqual(E.current.ok, false); assert.ok(E.current.need > 230 && E.current.need < 245);
+  assert.strictEqual(require('../../core/derive').flightMode(s).section, 'exobiologia');
+  at(0, 0.03); org('Analyse');
+  assert.strictEqual(require('../../core/derive').view(s).exobio.current, null, 'analizada: sin muestreo en curso');
+  org('Log');
+  assert.strictEqual(s.bio[5]['$Codex_Ent_Stratum_Genus_Name;'].samples.length, 1, 'una nueva especie empieza de cero');
+  assert.strictEqual(require('../../core/exobio').colonyRange('$Codex_Ent_Osseus_Genus_Name;'), 800);
+});
+
 test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {
   const m = require('../../core/model');
   const s = m.createState();

@@ -28,7 +28,8 @@ function createState() {
     // cuerpos de este sistema según el Journal: { nombre: { id, gravity (g), radius (m), landable, planetClass,
     //   atmosphere, temperature (K), rings: [nombres], signals: [{ key, name, count }], genuses: [{ key, name }] } }
     bodies: {},
-    bio: {}, // muestras exobiológicas de este sistema: { bodyId: { genusKey: { genus, species, step 1-3 } } }
+    bio: {}, // muestras exobiológicas de este sistema: { bodyId: { genusKey: { genus, species, step 1-3, samples: [{ lat, lon }] } } }
+    bioCurrent: null, // especie que estás muestreando: { body, genus, bodyName }
     destination: { name: null, body: null, system: null },
     status: {
       flags: {}, pips: null, fireGroup: null, guiFocus: null,
@@ -210,7 +211,7 @@ const HANDLERS = {
   },
   FSDJump(state, e) {
     setSystemInfo(state, e);
-    state.location.approach = null; state.bodies = {}; state.bio = {};
+    state.location.approach = null; state.bodies = {}; state.bio = {}; state.bioCurrent = null;
     state.location.docked = false; state.location.station = null; state.location.stationType = null;
     state.location.landed = false;
     state.lastJump = { distance: e.JumpDist ?? null, fuelUsed: e.FuelUsed ?? null, at: e.timestamp || null };
@@ -280,7 +281,15 @@ const HANDLERS = {
     if (e.Body == null || !e.Genus) return;
     const step = { Log: 1, Sample: 2, Analyse: 3 }[e.ScanType] || 1;
     const byBody = state.bio[e.Body] || (state.bio[e.Body] = {});
-    byBody[e.Genus] = { genus: e.Genus_Localised || e.Genus, species: e.Species_Localised || e.Species || null, variant: e.Variant_Localised || null, step };
+    // posición de cada muestra (Status.json en ese momento): para la distancia mínima entre muestras y el minimapa
+    const S = state.status;
+    const pos = S.latitude != null && S.longitude != null ? { lat: S.latitude, lon: S.longitude } : null;
+    const prev = byBody[e.Genus];
+    const restart = step === 1 || !prev || (prev.speciesKey && e.Species && prev.speciesKey !== e.Species);
+    const samples = (restart ? [] : (prev.samples || []).slice()).concat(pos ? [pos] : []);
+    byBody[e.Genus] = { genus: e.Genus_Localised || e.Genus, species: e.Species_Localised || e.Species || null, variant: e.Variant_Localised || null, step,
+      genusKey: e.Genus, speciesKey: e.Species || null, samples, at: e.timestamp || null };
+    state.bioCurrent = step < 3 ? { body: e.Body, genus: e.Genus, bodyName: S.bodyName || null } : null;
     pushLog(state, e, 'Exobiología', `${e.Species_Localised || e.Genus_Localised || ''} · ${step}/3`);
   },
   DockingRequested(state, e) { pushLog(state, e, 'Atraque solicitado', e.StationName); },
@@ -582,6 +591,7 @@ function applyStatus(state, raw, decoded) {
   S.longitude = raw.Longitude ?? null;
   S.altitude = raw.Altitude ?? null;
   S.heading = raw.Heading ?? null;
+  S.sampler = /sampletool/i.test(String(raw.SelectedWeapon || '')); // escáner genético en la mano (solo para el salto automático)
   S.bodyName = raw.BodyName || null;
   S.planetRadius = raw.PlanetRadius ?? null;
   S.gravity = raw.Gravity ?? null;

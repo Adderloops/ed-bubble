@@ -21,6 +21,7 @@ function isScoopable(starClass) {
 
 function flightMode(state) {
   const f = state.status.flags || {};
+  if (f.isOnFoot && state.status.sampler) return { key: 'exobio', label: 'Muestreo biológico', section: 'exobiologia' };
   if (f.isOnFoot) return { key: 'onfoot', label: 'A pie', section: 'apie' };
   if (f.isInSRV) return state.srv && /rhino/i.test(state.srv.type || '') ? { key: 'rhino', label: 'Minando con el Rhino', section: 'mineria' } : { key: 'srv', label: 'En SRV', section: 'srv' };
   if (f.isFSDJump) return { key: 'jump', label: 'Saltando', section: 'vuelo' };
@@ -263,6 +264,7 @@ function view(state) {
     mode: flightMode(state),
     combat: require('./combat').view(state),
     exploration: require('./exploration').view(state),
+    exobio: require('./exobio').view(state),
     neutron: neutronView(state),
     shipLayout: state.ship && state.ship.type ? require('./builds').layout(state.ship.type, state.ship.modules) : null,
     alerts: alerts(state),

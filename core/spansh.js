@@ -175,7 +175,8 @@ function body(id64) {
     for (const l of r.landmarks || []) {
       if (!l.subtype) continue;
       const x = species.find((y) => y.species === l.subtype);
-      if (x) x.count += 1; else species.push({ species: l.subtype, genus: l.type || null, value: l.value ?? null, count: 1, lat: l.latitude ?? null, lon: l.longitude ?? null });
+      const pt = l.latitude != null && l.longitude != null ? { lat: l.latitude, lon: l.longitude } : null;
+      if (x) { x.count += 1; if (pt && x.points.length < 40) x.points.push(pt); } else species.push({ species: l.subtype, genus: l.type || null, value: l.value ?? null, count: 1, lat: l.latitude ?? null, lon: l.longitude ?? null, points: pt ? [pt] : [] });
     }
     return {
       name: r.name, gravity: r.gravity ?? null, radius: r.radius ?? null, landable: r.is_landable ?? null,
@@ -231,6 +232,17 @@ function outfitting({ item, info, reference }) {
   });
 }
 
+/** Valor base de una especie biológica («Stratum Tectonicas»): lo da cualquier cuerpo de Spansh donde se haya visto. */
+function speciesValue(name) {
+  const n = String(name || '').trim();
+  if (!n) return Promise.resolve(null);
+  return cached(`v:${n.toLowerCase()}`, async () => {
+    const d = await getJson('https://spansh.co.uk/api/bodies/search', { method: 'POST', body: JSON.stringify({ filters: { landmark_subtype: { value: [n] } }, size: 1, page: 0 }), headers: { 'Content-Type': 'application/json' } });
+    for (const r of d.results || []) for (const l of r.landmarks || []) if (String(l.subtype).toLowerCase() === n.toLowerCase() && l.value) return l.value;
+    return null;
+  });
+}
+
 /**
  * Ruta con estrellas de neutrones (Neutron Plotter de Spansh). Lanza el cálculo y espera el resultado.
  * Devuelve { from, to, range, efficiency, total, jumps: [{ system, jumps, neutron, left, dist }] }.
@@ -254,4 +266,4 @@ async function neutronRoute({ from, to, range, efficiency = 60, maxWaitMs = 9000
   }
 }
 
-module.exports = { body, dump, neutronRoute, bodyId64, markets, outfitting, setFetch, suggest, system, normalise, stationKind, padSize };
+module.exports = { body, dump, neutronRoute, speciesValue, bodyId64, markets, outfitting, setFetch, suggest, system, normalise, stationKind, padSize };

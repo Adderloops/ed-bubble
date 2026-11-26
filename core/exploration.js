@@ -164,6 +164,7 @@ function apply(state, e) {
       const b = bodyOf(X, e.BodyID, e.BodyName);
       b.bio = signalCount(e.Signals, /Biological/i) || b.bio;
       b.geo = signalCount(e.Signals, /Geological/i) || b.geo;
+      if (Array.isArray(e.Genuses) && e.Genuses.length) b.genuses = e.Genuses.map((g) => ({ key: g.Genus, name: g.Genus_Localised || null }));
       return true;
     }
     case 'ScanOrganic': {
@@ -217,7 +218,7 @@ function fromSpansh(sb) {
   const count = (re) => Object.entries(sig).filter(([k]) => re.test(k)).reduce((n, [, v]) => n + (v || 0), 0);
   return { id: sb.bodyId, name: sb.name, kind: star ? 'star' : sb.type === 'Planet' ? 'planet' : 'other', cls: star ? null : sb.subType || null, starType: star ? sb.subType || null : null,
     mass: star ? sb.solarMasses ?? null : sb.earthMasses ?? null, terra: isTerraformable(sb.terraformingState), landable: !!sb.isLandable, distLs: sb.distanceToArrival ?? null,
-    bio: count(/Biological/i), geo: count(/Geological/i) };
+    bio: count(/Biological/i), geo: count(/Geological/i), genuses: ((sb.signals && sb.signals.genuses) || []).map((k) => ({ key: k })) };
 }
 
 /**

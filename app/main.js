@@ -55,7 +55,7 @@ function defaultBounds() {
 // Ajustes del comandante (settings.json en la carpeta de datos de la app)
 const DEFAULT_PREFS = {
   autoJump: true,
-  jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true, exploracion: true }, // a qué secciones salta solo
+  jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true, exploracion: true, exobiologia: true }, // a qué secciones salta solo
   startSection: 'puente', lastSection: 'puente', // al abrir: Puente o la última sección vista
   alerts: { dock: true, fuelRoute: true }, // avisos opcionales en la cabecera
   fullscreen: false,
@@ -69,7 +69,7 @@ function prefs() {
   delete p.ppTracked; delete p.skull; delete p.bindsFile; // datos internos, no son ajustes de la ventana
   return p;
 }
-const SECTION_IDS = ['puente', 'vuelo', 'orbita', 'combate', 'exploracion', 'equipo', 'mineria', 'apie', 'ingenieros', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
+const SECTION_IDS = ['puente', 'vuelo', 'orbita', 'combate', 'exploracion', 'exobiologia', 'equipo', 'mineria', 'apie', 'ingenieros', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
 /** Valida un ajuste que llega de la ventana; devuelve el valor limpio o undefined. */
 function cleanPref(key, value) {
   const bool = (x) => (typeof x === 'boolean' ? x : undefined);
@@ -221,6 +221,29 @@ async function lookHere(snap) {
     hereInfo = y ? { system: y.name, stations: y.stations, at: Date.now() } : { system: name, stations: [], at: Date.now() };
   } catch (e) { hereInfo = { system: name, error: e.message }; hereName = null; logLine(`[spansh] sistema ${name}: ${e.message}`); }
   if (win && !win.isDestroyed()) win.webContents.send('ed:here', hereInfo);
+}
+
+/** Valores de especies biológicas que aún no se saben (predichas en este cuerpo, muestreadas o sin vender), desde Spansh. */
+const bioValTried = new Set();
+let bioValBusy = false;
+async function lookBioValues(snap) {
+  if (bioValBusy) return;
+  const X = snap.state.exploration;
+  const nk = require('../core/exploration').nameKey;
+  const names = new Set();
+  for (const x of X.unsold.bio) if (x.name) names.add(x.name);
+  for (const g of Object.values(snap.state.bio || {})) for (const x of Object.values(g)) if (x.species) names.add(x.species);
+  const here = snap.state.status.bodyName || (snap.state.location.approach || {}).body;
+  const info = here && bodyInfo[here];
+  if (info) for (const p of info.predictions || []) if (p.species) names.add(p.species);
+  const todo = [...names].filter((n) => / /.test(n) && X.bioValues[nk(n)] == null && !bioValTried.has(n.toLowerCase())).slice(0, 8);
+  if (!todo.length) return;
+  bioValBusy = true;
+  for (const n of todo) {
+    bioValTried.add(n.toLowerCase());
+    try { const v = await spansh.speciesValue(n); if (v) engine.learnBioValues({ [nk(n)]: v }); } catch (e) { logLine(`[spansh] valor de ${n}: ${e.message}`); }
+  }
+  bioValBusy = false;
 }
 
 /** Exploración: cuerpos del sistema actual según Spansh (los que aún no has escaneado y si alguien lo ha subido). */
@@ -472,6 +495,7 @@ app.whenReady().then(() => {
     lookBody(snap);
     lookHere(snap);
     lookExplore(snap);
+    lookBioValues(snap);
     saveExplore(snap);
     skullSites(snap);
     // destino fijado sin cuerpo: se completa al llegar a uno

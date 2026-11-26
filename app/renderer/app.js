@@ -6,7 +6,7 @@ const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate', built: true }, { id: 'equipo', label: 'Equipo', built: true }, { id: 'srv', label: 'SRV' },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración', built: true }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie', built: true },
-  { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
+  { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio' }, { id: 'mineria', label: 'Minería', built: true }, { id: 'exobiologia', label: 'Exobiología', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
   { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
@@ -36,7 +36,8 @@ const ui = {
   finalDest: null, // estación de destino final: { station, system, ls, pad, icon, label, commodity, supply, price }
   plot: null, // { running, target, text, ok, error }
   extOk: null, // última consulta a Spansh: true / false
-  prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true, exploracion: true }, rigMin: 75, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
+  prefs: { autoJump: true, jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true, exploracion: true, exobiologia: true }, rigMin: 75, startSection: 'puente', lastSection: 'puente', alerts: { dock: true, fuelRoute: true }, fullscreen: false },
+  exoBodyPage: 0, exoKnownPage: 0, exoSysPage: 0, // Exobiología
   xTab: 'all', xBodyPage: 0, xCartoPage: 0, xBioPage: 0, xNrPage: 0, nrDest: '', nrSug: [], nr: null, // Exploración
   displays: null, info: null, // Ajustes: pantallas conectadas y datos de la app
 };
@@ -51,7 +52,7 @@ function setPref(key, value) {
 }
 /** ¿Se salta solo a la sección de esta situación? */
 function jumpAllowed(key) {
-  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : key === 'rhino' || key === 'mining' ? 'mineria' : key === 'combat' ? 'combate' : key === 'explore' ? 'exploracion' : 'vuelo';
+  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : key === 'rhino' || key === 'mining' ? 'mineria' : key === 'combat' ? 'combate' : key === 'explore' ? 'exploracion' : key === 'exobio' ? 'exobiologia' : 'vuelo';
   return ui.prefs.jump[g] !== false;
 }
 /** Abre una sección (y la recuerda para la próxima vez). */
@@ -1246,7 +1247,7 @@ function screenOrbita(s, v) {
   const bioSource = scanned.length || genuses.length ? `Tus escaneos${predGroups.length ? ' · posibles especies: reglas de SrvSurvey' : ''}` : species.length ? 'Especies conocidas · Spansh' : predGroups.length && b.bio !== 0 ? `Predicción con las reglas de SrvSurvey · datos ${sp.predictionSource === 'journal' ? 'de tu escaneo' : 'de Spansh'}${sp.region ? ` · ${sp.region}` : ''}` : '';
   const bioCard = `
     <section class="pn card" style="min-height:0">
-      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Exobiología</span>${bioPager}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Exobiología</span><span style="display:flex;gap:8px;align-items:center">${bioPager}<button type="button" class="tab small" data-goto="exobiologia">Abrir</button></span></div>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Señales biológicas', b.bio != null ? nf(b.bio) : '—', b.bio ? 'cyan' : '')}${stat('Muestras completas', `${scanned.filter(([, x]) => x.step >= 3).length}${b.bio ? ` / ${b.bio}` : ''}`)}</div>
       ${bioSource ? `<span class="eb dim" style="font-size:10px">${bioSource}</span>` : ''}
       <div style="display:flex;flex-direction:column;gap:4px">${bioRows.slice(ui.bioPage * BIO_PAGE, (ui.bioPage + 1) * BIO_PAGE).join('') || `<span class="soft" style="font-size:14px">${b.bio ? 'Escanea el cuerpo con el DSS para ver los géneros.' : 'Sin señales biológicas conocidas.'}</span>`}</div>
@@ -1686,6 +1687,152 @@ function cbAct(id, label, extra = '') {
   return `<button type="button" class="act${a.cls || ''} ${extra}" data-act="${id}" ${a.dis} title="${esc(a.title)}">${label}${a.key ? `<span class="k">${esc(a.key)}</span>` : ''}</button>`;
 }
 const FIGHTER = [['f_focus', 'Atacar mi objetivo'], ['f_attack', 'Atacar a discreción'], ['f_defend', 'Defenderme'], ['f_hold', 'Alto el fuego'], ['f_pos', 'Mantener posición'], ['f_follow', 'Seguirme'], ['f_dock', 'Volver a la nave'], ['f_orders', 'Abrir órdenes']];
+/* ---------- Exobiología: muestreo en curso con minimapa, este cuerpo, este sistema y lo que llevas ---------- */
+const BIO_GENUS = { Bacterial: 'Bacterium', Fonticulus: 'Fonticulua', Shrubs: 'Frutexa', Tussocks: 'Tussock', Cactoid: 'Cactoida', Clypeus: 'Clypeus', Conchas: 'Concha', Electricae: 'Electricae', Fumerolas: 'Fumerola', Fungoids: 'Fungoida', Osseus: 'Osseus', Recepta: 'Recepta', Stratum: 'Stratum', Tubus: 'Tubus', Aleoids: 'Aleoida', Vents: 'Amphora Plant', Sphere: 'Luteolum Anemone', Cone: 'Bark Mounds', Brancae: 'Brain Trees', Ground_Struct_Ice: 'Crystalline Shards', Tubers: 'Roseum Sinuous Tubers' };
+const BIO_RANGE = { Bacterial: 500, Fonticulus: 500, Shrubs: 150, Tussocks: 200, Cactoid: 300, Clypeus: 150, Conchas: 150, Electricae: 1000, Fumerolas: 100, Fungoids: 300, Osseus: 800, Recepta: 150, Stratum: 500, Tubus: 800, Aleoids: 150, Vents: 100, Sphere: 100, Cone: 100, Brancae: 100, Ground_Struct_Ice: 100, Tubers: 100 };
+const variantColour = (v) => (v && / - /.test(v) ? String(v).split(' - ').slice(1).join(' - ') : v || '');
+const genusKeyId = (k) => String(k || '').replace(/^\$Codex_Ent_|_Genus_Name;$/g, '');
+const genusName = (g) => BIO_GENUS[genusKeyId(g.key)] || g.name || genusKeyId(g.key);
+/** Valor base de una especie si se sabe (ventas tuyas o Spansh). */
+const bioValue = (s, name) => { const V = (s.exploration && s.exploration.bioValues) || {}; return name ? V[`n:${String(name).trim().toLowerCase()}`] ?? null : null; };
+const fmtCrShortM = (n) => (n == null ? '¿?' : n >= 1e6 ? `${nf(n / 1e6, 1)} M` : `${nf(n / 1e3, 0)} k`);
+const fmtM = (m) => (m == null ? '—' : m >= 1000 ? `${nf(m / 1000, 2)} km` : `${nf(m, 0)} m`);
+function haversine(a, b, R) {
+  const r = (d) => (d * Math.PI) / 180;
+  const h = Math.sin(r(b.lat - a.lat) / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(r(b.lon - a.lon) / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** Minimapa: tú en el centro (norte arriba), las muestras con su distancia mínima y la dirección del destino fijado. */
+function bioMinimap(s, E, W, H) {
+  const pos = E.pos;
+  const R = E.radius;
+  const all = E.species.flatMap((x) => x.points.map((p) => ({ ...p, x, cur: E.current && x.genusKey === E.current.genusKey })));
+  const center = pos || all[all.length - 1] || null;
+  if (!center || !R) return `<div class="in empty" style="flex:1;flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">Sin posición</span><span style="font-size:14px">El minimapa aparece en la superficie de un planeta (a pie o en el SRV).</span></div>`;
+  const r = (d) => (d * Math.PI) / 180;
+  const proj = (p) => ({ x: (p.lon - center.lon) * Math.cos(r(center.lat)) * r(1) * R, y: -(p.lat - center.lat) * r(1) * R });
+  const curRange = E.current ? E.current.range || 0 : 0;
+  const far = Math.max(150, curRange * 1.6, ...all.filter((p) => p.cur || !p.x.done).map((p) => Math.hypot(proj(p).x, proj(p).y) * 1.2));
+  const sc = (Math.min(W, H) / 2 - 14) / far;
+  const cx = W / 2; const cy = H / 2;
+  const P = (p) => { const q = proj(p); return { x: cx + q.x * sc, y: cy + q.y * sc }; };
+  const step = [50, 100, 200, 250, 500, 1000, 2000, 5000].find((v) => v * sc >= 40) || 5000;
+  const rings = [1, 2, 3, 4].map((i) => i * step).filter((v) => v * sc < Math.max(W, H)).map((v) => `<circle cx="${cx}" cy="${cy}" r="${v * sc}" fill="none" stroke="rgba(120,170,220,.12)"/><text x="${cx + 4}" y="${cy - v * sc + 12}" fill="rgba(160,190,220,.45)" font-size="10">${fmtM(v)}</text>`).join('');
+  const marks = all.map((p) => {
+    const q = P(p);
+    const range = p.x.range || 0;
+    const inside = pos && p.dist != null && p.dist < range;
+    const col = p.cur ? (inside ? '#ffb02e' : '#3fd5ff') : p.x.done ? 'rgba(120,200,140,.8)' : 'rgba(200,210,230,.6)';
+    return `${p.cur ? `<circle cx="${q.x}" cy="${q.y}" r="${range * sc}" fill="${inside ? 'rgba(255,176,46,.10)' : 'rgba(63,213,255,.06)'}" stroke="${col}" stroke-dasharray="6 4"/>` : ''}<circle cx="${q.x}" cy="${q.y}" r="${p.cur ? 6 : 4}" fill="${col}"/>`;
+  }).join('');
+  let target = '';
+  if (s.surfaceTarget && (!s.surfaceTarget.body || s.surfaceTarget.body === s.status.bodyName)) {
+    const t = P(s.surfaceTarget); const dx = t.x - cx; const dy = t.y - cy; const d = Math.hypot(dx, dy); const lim = Math.min(W, H) / 2 - 12;
+    const k = d > lim ? lim / d : 1;
+    target = `<g transform="translate(${cx + dx * k},${cy + dy * k})"><path d="M0,-9 L8,6 L-8,6 Z" fill="#ff5ac8" transform="rotate(${(Math.atan2(dx, -dy) * 180) / Math.PI})"/></g>`;
+  }
+  const me = pos ? `<g transform="translate(${cx},${cy}) rotate(${pos.heading || 0})"><path d="M0,-11 L7,8 L0,4 L-7,8 Z" fill="#fff" stroke="#000" stroke-width="1"/></g>` : '';
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="display:block;overflow:hidden;background:#050c16;border:1px solid var(--line2)"><text x="${cx}" y="14" text-anchor="middle" fill="rgba(160,190,220,.6)" font-size="11">N</text>${rings}${marks}${target}${me}</svg>`;
+}
+
+const EXO_BODY_PAGE = 7;
+function screenExobiologia(s, v) {
+  const E = v.exobio;
+  const X = v.exploration;
+  const b = orbitBody(s);
+  const C = E.current;
+  // ---- muestreo en curso
+  const dots = (n) => `<span style="display:inline-flex;gap:4px">${[1, 2, 3].map((i) => `<span class="dot ${i <= n ? 'on' : ''}"></span>`).join('')}</span>`;
+  const xb = b ? X.bodies.find((y) => y.name === b.name) : null;
+  const firstFoot = xb && xb.wasFootfalled === false;
+  let curHtml;
+  if (C) {
+    const val = bioValue(s, C.species);
+    curHtml = `<div class="in" style="padding:10px 14px;display:flex;flex-direction:column;gap:6px;border-color:${C.ok ? 'var(--cyan)' : 'var(--amber)'}">
+      <span style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="va nowrap" style="font-size:22px">${esc(C.species || C.genus)}</span>${dots(C.step)}</span>
+      <span style="display:flex;gap:6px;flex-wrap:wrap"><span class="eb dim">${esc(variantColour(C.variant) || C.genus || '')}</span><span class="eb dim">Muestra ${C.step} de 3</span><span class="eb dim">Distancia mínima ${fmtM(C.range)}</span>${val ? `<span class="eb cyan">${fmtCr(val)}${firstFoot ? ' · ×5 si eres el primero' : ''}</span>` : ''}</span>
+      <span class="num ${C.ok ? 'cyan' : 'amber'}" style="font-size:26px">${C.nearest == null ? 'Sin posición' : C.ok ? 'Ya puedes tomar la siguiente' : `Aléjate ${fmtM(C.need)} más`}</span>
+      ${C.nearest != null ? `<span class="soft" style="font-size:13px">Muestra más cercana a ${fmtM(C.nearest)}</span>` : ''}
+    </div>`;
+  } else {
+    curHtml = `<div class="in" style="padding:10px 14px;display:flex;flex-direction:column;gap:4px"><span class="va" style="font-size:18px;color:var(--soft)">Sin muestreo en curso</span><span style="font-size:14px">Saca el escáner genético y toma la primera muestra: aquí verás cuánto alejarte para la siguiente.</span></div>`;
+  }
+  const left = `<section class="pn card" style="min-height:0;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Muestreo</span><span class="eb dim">${esc(b ? b.name : E.bodyName || '')}</span></div>
+    ${curHtml}
+    <div style="flex:1;min-height:0;display:flex">${bioMinimap(s, E, 560, 640)}</div>
+    <span class="soft" style="font-size:12px;line-height:1.35">Círculo discontinuo: distancia mínima a cada muestra de la especie en curso (ámbar si estás dentro). Puntos verdes: especies ya analizadas. Flecha rosa: destino fijado.</span>
+  </section>`;
+
+  // ---- este cuerpo
+  let mid;
+  if (!b) mid = `<section class="pn card"><span class="ti" style="font-size:16px">Este cuerpo</span><div class="empty" style="flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">No estás cerca de un cuerpo</span><span style="font-size:14px">Al acercarte a un planeta con señales biológicas verás aquí sus géneros, especies posibles y su valor.</span></div></section>`;
+  else {
+    const jb = b.jb; const sp = b.sp || {};
+    const genuses = (jb.genuses || []).length ? jb.genuses : (xb && xb.genuses) || [];
+    const preds = sp.predictions || [];
+    const groups = [];
+    for (const p of preds) { let g = groups.find((x) => x.species === p.species); if (!g) groups.push(g = { species: p.species, genus: p.genus, variants: [], unsure: true }); if (p.variant) g.variants.push(p.variant); if (!p.unsure) g.unsure = false; }
+    const scans = Object.values(b.scans);
+    const rows = [];
+    for (const x of scans) { const val = bioValue(s, x.species); rows.push({ v: val || 0, html: `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 12px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:15px">${esc(x.species || x.genus)}</span><span class="eb dim nowrap" style="font-size:10px">${esc(variantColour(x.variant))}${x.step >= 3 ? ' · analizada' : ` · muestra ${x.step} de 3`}</span></span><span class="num" style="font-size:14px">${fmtCrShortM(val)}</span>${dots(x.step)}</div>` }); }
+    for (const g of genuses) {
+      if (b.scans[g.key]) continue;
+      const gname = genusName(g);
+      const pg = groups.filter((x) => x.genus === gname || String(x.species).startsWith(gname.split(' ')[0]));
+      const vals = pg.map((x) => bioValue(s, x.species)).filter((n) => n != null);
+      const range = vals.length ? (Math.min(...vals) === Math.max(...vals) ? fmtCrShortM(vals[0]) : `${fmtCrShortM(Math.min(...vals))}–${fmtCrShortM(Math.max(...vals))}`) : '¿?';
+      rows.push({ v: vals.length ? Math.max(...vals) : 0, html: `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 12px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:15px">${esc(g.name || gname)}</span><span class="eb ${pg.length ? 'cyan' : 'dim'} nowrap" style="font-size:10px" title="${esc(pg.map((x) => `${x.species}: ${x.variants.join(', ')}`).join(' · '))}">${pg.length ? `Posible: ${esc(pg.map((x) => x.species.split(' ').slice(1).join(' ')).join(' · '))}` : `Distancia mínima ${fmtM(BIO_RANGE[genusKeyId(g.key)])}`}</span></span><span class="num" style="font-size:14px">${range}</span><span class="eb dim" style="font-size:10px">Pendiente</span></div>` });
+    }
+    if (!genuses.length && !scans.length) for (const x of groups) { const val = bioValue(s, x.species); rows.push({ v: val || 0, html: `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 12px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:15px">${esc(x.species)}</span><span class="eb dim nowrap" style="font-size:10px">${esc(x.variants.join(', '))}</span></span><span class="num" style="font-size:14px">${fmtCrShortM(val)}</span><span class="eb ${x.unsure ? 'amber' : 'cyan'}" style="font-size:10px">${x.unsure ? 'Posible ?' : 'Posible'}</span></div>` }); }
+    rows.sort((a, c) => c.v - a.v);
+    const pages = Math.max(1, Math.ceil(rows.length / EXO_BODY_PAGE)); ui.exoBodyPage = Math.min(ui.exoBodyPage || 0, pages - 1);
+    // ubicaciones conocidas de otros comandantes (Spansh): la más cercana a ti de cada especie
+    const known = (sp.species || []).map((x) => {
+      const pts = x.points && x.points.length ? x.points : x.lat != null ? [{ lat: x.lat, lon: x.lon }] : [];
+      let best = pts[0] || null; let bd = null;
+      if (E.pos && E.radius) for (const p of pts) { const d = haversine(E.pos, p, E.radius); if (bd == null || d < bd) { bd = d; best = p; } }
+      return { ...x, best, bd };
+    }).filter((x) => x.best);
+    const kpages = Math.max(1, Math.ceil(known.length / 3)); ui.exoKnownPage = Math.min(ui.exoKnownPage || 0, kpages - 1);
+    const krows = known.slice(ui.exoKnownPage * 3, ui.exoKnownPage * 3 + 3).map((x) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:6px 12px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:14px">${esc(x.species)}</span><span class="eb dim nowrap" style="font-size:10px">${fmtCr(x.value)} · ${x.count} conocida${x.count === 1 ? '' : 's'}${x.bd != null ? ` · la más cercana a ${fmtM(x.bd)}` : ''}</span></span><span></span><button type="button" class="tab small" data-spot="${x.best.lat},${x.best.lon}" title="Fijar como destino la ubicación más cercana a ti">Fijar</button></div>`).join('');
+    const nav = v.surfaceNav && v.surfaceNav.sameBody ? v.surfaceNav : null;
+    const rel = nav && nav.relative;
+    const navLine = s.surfaceTarget ? `<div class="in" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-color:#ff5ac8"><span style="display:flex;flex-direction:column"><span class="eb" style="color:#ff5ac8">Destino fijado</span><span class="num" style="font-size:18px">${nav ? `${fmtM(nav.distance)} · ${rel == null ? '' : Math.abs(rel) <= 5 ? 'de frente' : `gira ${nf(Math.abs(rel))}° a la ${rel > 0 ? 'derecha' : 'izquierda'}`}` : 'en otro cuerpo'}</span></span><button type="button" class="tab small" data-coord="clear">Quitar</button></div>` : '';
+    mid = `<section class="pn card" style="min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti nowrap" style="font-size:16px">Este cuerpo</span>${pager2('exobody', ui.exoBodyPage, pages)}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${stat('Señales biológicas', b.bio != null ? nf(b.bio) : '—', b.bio ? 'cyan' : '')}${stat('Analizadas', `${scans.filter((x) => x.step >= 3).length}${b.bio ? ` / ${b.bio}` : ''}`)}${stat('Primera pisada', xb && xb.wasFootfalled != null ? (xb.wasFootfalled ? 'No' : 'Sí · ×5') : '—', firstFoot ? 'cyan' : '')}</div>
+      <div style="display:flex;flex-direction:column;gap:4px">${rows.slice(ui.exoBodyPage * EXO_BODY_PAGE, (ui.exoBodyPage + 1) * EXO_BODY_PAGE).map((r) => r.html).join('') || `<span class="soft" style="font-size:14px">${b.bio ? 'Escanea el cuerpo con el DSS (sondas) para ver los géneros.' : 'Sin señales biológicas conocidas.'}</span>`}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><span class="eb">Ubicaciones de otros comandantes · Spansh</span>${pager2('exoknown', ui.exoKnownPage, kpages)}</div>
+      <div style="display:flex;flex-direction:column;gap:4px">${krows || '<span class="soft" style="font-size:13px">Nadie ha subido ubicaciones de plantas de este cuerpo.</span>'}</div>
+      ${navLine}
+      <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">Valores base (Spansh o tus ventas); si eres el primero en pisar el cuerpo, el juego paga hasta 5 veces más. Especies posibles: reglas de SrvSurvey.</span>
+    </section>`;
+  }
+
+  // ---- este sistema y lo que llevas
+  const bioBodies = X.bodies.filter((y) => y.bio > 0).sort((a, c) => c.bio - a.bio || (a.distLs ?? 1e12) - (c.distLs ?? 1e12));
+  const spages = Math.max(1, Math.ceil(bioBodies.length / 6)); ui.exoSysPage = Math.min(ui.exoSysPage || 0, spages - 1);
+  const sysName = clean(X.system.name || s.location.system) || '';
+  const srows = bioBodies.slice(ui.exoSysPage * 6, ui.exoSysPage * 6 + 6).map((y) => {
+    const done = Object.values((s.bio || {})[y.id] || {}).filter((x) => x.step >= 3).length;
+    const gens = (y.genuses || []).map((g) => genusName(g)).join(' · ');
+    return `<div class="in" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;${b && b.name === y.name ? 'border-color:var(--amber)' : ''}"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:14px">${esc(shortBodyName(y.name, sysName))}</span><span class="soft nowrap" style="font-size:11px">${esc(gens || (y.landable ? 'Aterrizable' : ''))}</span></span><span style="display:flex;flex-direction:column;align-items:flex-end"><span class="num cyan nowrap" style="font-size:15px">${done}/${y.bio}</span><span class="soft nowrap" style="font-size:11px">bio${y.distLs != null ? ` · ${nf(y.distLs)} ls` : ''}</span></span></div>`;
+  }).join('') || '<span class="soft" style="font-size:13px">Ningún cuerpo con señales biológicas conocidas en este sistema.</span>';
+  const U = X.unsold.bio;
+  const right = `<section class="pn card" style="min-height:0;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti nowrap" style="font-size:16px">Este sistema</span>${pager2('exosys', ui.exoSysPage, spages)}</div>
+    <div style="display:flex;flex-direction:column;gap:4px">${srows}</div>
+    <span class="ti" style="font-size:16px;margin-top:8px">Lo que llevas</span>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${stat('Muestras sin vender', nf(U.list.length), U.list.length ? 'cyan' : '')}${stat('Valor base', U.list.length ? fmtCr(U.value) + (U.unknown ? ' +¿?' : '') : '—', U.value ? 'cyan' : '')}</div>
+    <div style="display:flex;flex-direction:column;gap:4px">${U.list.slice(0, 3).map((x) => `<div class="in" style="display:flex;justify-content:space-between;gap:8px;padding:5px 10px"><span class="va nowrap" style="font-size:13px">${esc(x.name)}</span><span class="num" style="font-size:13px">${fmtCrShortM(x.value)}</span></div>`).join('')}</div>
+    ${U.list.length > 3 ? '<button type="button" class="tab small" data-goto="exploracion" style="align-self:flex-start">Ver todas en Exploración</button>' : ''}
+    <span class="soft" style="font-size:12px;line-height:1.35;margin-top:auto">Se venden en Vista Genomics. Si mueres, se pierden.</span>
+  </section>`;
+  return `<div style="display:grid;grid-template-columns:600px minmax(0,1fr) 400px;gap:12px;min-height:0;height:100%">${left}${mid}${right}</div>`;
+}
+
 /* ---------- Exploración: sistema actual, datos sin vender y ruta de neutrones ---------- */
 const STAR_CODES = { O: 'Estrella O (azul)', B: 'Estrella B (azul-blanca)', A: 'Estrella A (blanca)', F: 'Estrella F (blanca-amarilla)', G: 'Estrella G (amarilla)', K: 'Estrella K (naranja)', M: 'Estrella M (roja)',
   L: 'Enana marrón L', T: 'Enana marrón T', Y: 'Enana marrón Y', TTS: 'Estrella T Tauri', AeBe: 'Estrella Herbig Ae/Be', N: 'Estrella de neutrones', H: 'Agujero negro', SupermassiveBlackHole: 'Agujero negro supermasivo',
@@ -2593,6 +2740,7 @@ function screenAjustes(s, v) {
       ${setRow('jump.orbita', 'Órbita planetaria', 'Te acercas a un planeta o aterrizas', p.jump.orbita, off)}
       ${setRow('jump.mineria', 'Minería', 'Minas con el Rhino o con la nave', p.jump.mineria, off)}
       ${setRow('jump.combate', 'Combate', 'Armamento desplegado, zona de combate o te atacan', p.jump.combate !== false, off)}
+      ${setRow('jump.exobiologia', 'Exobiología', 'Sacas el escáner genético a pie', p.jump.exobiologia !== false, off)}
       ${setRow('jump.exploracion', 'Exploración', 'Abres el escáner FSS o lanzas sondas DSS', p.jump.exploracion !== false, off)}
       ${setRow('jump.approach', 'Vuelo · plataformas', 'Te conceden el atraque', p.jump.approach, off)}
       ${setRow('jump.docked', 'Estación', 'Atracas en una estación', p.jump.docked, off)}
@@ -2674,7 +2822,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : ui.section === 'exobiologia' ? screenExobiologia(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -2824,7 +2972,7 @@ document.addEventListener('pointerdown', (ev) => {
     if (d.nrclear) { window.edbubble.neutronClear(); ui.nr = null; return; }
   }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage' }[minPgBtn.dataset.mpager];
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage' }[minPgBtn.dataset.mpager];
     if (!k && /^eq(core|hard|opt)$/.test(minPgBtn.dataset.mpager)) { const kk = minPgBtn.dataset.mpager.slice(2); ui.eqPages[kk] = Math.max(0, (ui.eqPages[kk] || 0) + Number(minPgBtn.dataset.d)); render(); return; } ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {
