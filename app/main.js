@@ -236,7 +236,9 @@ async function lookBioValues(snap) {
   const here = snap.state.status.bodyName || (snap.state.location.approach || {}).body;
   const info = here && bodyInfo[here];
   if (info) for (const p of info.predictions || []) if (p.species) names.add(p.species);
-  const todo = [...names].filter((n) => / /.test(n) && X.bioValues[nk(n)] == null && !bioValTried.has(n.toLowerCase())).slice(0, 8);
+  const sb = X.sysBio && X.sysBio.address === snap.state.location.systemAddress ? X.sysBio.bodies : {};
+  for (const l of Object.values(sb)) for (const n of l) names.add(n.species);
+  const todo = [...names].filter((n) => / /.test(n) && X.bioValues[nk(n)] == null && !bioValTried.has(n.toLowerCase())).slice(0, 12);
   if (!todo.length) return;
   bioValBusy = true;
   for (const n of todo) {
@@ -266,6 +268,59 @@ async function lookExplore(snap) {
 /** Gravedad del cuerpo al que te acercas, desde Spansh (Status.json solo la da a pie). */
 let bodyLooked = null;
 const bodyInfo = {}; // por nombre, para la ventana aunque se abra después de la consulta
+/**
+ * Especies posibles de un cuerpo (reglas de SrvSurvey) con los géneros ya conocidos: los del DSS (diario) o,
+ * si no, los que otros subieron a Spansh. Sin predicción si el cuerpo no se puede pisar o si sus señales
+ * (FSS, tuyo o de Spansh) no incluyen ninguna biológica.
+ */
+function predictBody(me, list, pos, jb, rawDump, bioScans) {
+  jb = jb || {};
+  const genusKeys = (jb.genuses || []).length ? jb.genuses.map((g) => g.key) : ((rawDump && rawDump.signals && rawDump.signals.genuses) || []);
+  const known = {
+    genus: genusKeys.map((g) => GENUS_KEYS[String(g || '').replace(/^\$Codex_Ent_|_Genus_Name;$/g, '')]).filter(Boolean),
+    species: Object.fromEntries(Object.values(bioScans || {}).filter((x) => x.species).map((x) => [String(x.species).split(' ')[0], x.species])),
+  };
+  const jSig = jb.signals || null;
+  const bioCount = ((jSig || []).find((x) => x.key === 'biological') || {}).count || 0;
+  const dSig = rawDump && rawDump.signals && rawDump.signals.signals ? rawDump.signals.signals : null;
+  const spBio = dSig ? dSig['$SAA_SignalType_Biological;'] || 0 : 0;
+  known.allGenusKnown = known.genus.length > 0 && known.genus.length >= (bioCount || spBio);
+  const noBio = !bioCount && !spBio && !known.genus.length && !!((jSig && jSig.length) || (dSig && Object.keys(dSig).length));
+  const predictions = me.landable === false || noBio ? [] : biopredict.predict(biopredict.bodyProps(me, list, pos), known);
+  return { knownGenus: known.genus, predictions, noBio, bio: bioCount || spBio };
+}
+
+/** Especies posibles de cada cuerpo del sistema con señales biológicas (para Exobiología › Este sistema). */
+let sysBioLooked = null;
+async function lookSystemBio(snap) {
+  const addr = snap.state.location.systemAddress;
+  if (addr == null) return;
+  const bodies = snap.state.bodies || {};
+  const key = `${addr}|${Object.values(bodies).filter((x) => x.scan).length}|${Object.values(bodies).reduce((n, x) => n + (x.genuses || []).length, 0)}`;
+  if (key === sysBioLooked) return;
+  sysBioLooked = key;
+  let dumpSys = null;
+  try { dumpSys = await spansh.dump(addr); } catch (e) { /* sin Spansh: solo el diario */ }
+  try {
+    const all = new Map();
+    for (const x of (dumpSys && dumpSys.bodies) || []) all.set(x.bodyId, biopredict.normBody(x, 'spansh'));
+    for (const x of Object.values(bodies)) if (x.scan && x.scan.BodyID != null && (x.scan.SystemAddress == null || x.scan.SystemAddress === addr)) all.set(x.scan.BodyID, biopredict.normBody(x.scan, 'journal'));
+    const list = [...all.values()];
+    const pos = snap.state.location.starPos || (dumpSys && dumpSys.coords ? [dumpSys.coords.x, dumpSys.coords.y, dumpSys.coords.z] : null);
+    const out = {};
+    for (const me of list) {
+      if (me.star) continue;
+      const jb = Object.values(bodies).find((x) => x.id === me.id) || {};
+      const rawDump = ((dumpSys && dumpSys.bodies) || []).find((x) => x.bodyId === me.id);
+      const r = predictBody(me, list, pos, jb, rawDump, (snap.state.bio || {})[me.id]);
+      if (!r.bio) continue;
+      const seen = new Map(); for (const p of r.predictions) if (!seen.has(p.species)) seen.set(p.species, { genus: p.genus, species: p.species });
+      out[me.id] = [...seen.values()];
+    }
+    engine.setSystemBio(addr, out);
+  } catch (e) { logLine(`[bio] predicción del sistema: ${e.message}`); }
+}
+
 async function lookBody(snap) {
   let a = snap.state.location.approach;
   // sin ApproachBody (p. ej. la app se abrió ya en la superficie): el cuerpo de Status.json y su BodyID del escaneo
@@ -301,18 +356,11 @@ async function lookBody(snap) {
       if (info.radius == null && me.radius != null) info.radius = me.radius / 1000;
       if (!info.subtype && me.planetClass) info.subtype = me.planetClass;
       const pos = snap.state.location.starPos || (dumpSys && dumpSys.coords ? [dumpSys.coords.x, dumpSys.coords.y, dumpSys.coords.z] : null);
-      // géneros ya conocidos: los de tu DSS o, si no, los que otros subieron a Spansh
       const rawDump = ((dumpSys && dumpSys.bodies) || []).find((x) => x.bodyId === a.bodyId);
-      const genusKeys = (jb.genuses || []).length ? jb.genuses.map((g) => g.key) : ((rawDump && rawDump.signals && rawDump.signals.genuses) || []);
-      const known = {
-        genus: genusKeys.map((g) => GENUS_KEYS[String(g || '').replace(/^\$Codex_Ent_|_Genus_Name;$/g, '')]).filter(Boolean),
-        species: Object.fromEntries(Object.values((snap.state.bio || {})[a.bodyId] || {}).filter((x) => x.species).map((x) => [String(x.species).split(' ')[0], x.species])),
-      };
-      const bioCount = ((jb.signals || []).find((x) => x.key === 'biological') || {}).count || 0;
-      const spBio = rawDump && rawDump.signals && rawDump.signals.signals ? rawDump.signals.signals['$SAA_SignalType_Biological;'] || 0 : 0;
-      known.allGenusKnown = known.genus.length > 0 && known.genus.length >= (bioCount || spBio);
-      info.knownGenus = known.genus;
-      info.predictions = me.landable === false ? [] : biopredict.predict(biopredict.bodyProps(me, list, pos), known);
+      const r = predictBody(me, list, pos, jb, rawDump, (snap.state.bio || {})[a.bodyId]);
+      info.knownGenus = r.knownGenus;
+      info.predictions = r.predictions;
+      if (r.noBio) info.noBio = true;
       info.predictionSource = jb.scan ? 'journal' : 'spansh';
       info.region = biopredict.regionName(biopredict.regionAt(pos));
     }
@@ -496,6 +544,7 @@ app.whenReady().then(() => {
     lookHere(snap);
     lookExplore(snap);
     lookBioValues(snap);
+    lookSystemBio(snap);
     saveExplore(snap);
     skullSites(snap);
     // destino fijado sin cuerpo: se completa al llegar a uno

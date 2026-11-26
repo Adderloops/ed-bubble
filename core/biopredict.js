@@ -127,6 +127,9 @@ function clauseOk(c, props) {
  * Devuelve [{ genus, species, variant, name, unsure }]; «unsure» si alguna regla no se pudo comprobar
  * por falta de datos (por ejemplo, la composición de la atmósfera).
  */
+/** Nombre completo de la especie: «Stratum Tectonicas», pero «Roseum Sinuous Tubers» o «Luteolum Anemone» tal cual. */
+const fullSpecies = (genus, species) => (String(species).toLowerCase().includes(String(genus).split(' ').pop().toLowerCase()) ? species : `${genus} ${species}`);
+
 function predict(props, known = {}) {
   const out = new Map();
   const knownGenus = (known.genus || []).map((g) => g.toLowerCase());
@@ -135,7 +138,7 @@ function predict(props, known = {}) {
     const cc = node.commonChildren || common;
     genus = node.genus ?? genus; species = node.species ?? species; variant = node.variant ?? variant;
     if (genus && known.allGenusKnown && knownGenus.length && !knownGenus.includes(genus.toLowerCase())) return;
-    if (genus && species && knownSpecies[genus] && knownSpecies[genus] !== `${genus} ${species}`) return;
+    if (genus && species && knownSpecies[genus] && knownSpecies[genus] !== fullSpecies(genus, species)) return;
     let u = unsure;
     for (const c of node.query) {
       const r = clauseOk(c, props);
@@ -143,9 +146,10 @@ function predict(props, known = {}) {
       if (r === null) u = true;
     }
     if (genus && species && variant != null) {
-      const name = variant === '' ? species : `${genus} ${species} - ${variant}`;
+      const full = fullSpecies(genus, species);
+      const name = variant === '' ? full : `${full} - ${variant}`;
       const prev = out.get(name);
-      if (!prev || (prev.unsure && !u)) out.set(name, { genus, species: `${genus} ${species}`, variant, name, unsure: u });
+      if (!prev || (prev.unsure && !u)) out.set(name, { genus, species: full, variant, name, unsure: u });
     }
     const kids = node.useCommonChildren ? cc : node.children;
     for (const k of kids || []) walk(k, genus, species, variant, cc, u);

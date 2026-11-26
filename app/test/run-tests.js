@@ -841,6 +841,12 @@ test('exobiología: posición de cada muestra, distancia mínima por género y s
   assert.strictEqual(require('../../core/exobio').colonyRange('$Codex_Ent_Osseus_Genus_Name;'), 800);
 });
 
+test('exobiología: nombres de especie sin repetir el género (Sinuous Tubers, Anemone)', () => {
+  const bp = require('../../core/biopredict');
+  const all = bp.predict({ planetClass: 'Rocky body', body: 'Rocky', atmosType: 'None', temp: 300, pressure: 0, gravity: 0.2, volcanism: 'Minor Rocky Magma', regions: ['TubersBatch'] }, {});
+  for (const p of all) assert.ok(!/(\b\w+ \w+ \w+)\s+\1/.test(p.species) && !/Tubers .*Tubers/.test(p.species), `nombre repetido: ${p.species}`);
+});
+
 test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {
   const m = require('../../core/model');
   const s = m.createState();

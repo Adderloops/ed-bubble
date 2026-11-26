@@ -1159,9 +1159,11 @@ function orbitBody(s) {
   const jb = (s.bodies && s.bodies[name]) || {};
   const sp = ui.bodyInfo[name] || null;
   // señales: las del Journal (escaneo) y, si falta alguna, las de Spansh
+  // si el cuerpo tiene señales registradas (tu FSS o Spansh) y falta un tipo, de ese tipo no hay ninguna
+  const anySig = (jb.signals && jb.signals.length) || (sp && sp.signals && sp.signals.length);
   const count = (k) => {
     const x = (jb.signals || []).find((y) => sigKey(y) === k) || ((sp && sp.signals) || []).find((y) => sigKey(y) === k);
-    return x ? x.count : null;
+    return x ? x.count : k === 'biological' && sp && sp.noBio ? 0 : anySig && k !== 'planetary mining location' ? 0 : null;
   };
   const signals = jb.signals || (sp && sp.signals) || [];
   // anillos: puntos calientes del Journal (DSS) o de Spansh
@@ -1703,6 +1705,20 @@ function haversine(a, b, R) {
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
+/** Valor posible de un cuerpo con sus especies posibles: por género, la más barata y la más cara; suma de los géneros. */
+function bioEstimate(s, pred, n) {
+  if (!pred || !pred.length) return null;
+  const by = {};
+  for (const p of pred) { const v = bioValue(s, p.species); const g = by[p.genus] || (by[p.genus] = { min: null, max: null, unknown: false }); if (v == null) { g.unknown = true; continue; } g.min = g.min == null ? v : Math.min(g.min, v); g.max = g.max == null ? v : Math.max(g.max, v); }
+  const gs = Object.values(by);
+  const known = gs.filter((g) => g.max != null);
+  if (!known.length) return null;
+  // con n señales solo hay n géneros: los n más caros (máximo) y los n más baratos (mínimo)
+  const k = Math.min(n || known.length, known.length);
+  const max = known.map((g) => g.max).sort((a, b) => b - a).slice(0, k).reduce((x, y) => x + y, 0);
+  const min = known.map((g) => g.min).sort((a, b) => a - b).slice(0, k).reduce((x, y) => x + y, 0);
+  return { min, max, unknown: gs.some((g) => g.unknown), genera: gs.length };
+}
 /** Minimapa: tú en el centro (norte arriba), las muestras con su distancia mínima y la dirección del destino fijado. */
 function bioMinimap(s, E, W, H) {
   const pos = E.pos;
@@ -1797,13 +1813,15 @@ function screenExobiologia(s, v) {
     }).filter((x) => x.best);
     const kpages = Math.max(1, Math.ceil(known.length / 3)); ui.exoKnownPage = Math.min(ui.exoKnownPage || 0, kpages - 1);
     const krows = known.slice(ui.exoKnownPage * 3, ui.exoKnownPage * 3 + 3).map((x) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:6px 12px"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:14px">${esc(x.species)}</span><span class="eb dim nowrap" style="font-size:10px">${fmtCr(x.value)} · ${x.count} conocida${x.count === 1 ? '' : 's'}${x.bd != null ? ` · la más cercana a ${fmtM(x.bd)}` : ''}</span></span><span></span><button type="button" class="tab small" data-spot="${x.best.lat},${x.best.lon}" title="Fijar como destino la ubicación más cercana a ti">Fijar</button></div>`).join('');
+    const sysN = clean(X.system.name || s.location.system) || '';
+    const others = X.bodies.filter((y) => y.bio > 0 && y.name !== b.name).map((y) => shortBodyName(y.name, sysN));
     const nav = v.surfaceNav && v.surfaceNav.sameBody ? v.surfaceNav : null;
     const rel = nav && nav.relative;
     const navLine = s.surfaceTarget ? `<div class="in" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-color:#ff5ac8"><span style="display:flex;flex-direction:column"><span class="eb" style="color:#ff5ac8">Destino fijado</span><span class="num" style="font-size:18px">${nav ? `${fmtM(nav.distance)} · ${rel == null ? '' : Math.abs(rel) <= 5 ? 'de frente' : `gira ${nf(Math.abs(rel))}° a la ${rel > 0 ? 'derecha' : 'izquierda'}`}` : 'en otro cuerpo'}</span></span><button type="button" class="tab small" data-coord="clear">Quitar</button></div>` : '';
     mid = `<section class="pn card" style="min-height:0;overflow:hidden">
       <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti nowrap" style="font-size:16px">Este cuerpo</span>${pager2('exobody', ui.exoBodyPage, pages)}</div>
       <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${stat('Señales biológicas', b.bio != null ? nf(b.bio) : '—', b.bio ? 'cyan' : '')}${stat('Analizadas', `${scans.filter((x) => x.step >= 3).length}${b.bio ? ` / ${b.bio}` : ''}`)}${stat('Primera pisada', xb && xb.wasFootfalled != null ? (xb.wasFootfalled ? 'No' : 'Sí · ×5') : '—', firstFoot ? 'cyan' : '')}</div>
-      <div style="display:flex;flex-direction:column;gap:4px">${rows.slice(ui.exoBodyPage * EXO_BODY_PAGE, (ui.exoBodyPage + 1) * EXO_BODY_PAGE).map((r) => r.html).join('') || `<span class="soft" style="font-size:14px">${b.bio ? 'Escanea el cuerpo con el DSS (sondas) para ver los géneros.' : 'Sin señales biológicas conocidas.'}</span>`}</div>
+      <div style="display:flex;flex-direction:column;gap:4px">${rows.slice(ui.exoBodyPage * EXO_BODY_PAGE, (ui.exoBodyPage + 1) * EXO_BODY_PAGE).map((r) => r.html).join('') || `<span class="soft" style="font-size:14px">${b.bio ? 'Escanea el cuerpo con el DSS (sondas) para ver los géneros.' : b.bio === 0 ? `Este cuerpo no tiene señales biológicas.${others.length ? ` En este sistema las hay en ${others.map(esc).join(', ')}.` : ''}` : 'Sin señales biológicas conocidas.'}</span>`}</div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><span class="eb">Ubicaciones de otros comandantes · Spansh</span>${pager2('exoknown', ui.exoKnownPage, kpages)}</div>
       <div style="display:flex;flex-direction:column;gap:4px">${krows || '<span class="soft" style="font-size:13px">Nadie ha subido ubicaciones de plantas de este cuerpo.</span>'}</div>
       ${navLine}
@@ -1818,7 +1836,8 @@ function screenExobiologia(s, v) {
   const srows = bioBodies.slice(ui.exoSysPage * 6, ui.exoSysPage * 6 + 6).map((y) => {
     const done = Object.values((s.bio || {})[y.id] || {}).filter((x) => x.step >= 3).length;
     const gens = (y.genuses || []).map((g) => genusName(g)).join(' · ');
-    return `<div class="in" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;${b && b.name === y.name ? 'border-color:var(--amber)' : ''}"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:14px">${esc(shortBodyName(y.name, sysName))}</span><span class="soft nowrap" style="font-size:11px">${esc(gens || (y.landable ? 'Aterrizable' : ''))}</span></span><span style="display:flex;flex-direction:column;align-items:flex-end"><span class="num cyan nowrap" style="font-size:15px">${done}/${y.bio}</span><span class="soft nowrap" style="font-size:11px">bio${y.distLs != null ? ` · ${nf(y.distLs)} ls` : ''}</span></span></div>`;
+    const est = bioEstimate(s, y.predSpecies, y.bio);
+    return `<div class="in" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;${b && b.name === y.name ? 'border-color:var(--amber)' : ''}"><span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:14px">${esc(shortBodyName(y.name, sysName))}</span><span class="soft nowrap" style="font-size:11px">${esc(gens || (y.landable ? 'Aterrizable' : ''))}</span></span><span style="display:flex;flex-direction:column;align-items:flex-end"><span class="num cyan nowrap" style="font-size:15px">${done}/${y.bio}</span><span class="soft nowrap" style="font-size:11px" title="${est ? `Valor posible: de ${fmtCr(est.min)} a ${fmtCr(est.max)}${est.unknown ? ' (faltan valores de algunas especies)' : ''}` : ''}">${est ? `hasta ${fmtCrShortM(est.max)}${est.unknown ? '+' : ''} · ` : ''}bio${y.distLs != null ? ` · ${nf(y.distLs)} ls` : ''}</span></span></div>`;
   }).join('') || '<span class="soft" style="font-size:13px">Ningún cuerpo con señales biológicas conocidas en este sistema.</span>';
   const U = X.unsold.bio;
   const right = `<section class="pn card" style="min-height:0;overflow:hidden">

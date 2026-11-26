@@ -17,6 +17,7 @@ const create = () => ({
   bioValues: {}, // valor base por especie (clave interna del juego, p. ej. $Codex_Ent_Stratum_07_Name;)
   bioValuesChanged: 0,
   spansh: null, // { address, bodies|null, error } volcado de Spansh del sistema actual
+  sysBio: null, // { address, bodies: { bodyId: [especie posible] } }
 });
 
 /* ---------- tipos de cuerpo ---------- */
@@ -239,7 +240,8 @@ function view(state, spanshBodies) {
   }
   const bodies = [...byId.values()].map((b) => {
     const v = bodyValues(b);
-    return { ...b, value: v.now, valueScan: v.scan, valueMapped: v.mapped, interest: b.kind === 'planet' && v.mapped >= 300000, mapLeft: b.kind === 'planet' && !b.mapped && v.mapped >= 300000 };
+    const pred = X.sysBio && X.sysBio.address === X.system.address ? X.sysBio.bodies[b.id] || null : null;
+    return { ...b, predSpecies: pred, value: v.now, valueScan: v.scan, valueMapped: v.mapped, interest: b.kind === 'planet' && v.mapped >= 300000, mapLeft: b.kind === 'planet' && !b.mapped && v.mapped >= 300000 };
   }).sort((a, b) => (a.distLs ?? 1e12) - (b.distLs ?? 1e12) || a.id - b.id);
   const scanned = bodies.filter((b) => b.scanned);
   const total = X.system.bodyCount ?? (spanshBodies ? bodies.length : null);

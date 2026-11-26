@@ -134,6 +134,9 @@ class Engine extends EventEmitter {
   /** Cuerpos del sistema según Spansh (volcado), para Exploración. bodies null: Spansh no lo tiene. */
   setSpanshSystem(address, bodies, error) { this.state.exploration.spansh = { address, bodies: bodies || null, error: error || null, at: Date.now() }; this.changed(); }
 
+  /** Especies posibles de cada cuerpo con señales biológicas del sistema actual: { bodyId: [{ genus, species }] }. */
+  setSystemBio(address, bodies) { this.state.exploration.sysBio = { address, bodies: bodies || {} }; this.changed(); }
+
   /** Valores de especies biológicas aprendidos de Spansh o guardados. */
   learnBioValues(map) { if (require('./exploration').learnBioValues(this.state, map)) this.changed(); }
 
