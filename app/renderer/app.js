@@ -2115,7 +2115,7 @@ function wishBuy(s, D, b, it) {
 /* ---------- Ingenieros (naves y a pie) ---------- */
 // Retratos recortados de la ficha de ingenieros (los que el usuario tiene a la vista); el resto, iniciales.
 // Clase del ingeniero de a pie (estratégico, de fuerza o dinámico), con el color de sus fichas.
-const ENG_REP = { mejoras: 'mejoras de módulos', exploracion: 'venta de datos de exploración', mercancias: 'venta de mercancías' };
+const ENG_REP = { mejoras: 'mejoras de módulos', exploracion: 'venta de datos de exploración', mercancias: 'venta de mercancías', recompensas: 'cobro de recompensas', bonos: 'cobro de bonos de combate' };
 const ENG_TIPOS = { estrategico: ['Estratégico', '#7ed321'], fuerza: ['De fuerza', '#ff6a1a'], dinamico: ['Dinámico', '#e040d8'] };
 function engTipo(e, size) {
   const t = e.tipo && ENG_TIPOS[e.tipo];
