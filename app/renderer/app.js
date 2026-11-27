@@ -177,7 +177,7 @@ function screenPuente(s, v) {
       ${idCell('Comandante', or(s.cmdr.name), `${nf(s.cmdr.credits)} CR`)}
       ${idCell('Nave', or(s.ship.name), `${shipName(s.ship.type, s.ship.typeLocalised)} · ${or(s.ship.ident)}`)}
       ${idCell(s.location.docked ? 'Atracado en' : 'Destino', clean(s.location.docked ? s.location.station : s.destination.name) || '—', s.location.docked ? (STATION_TYPES[s.location.stationType] || or(s.location.stationType)) : (s.destination.name ? 'Destino fijado' : 'Sin destino'))}
-      ${idCell('Powerplay', or(pp.power), pp.rank != null ? `Rango ${pp.rank} · ${nf(pp.merits)} méritos` : '—', true)}
+      ${idCell('Powerplay', or(pp.power), pp.rank != null ? `Rango ${pp.rank} · ${nf(pp.merits)} méritos` : '—', true, powerEmblem(pp.power, 40))}
     </div>
     <section class="pn hero">
       <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
@@ -306,7 +306,26 @@ function controlsPanel() {
   </section>`;
 }
 
-function idCell(label, value, sub, last) {
+/* Potencias de Powerplay: emblema y retrato (de las capturas del juego de Adder) y su color en el mapa */
+const POWERS = {
+  'Aisling Duval': ['aisling', '#00ffff', 'Imperio'], 'Edmund Mahon': ['mahon', '#00ff1b', 'Alianza'], 'Li Yong-Rui': ['lyr', '#00ffc3', 'Independiente'],
+  'Arissa Lavigny-Duval': ['ald', '#ff00ff', 'Imperio'], 'Nakato Kaine': ['kaine', '#d5ff00', 'Alianza'], 'Pranav Antal': ['antal', '#ffff00', 'Independiente'],
+  'Yuri Grom': ['grom', '#ff9c00', 'Independiente'], 'Jerome Archer': ['archer', '#ff00ff', 'Federación'], 'Felicia Winters': ['winters', '#ffff00', 'Federación'],
+  'Archon Delaine': ['delaine', '#ff0000', 'Independiente'], 'Zemina Torval': ['torval', '#00b7ff', 'Imperio'], 'Denton Patreus': ['patreus', '#00ffff', 'Imperio'],
+};
+const powerOf = (name) => (name && (POWERS[name] || POWERS[Object.keys(POWERS).find((k) => k.toLowerCase() === String(name).toLowerCase())])) || null;
+/** Emblema de una potencia (img) o '' si no la conozco. */
+function powerEmblem(name, size = 28) {
+  const P = powerOf(name);
+  return P ? `<img src="powers/${P[0]}.png" alt="" title="${esc(name)}" style="width:${size}px;height:${size}px;object-fit:contain;flex:none;vertical-align:middle">` : '';
+}
+function powerPortrait(name, size = 96) {
+  const P = powerOf(name);
+  return P ? `<img src="powers/${P[0]}-retrato.jpg" alt="" style="width:${size}px;height:${Math.round(size * 1.06)}px;object-fit:cover;flex:none;border:1px solid var(--line2);border-bottom:3px solid ${P[1]};border-radius:2px">` : '';
+}
+
+function idCell(label, value, sub, last, icon) {
+  if (icon) return `<div style="display:flex;align-items:center;gap:12px;padding:0 18px;min-width:0;${last ? '' : 'border-right:1px solid var(--inline)'}">${icon}<span style="display:flex;flex-direction:column;min-width:0"><span class="eb">${esc(label)}</span><span class="va nowrap" style="font-size:19px">${esc(value)}</span><span class="eb nowrap" style="font-size:10px;color:var(--dim)">${esc(sub)}</span></span></div>`;
   return `<div style="display:flex;flex-direction:column;padding:0 18px;min-width:0;${last ? '' : 'border-right:1px solid var(--inline)'}"><span class="eb">${esc(label)}</span><span class="va nowrap" style="font-size:19px">${esc(value)}</span><span class="eb nowrap" style="font-size:10px;color:var(--dim)">${esc(sub)}</span></div>`;
 }
 function meter(label, value, ratio, cls) {
@@ -1623,8 +1642,9 @@ function screenPowerplay(s, v) {
     <aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">
       <section class="pn card">
         <span class="ti" style="font-size:16px">Piloto</span>
+        ${powerOf(pilot.power) ? `<div style="display:flex;gap:14px;align-items:center">${powerPortrait(pilot.power, 84)}<span style="display:flex;flex-direction:column;gap:4px;min-width:0"><span style="display:flex;align-items:center;gap:8px">${powerEmblem(pilot.power, 34)}<span class="va nowrap" style="font-size:19px;color:${powerOf(pilot.power)[1]}">${esc(pilot.power)}</span></span><span class="soft" style="font-size:13px">${powerOf(pilot.power)[2]}</span></span></div>` : ''}
         <div class="kv" style="font-size:16px">
-          <span class="eb" style="font-size:10px">Potencia</span><span class="amber">${esc(or(pilot.power))}</span>
+          ${powerOf(pilot.power) ? '' : `<span class="eb" style="font-size:10px">Potencia</span><span class="amber">${esc(or(pilot.power))}</span>`}
           <span class="eb" style="font-size:10px">Rango</span><span class="num">${or(pilot.rank)}</span>
           <span class="eb" style="font-size:10px">Para subir</span><span class="num">${pilot.toNext ? `${nf(pilot.toNext.remainingMerits)} méritos` : '—'}</span>
           <span class="eb" style="font-size:10px">Méritos</span><span class="num">${nf(pilot.merits)}</span>
@@ -1683,7 +1703,7 @@ function screenPowerplay(s, v) {
   const main = `
     <main style="display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0">
       <section class="pn card" style="border-left:3px solid var(--amber)">
-        <span class="eb">Control del sistema · ${esc(y.power || '—')}${y.stale ? ' · <span class="yellow">datos de un ciclo anterior</span>' : ''}</span>
+        <span class="eb" style="display:flex;align-items:center;gap:6px">${powerEmblem(y.power, 20)}Control del sistema · ${esc(y.power || '—')}${y.stale ? ' · <span class="yellow">datos de un ciclo anterior</span>' : ''}</span>
         <span class="ti nowrap" style="font-size:32px">${esc(y.name)}</span>
         <div style="display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:20px;align-items:end">
           <div style="display:flex;flex-direction:column;gap:6px">${head}</div>
@@ -1727,8 +1747,8 @@ function ppAcquisitionCards(A, p) {
   const rows = A.powers.slice(0, 4).map((x) => {
     const w = Math.min(1, x.cp / A.cap) * 100;
     const prev = A.previous && A.previous.powers.find((q) => q.power === x.power);
-    return `<div style="display:grid;grid-template-columns:190px minmax(0,1fr) 150px;gap:12px;align-items:center">
-      <span class="va nowrap ${x.mine ? 'amber' : ''}" style="font-size:16px">${esc(x.power)}</span>
+    return `<div style="display:grid;grid-template-columns:230px minmax(0,1fr) 150px;gap:12px;align-items:center">
+      <span class="va nowrap ${x.mine ? 'amber' : ''}" style="font-size:16px;display:flex;align-items:center;gap:8px">${powerEmblem(x.power, 24)}${esc(x.power)}</span>
       <span style="position:relative;height:16px;background:#0c1b2e;border:1px solid var(--line2);border-radius:2px;display:block">
         <span style="position:absolute;left:0;top:0;bottom:0;width:${w}%;background:${x.mine ? 'var(--amber)' : 'var(--cyan)'}"></span>
         <span style="position:absolute;left:${(A.contest / A.cap) * 100}%;top:-4px;bottom:-4px;width:2px;background:#ffcf5a" title="35.000 PC: disputado"></span>
@@ -1963,7 +1983,7 @@ function screenCmdr(s, v) {
       <span class="eb">Comandante</span>
       <span class="ti nowrap" style="font-size:36px">${esc(C.name || '—')}</span>
       <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px">
-        ${box('Créditos', fmtCr(C.credits), 'cyan')}${box('Patrimonio', fmtCr(C.wealth))}${box('Escuadrón', C.squadron ? esc(C.squadron.name) : '—')}${box('Rango escuadrón', C.squadron && C.squadron.rank ? esc(C.squadron.rank) : '—')}${box('Powerplay', pp.power ? `${esc(pp.power)} · ${nf(pp.rank)}` : '—')}${box('Estado legal', esc(LEGAL[C.legalState] || C.legalState || '—'), C.legalState && C.legalState !== 'Clean' ? 'red' : '')}
+        ${box('Créditos', fmtCr(C.credits), 'cyan')}${box('Patrimonio', fmtCr(C.wealth))}${box('Escuadrón', C.squadron ? esc(C.squadron.name) : '—')}${box('Rango escuadrón', C.squadron && C.squadron.rank ? esc(C.squadron.rank) : '—')}${box('Powerplay', pp.power ? `${powerEmblem(pp.power, 20)} ${esc(pp.power)} · ${nf(pp.rank)}` : '—')}${box('Estado legal', esc(LEGAL[C.legalState] || C.legalState || '—'), C.legalState && C.legalState !== 'Clean' ? 'red' : '')}
       </div>
     </section>`;
 

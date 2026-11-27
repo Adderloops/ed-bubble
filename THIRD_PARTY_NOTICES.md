@@ -43,6 +43,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 `core/odymods.js` recoge los materiales de las mejoras de ingeniero de trajes y armas de Odyssey y los ingenieros que las montan, con su sitio y sus requisitos de desbloqueo. Se transcribieron a mano de las pantallas de Odyssey Materials Helper del usuario y de la ficha de ingenieros del juego; no se ha copiado código ni archivos de ese programa. Son datos del juego, de Frontier Developments.
 
+## Potencias de Powerplay: emblemas y retratos
+
+Los emblemas y retratos de `app/renderer/powers/` son imágenes del juego Elite Dangerous (© Frontier Developments plc), recortadas de capturas de pantalla del usuario y de una imagen promocional de Powerplay, para identificar a cada potencia. Los colores son los de cada potencia en el mapa del juego. ED BUBBLE es un proyecto de aficionado sin ánimo de lucro y no está afiliado a Frontier.
+
 ## Ingenieros de nave y retratos
 
 `core/shipengineers.js` recoge los ingenieros de nave, su sitio, los módulos que mejoran con su grado máximo y, de los que estaban bloqueados, cómo se desbloquean. Se transcribió a mano de la ficha de ingenieros de Odyssey Materials Helper del usuario. Son datos del juego, de Frontier Developments.
