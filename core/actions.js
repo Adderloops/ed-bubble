@@ -124,17 +124,26 @@ const chord = (b) => `${[...b.modifiers].sort().join('+')}|${b.key}`;
  * problemas (sin asignar, solo en mando, tecla que no se puede enviar, o
  * tecla compartida entre dos acciones que usa ED BUBBLE).
  */
+/** Contexto del juego en el que se usa una tecla: cámara (de la nave o libre), SRV o nave. */
+function bindContext(a) {
+  if (/^(FreeCam|MoveFreeCam|FStop|VanityCamera|FixCamera|QuitCamera|PitchCamera|YawCamera|RollCamera|ToggleReverseThrottleInputFreeCam|ToggleFreeCam)/.test(a)) return 'camera';
+  if (/_Buggy$|Buggy|^ToggleDriveAssist$|^RecallDismissShip$/.test(a)) return 'srv';
+  if (/_Humanoid$/.test(a)) return 'foot';
+  return 'ship';
+}
+
 function checkControls(controls) {
   const kb = (controls && controls.binds) || {};
   const other = (controls && controls.otherDevices) || new Set();
   const all = [...new Set(CHECK_GROUPS.flatMap((g) => g.binds))];
+  // una misma tecla puede servir en contextos distintos (nave, SRV, cámara libre): solo choca dentro del mismo
   const byChord = {};
-  for (const a of all) if (kb[a]) (byChord[chord(kb[a])] = byChord[chord(kb[a])] || []).push(a);
+  for (const a of all) if (kb[a]) { const k = `${bindContext(a)}|${chord(kb[a])}`; (byChord[k] = byChord[k] || []).push(a); }
   const statusOf = (a) => {
     const b = kb[a];
     if (!b) return other.has(a) ? { status: 'hotas' } : { status: 'unbound' };
     if (!canSend(b)) return { status: 'unsupported', key: bindLabel(b) };
-    const shared = byChord[chord(b)].filter((x) => x !== a);
+    const shared = byChord[`${bindContext(a)}|${chord(b)}`].filter((x) => x !== a);
     if (shared.length) return { status: 'shared', key: bindLabel(b), with: shared.map((x) => BIND_NAMES[x] || x) };
     return { status: 'ok', key: bindLabel(b) };
   };

@@ -34,6 +34,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 23 | Colonización: la construcción seguía con su nombre antiguo («Watabe Depot») después de ponerle uno nuevo («Sisters' Pride») | Adder | 0.7.0-beta.4 | 0.7.0-beta.5 | Publicado |
 | 24 | Colonización › Comprar: con la Anaconda Mk II (y Clipper, Orca, Caspian Explorer) no filtraba por plataforma L | Revisión al añadir «Dónde comprar» en Comercio | 0.7.0-beta.1 | 0.7.0-beta.5 | Publicado |
 | 25 | Órbita planetaria y Exobiología: la página fallaba («Error al pintar») en un cuerpo cuya ficha de Spansh no traía anillos | Prueba de todas las secciones antes de la beta 5 | 0.7.0-beta.4 | 0.7.0-beta.5 | Publicado |
+| 26 | «Trazar ruta» desactivado en todas las páginas: la tecla del mapa galáctico se daba por repetida porque la misma tecla sirve en la cámara libre | Adder (Colonización › Comprar) | 0.7.0-beta.5 | 0.7.0-beta.6 | Corregido |
 
 ## Detalle
 
@@ -169,6 +170,13 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 - **Encontrado en:** 0.7.0-beta.1 · **Corregido en:** 0.7.0-beta.5
 - **Qué pasaba:** la lista de naves grandes de Colonización › Comprar no tenía la Anaconda Mk II, la Imperial Clipper, la Orca ni la Caspian Explorer, así que con ellas el filtro «Plataforma L» salía apagado y podía mostrar estaciones donde no cabes.
 - **Arreglo:** la lista incluye todas las naves de clase 3 de los datos de naves.
+
+### 26 · «Trazar ruta» desactivado por la cámara libre
+
+- **Encontrado:** Adder (27-11-2026), en Colonización › Comprar con una estación elegida: el botón «Trazar ruta» no respondía.
+- **Encontrado en:** 0.7.0-beta.5 · **Corregido en:** 0.7.0-beta.6
+- **Qué pasaba:** la beta 5 añadió las teclas de la cámara a la revisión de controles. En su preset, L abre el mapa galáctico y también sube la velocidad de la cámara libre; la app lo marcó como tecla repetida y desactivó trazar ruta (y algunas de Combate). En el juego no chocan: son contextos distintos.
+- **Arreglo:** las teclas solo se comparan dentro del mismo contexto (nave, SRV, cámara, a pie). El botón dice por qué está desactivado al pasar el ratón.
 
 ### 25 · Órbita y Exobiología sin anillos de Spansh
 

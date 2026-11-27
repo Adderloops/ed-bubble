@@ -972,7 +972,7 @@ function buyPanel(s, d, c) {
     <div class="in" style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;border-color:var(--amber)">
       <span class="nowrap" style="font-size:15px">${esc(siteName(pick.station))} <span class="soft">· ${esc(pick.system)}</span></span>
       <div style="display:flex;gap:8px">
-        <button type="button" class="plot-btn" style="flex:1" data-mkplot="1" ${here || (ui.plot && ui.plot.running) || !plotReady() ? 'disabled' : ''} title="${here ? 'Ya estás en ese sistema' : 'Trazar ruta hasta ese sistema'}">${here ? 'En este sistema' : 'Trazar ruta'}</button>
+        <button type="button" class="plot-btn" style="flex:1" data-mkplot="1" ${here || (ui.plot && ui.plot.running) || !plotReady() ? 'disabled' : ''} title="${here ? 'Ya estás en ese sistema' : !plotReady() ? 'Faltan teclas para trazar ruta: mira Controles en el Puente de mando' : 'Trazar ruta hasta ese sistema'}">${here ? 'En este sistema' : 'Trazar ruta'}</button>
         <button type="button" class="nav-btn" style="width:120px" data-copy="1" data-name="${esc(pick.station)}">Copiar</button>
       </div>
       ${plotLine()}
