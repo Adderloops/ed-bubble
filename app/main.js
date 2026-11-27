@@ -737,6 +737,81 @@ app.whenReady().then(() => {
     shell.openExternal(url);
     return true;
   });
+  // Utilidades: estación actual en Inara y Spansh
+  ipcMain.handle('ed:open-station', (_e, req) => {
+    const name = String((req && req.name) || '').slice(0, 120);
+    const market = /^\d{1,20}$/.test(String((req && req.market) || '')) ? String(req.market) : null;
+    const url = req && req.site === 'spansh' && market ? `https://spansh.co.uk/station/${market}` : req && req.site === 'inara' && name ? `https://inara.cz/elite/station/?search=${encodeURIComponent(name)}` : null;
+    if (!url) return false;
+    shell.openExternal(url);
+    return true;
+  });
+
+  /* ---------- Utilidades: accesos directos del comandante (webs y programas, con su icono) ---------- */
+  const LINKS_FILE = path.join(app.getPath('userData'), 'links.json');
+  const ICON_DIR = path.join(app.getPath('userData'), 'linkicons');
+  const readLinks = () => { try { const l = JSON.parse(fs.readFileSync(LINKS_FILE, 'utf8')); return Array.isArray(l) ? l : []; } catch (e) { return []; } };
+  const writeLinks = (l) => { try { fs.writeFileSync(LINKS_FILE, JSON.stringify(l, null, 1)); } catch (e) { logLine(`[accesos] no se guardan: ${e.message}`); } };
+  const iconData = (f) => { try { return f ? `data:image/png;base64,${fs.readFileSync(path.join(ICON_DIR, path.basename(f))).toString('base64')}` : null; } catch (e) { return null; } };
+  const saveIcon = (id, img) => {
+    if (!img || img.isEmpty()) return null;
+    fs.mkdirSync(ICON_DIR, { recursive: true });
+    const f = `${String(id).replace(/[^a-z0-9]/gi, '')}.png`;
+    const sz = img.getSize(); const r = img.resize(sz.width >= sz.height ? { width: Math.min(128, sz.width) } : { height: Math.min(128, sz.height) });
+    fs.writeFileSync(path.join(ICON_DIR, f), r.toPNG());
+    return f;
+  };
+  const cleanLink = (x) => {
+    const kind = x && x.kind === 'file' ? 'file' : 'url';
+    let target = String((x && x.target) || '').trim().slice(0, 500);
+    if (kind === 'url' && target && !/^https?:\/\//i.test(target)) target = `https://${target}`;
+    return { id: String((x && x.id) || Date.now().toString(36)).replace(/[^a-z0-9]/gi, '').slice(0, 24), name: String((x && x.name) || '').trim().slice(0, 40), kind, target, icon: x && x.icon ? path.basename(String(x.icon)) : null };
+  };
+  ipcMain.handle('ed:links', () => readLinks().map((l) => ({ ...l, iconData: iconData(l.icon) })));
+  ipcMain.handle('ed:link-save', (_e, link) => {
+    const l = cleanLink(link);
+    if (!l.target) return { ok: false, error: 'Falta la dirección o el programa' };
+    const list = readLinks(); const i = list.findIndex((x) => x.id === l.id);
+    if (i >= 0) list[i] = l; else list.push(l);
+    writeLinks(list);
+    return { ok: true, id: l.id };
+  });
+  ipcMain.handle('ed:link-delete', (_e, id) => {
+    const list = readLinks(); const l = list.find((x) => x.id === id);
+    if (l && l.icon) { try { fs.unlinkSync(path.join(ICON_DIR, path.basename(l.icon))); } catch (e) { /* ya no está */ } }
+    writeLinks(list.filter((x) => x.id !== id));
+    return true;
+  });
+  ipcMain.handle('ed:link-move', (_e, id, d) => {
+    const list = readLinks(); const i = list.findIndex((x) => x.id === id); const j = i + (d > 0 ? 1 : -1);
+    if (i < 0 || j < 0 || j >= list.length) return false;
+    [list[i], list[j]] = [list[j], list[i]]; writeLinks(list); return true;
+  });
+  ipcMain.handle('ed:link-open', async (_e, id) => {
+    const l = readLinks().find((x) => x.id === id);
+    if (!l) return { ok: false, error: 'Acceso no encontrado' };
+    if (l.kind === 'url') { if (!/^https?:\/\//i.test(l.target)) return { ok: false, error: 'Dirección no válida' }; shell.openExternal(l.target); return { ok: true }; }
+    if (!fs.existsSync(l.target)) return { ok: false, error: 'El programa o archivo ya no está en esa ruta' };
+    const err = await shell.openPath(l.target);
+    return err ? { ok: false, error: err } : { ok: true };
+  });
+  // elegir un programa o archivo: devuelve la ruta y su icono de Windows (si lo tiene)
+  ipcMain.handle('ed:link-pick-file', async (_e, id) => {
+    const r = await dialog.showOpenDialog(win, { title: 'Elige el programa o archivo', defaultPath: process.env.ProgramFiles || app.getPath('home'), properties: ['openFile'] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    const file = r.filePaths[0];
+    let icon = null;
+    try { icon = saveIcon(id, await app.getFileIcon(file, { size: 'large' })); } catch (e) { /* sin icono */ }
+    return { target: file, name: path.basename(file).replace(/\.(exe|lnk|url|bat|cmd)$/i, ''), icon, iconData: iconData(icon) };
+  });
+  ipcMain.handle('ed:link-pick-icon', async (_e, id) => {
+    const r = await dialog.showOpenDialog(win, { title: 'Elige una imagen para el icono', defaultPath: app.getPath('pictures'), filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'ico', 'webp'] }], properties: ['openFile'] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    const { nativeImage } = require('electron');
+    const icon = saveIcon(id, nativeImage.createFromPath(r.filePaths[0]));
+    return icon ? { icon, iconData: iconData(icon) } : { error: 'No he podido leer esa imagen' };
+  });
+
   // Spansh: sugerencias y ficha (con la distancia desde el sistema actual)
   ipcMain.handle('ed:suggest', async (_e, q) => {
     try { return { ok: true, results: await spansh.suggest(String(q || '').slice(0, 80)) }; } catch (e) { return { ok: false, error: e.message }; }

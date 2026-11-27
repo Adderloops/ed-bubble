@@ -112,6 +112,15 @@ Grupo Comandante. Tu fleet carrier (`core/carrier.js`): nombre, indicativo, dón
 
 Grupo Comandante. Botones que pulsan tus teclas de la cámara: abrir la cámara (de la nave, del SRV o a pie, según dónde estés), anterior, siguiente, salir, las diez cámaras fijas, cámara libre, ocultar la interfaz, fijar a la nave o al mundo, velocidad, acercar, alejar y desenfoque. A la derecha, una ayuda breve y la tecla de tu preset para cada control de la cámara (también los de mover y girar, que no tienen botón). En Controles hay un grupo «Cámara» para revisarlas.
 
+## Utilidades
+
+Grupo Comandante.
+
+- **Accesos directos:** 18 por página (con más páginas si añades más): webs y programas o archivos de tu PC, con la imagen que quieras de icono (o el icono del programa, que Windows da al elegirlo). «Editar» para añadir, cambiar, ordenar (‹ ›) o borrar. Se guardan en `links.json` y los iconos en `linkicons/`, en la carpeta de datos de la app.
+- **Calculadoras:** distancia entre dos sistemas (coordenadas de Spansh) con los saltos y el tiempo aproximados con tu nave; alcance de salto vacío, ahora, con la carga que elijas y con la bodega llena (estimación por masa a partir del alcance máximo del juego); tiempo de viaje para distancias típicas.
+- **Relojes y ciclos:** hora del juego (UTC, año +1286), hora local, cuenta atrás al corte de Powerplay y al mantenimiento del jueves, y tiempo de la sesión.
+- **Enlaces rápidos:** el sistema actual en Inara, Spansh y EDSM; la estación en la que estás atracado en Inara y Spansh; copiar el sistema.
+
 ## Comercio
 
 Grupo Actividades. La app salta aquí al abrir el mercado de mercancías en una estación (se queda hasta que despegas; se puede desactivar en Ajustes).

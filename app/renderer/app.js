@@ -7,7 +7,7 @@ const SECTIONS = [
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate', built: true }, { id: 'equipo', label: 'Equipo', built: true }, { id: 'srv', label: 'SRV', built: true },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración', built: true }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie', built: true },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio', built: true }, { id: 'mineria', label: 'Minería', built: true }, { id: 'exobiologia', label: 'Exobiología', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
-  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR', built: true }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier', built: true }, { id: 'camara', label: 'Cámara', built: true }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
+  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR', built: true }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier', built: true }, { id: 'camara', label: 'Cámara', built: true }, { id: 'utilidades', label: 'Utilidades', built: true }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
 
@@ -2149,6 +2149,170 @@ function screenCamara(s, v) {
   return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:12px;min-height:0">${main}${right}</div>`;
 }
 
+/* ---------- Utilidades: accesos directos, calculadoras, relojes y enlaces rápidos ---------- */
+const LINK_PAGE = 18;
+function loadLinks() { ui.linksLoading = true; window.edbubble.links().then((l) => { ui.links = l || []; ui.linksLoading = false; render(); }); }
+function linkTile(l, edit) {
+  const ico = l.iconData ? `<img src="${l.iconData}" alt="" style="width:56px;height:56px;object-fit:contain">` : `<span class="ti" style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;font-size:30px;border:1px solid var(--line2);border-radius:4px">${esc((l.name || '?').slice(0, 1).toUpperCase())}</span>`;
+  return `<button type="button" class="in" data-linkid="${esc(l.id)}" title="${esc(l.target)}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px;min-width:0;cursor:pointer;${edit ? 'border-style:dashed;border-color:var(--amber)' : ''}${ui.linkEdit && ui.linkEdit.id === l.id ? ';background:#2a1c0c' : ''}">
+    ${ico}<span class="va nowrap" style="font-size:13px;max-width:100%">${esc(l.name || l.target)}</span></button>`;
+}
+function linkEditor() {
+  const E = ui.linkEdit;
+  const kindBtn = (k, t) => `<button type="button" class="tab small ${E.kind === k ? 'on' : ''}" data-linkkind="${k}">${t}</button>`;
+  const ico = E.iconData ? `<img src="${E.iconData}" alt="" style="width:64px;height:64px;object-fit:contain">` : '<span class="soft" style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;border:1px dashed var(--line2);font-size:11px">Sin icono</span>';
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px">
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+      <span style="display:flex;gap:6px;align-items:center"><span class="ti" style="font-size:16px;margin-right:8px">${E.isNew ? 'Nuevo acceso' : 'Editar acceso'}</span>${kindBtn('url', 'Web')}${kindBtn('file', 'Programa o archivo')}</span>
+      <input id="link-name" class="search" type="text" maxlength="40" spellcheck="false" placeholder="Nombre" value="${esc(E.name)}">
+      ${E.kind === 'url' ? `<input id="link-target" class="search" type="text" spellcheck="false" placeholder="Dirección (ej. inara.cz)" value="${esc(E.target)}">`
+        : `<span style="display:flex;gap:8px;align-items:center"><button type="button" class="nav-btn" style="width:170px" data-linkact="pickfile">Elegir programa…</button><span class="soft nowrap" style="font-size:12px;min-width:0" title="${esc(E.target)}">${esc(E.target || 'Ninguno elegido')}</span></span>`}
+      ${E.error ? `<span class="eb red">${esc(E.error)}</span>` : ''}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+      <span class="eb">Icono</span>
+      <span style="display:flex;gap:10px;align-items:center">${ico}<span style="display:flex;flex-direction:column;gap:4px"><button type="button" class="tab small" data-linkact="pickicon">Elegir imagen…</button>${E.icon ? '<button type="button" class="tab small" data-linkact="noicon">Quitar icono</button>' : ''}</span></span>
+      <span style="display:flex;gap:6px;margin-top:14px"><button type="button" class="tab small on" data-linkact="save">Guardar</button><button type="button" class="tab small" data-linkact="cancel">Cancelar</button>${E.isNew ? '' : '<button type="button" class="tab small" data-linkact="delete" style="color:var(--red,#ff4b4b)">Borrar</button>'}</span>
+    </div>
+  </div>`;
+}
+function utilClocks(s, v) {
+  const now = new Date();
+  const two = (n) => String(n).padStart(2, '0');
+  const gameDate = `${two(now.getUTCDate())}/${two(now.getUTCMonth() + 1)}/${now.getUTCFullYear() + 1286}`;
+  const left = (ms) => { const t = Math.max(0, ms); const d = Math.floor(t / 86400000); const h = Math.floor((t % 86400000) / 3600000); const m = Math.floor((t % 3600000) / 60000); return `${d ? `${d} d ` : ''}${h} h ${two(m)} min`; };
+  const cut = v.powerplay.nextCut;
+  const sess = s.session.startedAt ? Date.now() - Date.parse(s.session.startedAt) : null;
+  const row = (label, value, sub) => `<div class="in" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px"><span style="display:flex;flex-direction:column"><span class="eb" style="font-size:10px">${label}</span>${sub ? `<span class="soft" style="font-size:11px">${sub}</span>` : ''}</span><span class="num" style="font-size:18px">${value}</span></div>`;
+  return `<section class="pn card">
+      <span class="ti" style="font-size:16px">Relojes y ciclos</span>
+      ${row('Hora del juego (UTC)', `${two(now.getUTCHours())}:${two(now.getUTCMinutes())}:${two(now.getUTCSeconds())}`, gameDate)}
+      ${row('Hora local', `${two(now.getHours())}:${two(now.getMinutes())}`)}
+      ${row('Corte de Powerplay', left(cut - Date.now()), 'Jueves 07:00 UTC')}
+      ${row('Mantenimiento semanal', left(cut - Date.now()), 'Los jueves por la mañana (UTC); el juego cierra unas horas')}
+      ${row('Esta sesión', sess != null ? left(sess) : '—', s.session.startedAt ? `Desde las ${hhmm(s.session.startedAt)} UTC` : 'Al iniciar el juego')}
+      <span class="note">El tick diario del BGS no tiene hora fija; el juego no lo anuncia en el diario.</span>
+    </section>`;
+}
+function utilQuickLinks(s) {
+  const L = s.location; const sys = clean(L.system); const st = s.station || null;
+  const docked = L.docked && st;
+  const btn = (attrs, label, on) => `<button type="button" class="nav-btn" ${attrs} ${on ? '' : 'disabled'}>${label}</button>`;
+  const fb = ui.navFeedback && Date.now() - ui.navFeedback.at < 3000 ? `<span class="eb cyan">${esc(ui.navFeedback.text)}</span>` : '';
+  return `<section class="pn card">
+      <span class="ti" style="font-size:16px">Enlaces rápidos</span>
+      <span class="eb">Sistema · ${esc(sys || '—')}</span>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">${btn('data-link="inara"', 'Inara', sys)}${btn('data-link="spansh"', 'Spansh', sys)}${btn('data-link="edsm"', 'EDSM', sys)}</div>
+      <span class="eb">Estación · ${docked ? esc(st.name) : 'no estás atracado'}</span>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">${btn(`data-stlink="inara"`, 'Inara', docked)}${btn(`data-stlink="spansh"`, 'Spansh', docked && st.marketId)}${btn(`data-copy="1" data-name="${esc(sys || '')}"`, 'Copiar sistema', sys)}</div>
+      ${fb}
+    </section>`;
+}
+const fmtMins = (sec) => { const m = Math.round(sec / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min` : `${m} min`; };
+function utilCalc(s, v) {
+  const tab = ui.calcTab || 'dist';
+  const tabs = [['dist', 'Distancia'], ['range', 'Alcance de salto'], ['trip', 'Tiempo de viaje']].map(([k, t]) => `<button type="button" class="tab small ${tab === k ? 'on' : ''}" data-calctab="${k}">${t}</button>`).join('');
+  const sh = s.ship; const lo = sh.loadout || {};
+  const R0 = sh.maxJumpRange; const U = lo.UnladenMass; const capC = sh.cargoCapacity || 0; const capF = sh.fuelCapacity || 0;
+  // alcance aproximado: inversamente proporcional a la masa (sin potenciador guardián exacto)
+  const rangeWith = (cargo, fuel) => (R0 && U ? (R0 * (U + Math.min(capF, 8))) / (U + cargo + fuel) : null);
+  const cargoNow = s.cargo ? s.cargo.count : 0; const fuelNow = s.status.fuelMain != null ? s.status.fuelMain : capF;
+  let body = '';
+  if (tab === 'dist') {
+    const C = ui.calc || {}; const r = C.res;
+    body = `<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 120px;gap:8px">
+        <input id="calc-a" class="search" type="text" spellcheck="false" placeholder="Desde (vacío: donde estás)" value="${esc(C.a || '')}">
+        <input id="calc-b" class="search" type="text" spellcheck="false" placeholder="Hasta (sistema)" value="${esc(C.b || '')}">
+        <button type="button" class="nav-btn" data-calcgo="1" style="color:#1a1402;background:var(--amber);border-color:var(--amber)">Calcular</button>
+      </div>
+      ${r ? (r.error ? `<span class="eb red">${esc(r.error)}</span>` : r.busy ? '<span class="soft">Buscando en Spansh…</span>' : `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${stat('Distancia', `${nf(r.d, 2)} al`, 'cyan')}${stat('Saltos con tu nave', r.jumps != null ? `≈ ${nf(r.jumps)}` : '—')}${stat('Tiempo', r.jumps != null ? `≈ ${fmtMins(r.jumps * 50)}` : '—')}</div><span class="soft" style="font-size:13px">${esc(r.a)} → ${esc(r.b)}. Saltos en línea recta con tu alcance actual; la ruta real puede necesitar alguno más.</span>`) : '<span class="soft" style="font-size:14px">Escribe dos sistemas (los nombres exactos) y pulsa Calcular. Coordenadas de Spansh.</span>'}`;
+  } else if (tab === 'range') {
+    const c = ui.calcCargo != null ? ui.calcCargo : cargoNow;
+    body = R0 && U ? `<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">${stat('Vacío', `${nf(rangeWith(0, Math.min(capF, 8)), 2)} al`, 'cyan')}${stat('Ahora', `${nf(rangeWith(cargoNow, fuelNow), 2)} al`)}${stat(`Con ${nf(c)} t`, `${nf(rangeWith(c, capF), 2)} al`, 'amber')}${stat('Bodega llena', `${nf(rangeWith(capC, capF), 2)} al`)}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${[0, 0.25, 0.5, 0.75, 1].map((f) => { const t = Math.round(capC * f); return `<button type="button" class="tab small ${c === t ? 'on' : ''}" data-calccargo="${t}">${nf(t)} t</button>`; }).join('')}<button type="button" class="tab small" data-calccargo="${cargoNow}">Lo que llevas (${nf(cargoNow)} t)</button></div>
+        <span class="soft" style="font-size:13px">${esc(shipName(sh.type, sh.typeLocalised))}: masa sin carga ${nf(U, 1)} t, bodega ${nf(capC)} t, tanque ${nf(capF)} t. Estimación por masa a partir del alcance máximo del juego (${nf(R0, 2)} al); «Con… t» supone el tanque lleno.</span>`
+      : '<span class="soft" style="font-size:14px">Hace falta el equipamiento de tu nave (evento Loadout, al iniciar el juego o al cambiar de nave).</span>';
+  } else {
+    const d = ui.calcTripD != null ? ui.calcTripD : 1000;
+    const r = rangeWith(cargoNow, fuelNow);
+    const jumps = r ? Math.ceil(d / (r * 0.95)) : null;
+    body = `<div style="display:flex;gap:6px;flex-wrap:wrap">${[100, 500, 1000, 5000, 10000, 22000].map((x) => `<button type="button" class="tab small ${d === x ? 'on' : ''}" data-calctrip="${x}">${nf(x)} al</button>`).join('')}</div>
+      ${r ? `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${stat('Saltos', `≈ ${nf(jumps)}`, 'cyan')}${stat('A 45 s el salto', fmtMins(jumps * 45))}${stat('A 60 s el salto', fmtMins(jumps * 60))}</div>
+        <span class="soft" style="font-size:13px">Con tu alcance actual (${nf(r, 2)} al) y un 5 % de margen. Una ruta de neutrones (en Exploración) lo reduce mucho en viajes largos.</span>` : '<span class="soft" style="font-size:14px">Hace falta el equipamiento de tu nave (evento Loadout).</span>'}`;
+  }
+  return `<section class="pn card" style="flex:1;min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Calculadoras</span><span style="display:flex;gap:6px">${tabs}</span></div>
+      ${body}
+    </section>`;
+}
+async function calcDistance(s) {
+  const C = ui.calc = ui.calc || {};
+  const a = (C.a || '').trim() || clean(s.location.system); const b = (C.b || '').trim();
+  if (!a || !b) { C.res = { error: 'Escribe el sistema de destino' }; render(); return; }
+  C.res = { busy: true }; render();
+  const [ra, rb] = await Promise.all([window.edbubble.system(a), window.edbubble.system(b)]);
+  const pa = ra && ra.ok && ra.system && ra.system.pos; const pb = rb && rb.ok && rb.system && rb.system.pos;
+  if (!pa || !pb) { C.res = { error: `Spansh no conoce ${!pa ? a : b}` }; render(); return; }
+  const d = Math.hypot(pa[0] - pb[0], pa[1] - pb[1], pa[2] - pb[2]);
+  const sh = s.ship; const lo = sh.loadout || {};
+  const r = sh.maxJumpRange && lo.UnladenMass ? (sh.maxJumpRange * (lo.UnladenMass + Math.min(sh.fuelCapacity || 0, 8))) / (lo.UnladenMass + (s.cargo ? s.cargo.count : 0) + (s.status.fuelMain != null ? s.status.fuelMain : sh.fuelCapacity || 0)) : null;
+  C.res = { a: ra.system.name, b: rb.system.name, d, jumps: r ? Math.ceil(d / (r * 0.95)) : null };
+  render();
+}
+function screenUtilidades(s, v) {
+  if (!ui.links && !ui.linksLoading) loadLinks();
+  const list = ui.links || []; const edit = !!ui.linkEditMode;
+  const all = edit ? [...list, { id: '__add', add: true }] : list;
+  const pages = Math.max(1, Math.ceil(all.length / LINK_PAGE)); ui.linkPage = Math.min(ui.linkPage || 0, pages - 1);
+  const slice = all.slice(ui.linkPage * LINK_PAGE, (ui.linkPage + 1) * LINK_PAGE);
+  const tiles = slice.map((l) => (l.add ? '<button type="button" class="in" data-linkact="new" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-style:dashed;cursor:pointer"><span class="ti" style="font-size:34px">+</span><span class="eb">Añadir</span></button>' : linkTile(l, edit)));
+  while (tiles.length < LINK_PAGE) tiles.push('<span class="in" style="opacity:.35"></span>');
+  const msg = ui.linkMsg && Date.now() - ui.linkMsg.at < 4000 ? `<span class="eb ${ui.linkMsg.ok ? 'cyan' : 'red'}">${esc(ui.linkMsg.text)}</span>` : '';
+  const links = `<section class="pn card" style="min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Accesos directos</span>
+        <span style="display:flex;gap:8px;align-items:center">${msg}${edit && ui.linkEdit && !ui.linkEdit.isNew ? `<button type="button" class="pg" data-linkmove="-1" title="Mover antes">‹</button><button type="button" class="pg" data-linkmove="1" title="Mover después">›</button>` : ''}${pager2('links', ui.linkPage, pages)}<button type="button" class="tab small ${edit ? 'on' : ''}" data-linkact="edit">${edit ? 'Terminar' : 'Editar'}</button></span></div>
+      <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:8px;flex:1;min-height:0">${tiles.join('')}</div>
+      ${`<span class="note">${edit ? 'Pulsa un acceso para cambiarlo o «+» para añadir uno: una web o un programa de tu PC, con la imagen que quieras de icono.' : list.length ? 'Pulsa un acceso para abrirlo. «Editar» para añadir, cambiar u ordenar.' : 'Añade tus webs y programas (Inara, EDMC, EDDiscovery, Discord…) con «Editar».'}</span>`}
+    </section>`;
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:12px;min-height:0">
+    <main style="display:grid;grid-template-rows:minmax(0,1.35fr) minmax(0,1fr);gap:12px;min-width:0;min-height:0">${links}${edit && ui.linkEdit ? `<section class="pn card" style="min-height:0;overflow:hidden">${linkEditor()}</section>` : utilCalc(s, v)}</main>
+    <aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${utilClocks(s, v)}${utilQuickLinks(s)}</aside>
+  </div>`;
+}
+
+async function utilClick(b) {
+  const d = b.dataset; const S = ui.snap && ui.snap.state;
+  const say = (ok, text) => { ui.linkMsg = { ok, text, at: Date.now() }; render(); setTimeout(render, 4100); };
+  if (d.calctab) { ui.calcTab = d.calctab; render(); return; }
+  if (d.calcgo && S) { calcDistance(S); return; }
+  if (d.calccargo != null) { ui.calcCargo = Number(d.calccargo); render(); return; }
+  if (d.calctrip != null) { ui.calcTripD = Number(d.calctrip); render(); return; }
+  if (d.stlink && S && S.station) { const ok = await window.edbubble.openStation({ site: d.stlink, name: S.station.name, market: S.station.marketId }); ui.navFeedback = { text: ok ? 'Abriendo en el navegador' : 'No se pudo abrir', at: Date.now() }; render(); setTimeout(render, 3100); return; }
+  if (d.linkmove && ui.linkEdit) { await window.edbubble.linkMove(ui.linkEdit.id, Number(d.linkmove)); loadLinks(); return; }
+  if (d.linkkind && ui.linkEdit) { ui.linkEdit.kind = d.linkkind; ui.linkEdit.target = ''; render(); return; }
+  if (d.linkid) {
+    const l = (ui.links || []).find((x) => x.id === d.linkid); if (!l) return;
+    if (ui.linkEditMode) { ui.linkEdit = { ...l, isNew: false, error: null }; render(); return; }
+    const r = await window.edbubble.linkOpen(l.id);
+    say(r.ok, r.ok ? `Abriendo ${l.name || l.target}` : r.error);
+    return;
+  }
+  const a = d.linkact;
+  if (a === 'edit') { ui.linkEditMode = !ui.linkEditMode; ui.linkEdit = null; render(); return; }
+  if (a === 'new') { ui.linkEdit = { id: Date.now().toString(36), name: '', kind: 'url', target: '', icon: null, iconData: null, isNew: true }; render(); return; }
+  const E = ui.linkEdit; if (!E) return;
+  if (a === 'cancel') { ui.linkEdit = null; render(); return; }
+  if (a === 'pickfile') { const r = await window.edbubble.linkPickFile(E.id); if (r) { E.target = r.target; if (!E.name) E.name = r.name; if (r.icon && !E.icon) { E.icon = r.icon; E.iconData = r.iconData; } render(); } return; }
+  if (a === 'pickicon') { const r = await window.edbubble.linkPickIcon(E.id); if (r && r.icon) { E.icon = r.icon; E.iconData = r.iconData; render(); } else if (r && r.error) { E.error = r.error; render(); } return; }
+  if (a === 'noicon') { E.icon = null; E.iconData = null; render(); return; }
+  if (a === 'delete') { await window.edbubble.linkDelete(E.id); ui.linkEdit = null; loadLinks(); return; }
+  if (a === 'save') {
+    const r = await window.edbubble.linkSave({ id: E.id, name: E.name, kind: E.kind, target: E.target, icon: E.icon });
+    if (!r.ok) { E.error = r.error; render(); return; }
+    ui.linkEdit = null; loadLinks();
+  }
+}
+
 /* ---------- Comercio: mercado de la estación, bodega, Powerplay, sesión y ruta de comercio ---------- */
 const PP_KIND = { reinforcement: ['Refuerzo', 'Sistema de tu potencia'], undermining: ['Socavar', 'Sistema de otra potencia'], acquisition: ['Adquisición', 'Sin potencia que lo controle'] };
 const TRADE_PAGE = 9;
@@ -3514,7 +3678,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : ui.section === 'exobiologia' ? screenExobiologia(s, v) : ui.section === 'comercio' ? screenComercio(s, v) : ui.section === 'srv' ? screenSrv(s, v) : ui.section === 'cmdr' ? screenCmdr(s, v) : ui.section === 'carrier' ? screenCarrier(s, v) : ui.section === 'camara' ? screenCamara(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : ui.section === 'exobiologia' ? screenExobiologia(s, v) : ui.section === 'comercio' ? screenComercio(s, v) : ui.section === 'srv' ? screenSrv(s, v) : ui.section === 'cmdr' ? screenCmdr(s, v) : ui.section === 'carrier' ? screenCarrier(s, v) : ui.section === 'camara' ? screenCamara(s, v) : ui.section === 'utilidades' ? screenUtilidades(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -3538,6 +3702,9 @@ document.addEventListener('click', (ev) => {
 let searchTimer = null;
 document.addEventListener('input', (ev) => {
   if (ev.target.id === 'coord-input') { ui.coordText = ev.target.value; return; }
+  if (ev.target.id === 'link-name' && ui.linkEdit) { ui.linkEdit.name = ev.target.value; return; }
+  if (ev.target.id === 'link-target' && ui.linkEdit) { ui.linkEdit.target = ev.target.value; return; }
+  if (ev.target.id === 'calc-a' || ev.target.id === 'calc-b') { ui.calc = ui.calc || {}; ui.calc[ev.target.id.slice(-1)] = ev.target.value; return; }
   if (ev.target.id === 'tr-buy') { ui.trBuy.q = ev.target.value; render(); return; }
   if (ev.target.id === 'nr-dest') {
     ui.nrDest = ev.target.value; clearTimeout(searchTimer);
@@ -3565,6 +3732,7 @@ document.addEventListener('input', (ev) => {
 });
 document.addEventListener('keydown', (ev) => {
   if (ev.target.id === 'coord-input' && ev.key === 'Enter') { coordAction('set'); return; }
+  if ((ev.target.id === 'calc-a' || ev.target.id === 'calc-b') && ev.key === 'Enter' && ui.snap) { calcDistance(ui.snap.state); return; }
   if (ev.target.id === 'tr-buy' && ev.key === 'Enter') { const c = commodityMatches(ui.trBuy.q, 1)[0]; if (c) { ui.trBuy.sel = c; ui.trBuy.q = c.es || c.en; ui.trBuy.res = null; render(); } return; }
   if (ev.target.id === 'nr-dest' && ev.key === 'Enter') { neutronPlot((ui.nrDest || '').trim()); return; }
   if (ev.target.id === 'nav-search' && ev.key === 'Enter') {
@@ -3622,6 +3790,8 @@ document.addEventListener('pointerdown', (ev) => {
   }
   const cmS = ev.target.closest('button[data-cmdrstat], button[data-cmdrstatgo]');
   if (cmS) { const n = (v0) => ((ui.snap && ui.snap.view.cmdr.stats.length) || 1); if (cmS.dataset.cmdrstatgo != null) ui.cmdrStat = Number(cmS.dataset.cmdrstatgo); else ui.cmdrStat = ((ui.cmdrStat || 0) + Number(cmS.dataset.cmdrstat) + n()) % n(); render(); return; }
+  const ut = ev.target.closest('button[data-linkid], button[data-linkact], button[data-linkkind], button[data-linkmove], button[data-calctab], button[data-calcgo], button[data-calccargo], button[data-calctrip], button[data-stlink]');
+  if (ut && !ut.disabled) { utilClick(ut); return; }
   const srvT = ev.target.closest('button[data-srvto]');
   if (srvT) { ui.srvTo = srvT.dataset.srvto; render(); return; }
   const ppT = ev.target.closest('button[data-pptab], button[data-ppact]');
@@ -3685,7 +3855,7 @@ document.addEventListener('pointerdown', (ev) => {
     if (d.nrclear) { window.edbubble.neutronClear(); ui.nr = null; return; }
   }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage', trade: 'trPage', trwhere: 'trWherePage', trroute: 'trRoutePage', trbuy: 'trBuyPage', ppmine: 'ppMinePage', cmdrfleet: 'cmdrFleetPage', fclog: 'fcLogPage' }[minPgBtn.dataset.mpager];
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage', trade: 'trPage', trwhere: 'trWherePage', trroute: 'trRoutePage', trbuy: 'trBuyPage', ppmine: 'ppMinePage', cmdrfleet: 'cmdrFleetPage', fclog: 'fcLogPage', links: 'linkPage' }[minPgBtn.dataset.mpager];
     if (!k && /^eq(core|hard|opt)$/.test(minPgBtn.dataset.mpager)) { const kk = minPgBtn.dataset.mpager.slice(2); ui.eqPages[kk] = Math.max(0, (ui.eqPages[kk] || 0) + Number(minPgBtn.dataset.d)); render(); return; } ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {

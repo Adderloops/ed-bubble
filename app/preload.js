@@ -57,4 +57,12 @@ contextBridge.exposeInMainWorld('edbubble', {
   tradeRoute: (q) => ipcRenderer.invoke('ed:trade-route', q),
   tradeRouteClear: () => ipcRenderer.invoke('ed:trade-route-clear'),
   commodityList: () => ipcRenderer.invoke('ed:commodity-list'),
+  openStation: (req) => ipcRenderer.invoke('ed:open-station', req),
+  links: () => ipcRenderer.invoke('ed:links'),
+  linkSave: (l) => ipcRenderer.invoke('ed:link-save', l),
+  linkDelete: (id) => ipcRenderer.invoke('ed:link-delete', id),
+  linkMove: (id, d) => ipcRenderer.invoke('ed:link-move', id, d),
+  linkOpen: (id) => ipcRenderer.invoke('ed:link-open', id),
+  linkPickFile: (id) => ipcRenderer.invoke('ed:link-pick-file', id),
+  linkPickIcon: (id) => ipcRenderer.invoke('ed:link-pick-icon', id),
 });
