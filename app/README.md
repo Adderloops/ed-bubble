@@ -108,6 +108,10 @@ Los nombres de los rangos están en español aproximado (no todos se han comprob
 
 Grupo Comandante. Tu fleet carrier (`core/carrier.js`): nombre, indicativo, dónde está (`CarrierLocation` al cargar la partida; `CarrierJump` si estás a bordo; si no, pasada la hora de salida de un `CarrierJumpRequest` se da por hecho el salto) y la distancia desde ti (Spansh), acceso de atraque y capitán. **Salto** con cuenta atrás hasta la salida. **Tritio** del depósito (de 1.000 t) y alcance. **Espacio** (tripulación, carga, reservado, paquetes, libre) y **finanzas** (saldo, reserva, disponible, tasas) de `CarrierStats`, que el juego escribe al abrir la gestión del carrier. **Servicios** instalados, activos o en pausa, con su tripulante. **Registro** de saltos, tritio, servicios y dinero. También dónde está el carrier del escuadrón. Lo último conocido se guarda en `carrier.json` (y lo del CMDR en `cmdr.json`), porque esos eventos pueden ser de hace semanas.
 
+## Cámara
+
+Grupo Comandante. Botones que pulsan tus teclas de la cámara: abrir la cámara (de la nave, del SRV o a pie, según dónde estés), anterior, siguiente, salir, las diez cámaras fijas, cámara libre, ocultar la interfaz, fijar a la nave o al mundo, velocidad, acercar, alejar y desenfoque. A la derecha, una ayuda breve y la tecla de tu preset para cada control de la cámara (también los de mover y girar, que no tienen botón). En Controles hay un grupo «Cámara» para revisarlas.
+
 ## Comercio
 
 Grupo Actividades. La app salta aquí al abrir el mercado de mercancías en una estación (se queda hasta que despegas; se puede desactivar en Ajustes).

@@ -101,6 +101,8 @@ const KEY_LABELS = {
   Key_Escape: 'Esc', Key_Tab: 'Tab', Key_PageUp: 'RePág', Key_PageDown: 'AvPág', Key_Insert: 'Insert',
   Key_Delete: 'Supr', Key_Home: 'Inicio', Key_End: 'Fin', Key_UpArrow: '↑', Key_DownArrow: '↓',
   Key_LeftArrow: '←', Key_RightArrow: '→',
+  Key_SemiColon: ';', Key_Comma: ',', Key_Period: '.', Key_Slash: '/', Key_BackSlash: '\\', Key_Minus: '-', Key_Equals: '=', Key_Apostrophe: "'", Key_Grave: 'º',
+  Key_LeftBracket: '[', Key_RightBracket: ']', Key_CapsLock: 'Bloq Mayús',
 };
 
 function keyLabel(k) {

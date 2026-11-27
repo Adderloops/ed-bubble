@@ -448,6 +448,7 @@ function controlsInfo() {
     source: controls.source, file: controls.file || null, folder: controls.folder || null,
     defaultFolder: process.env.ED_BINDINGS_FOLDER || binds.defaultBindingsFolder(),
     simulate: keys.simulate, actions: actions.describe(controls.binds), check: controls.error ? null : actions.checkControls(controls),
+    cameraHelp: controls.error ? null : actions.cameraHelp(controls),
   };
 }
 

@@ -7,7 +7,7 @@ const SECTIONS = [
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate', built: true }, { id: 'equipo', label: 'Equipo', built: true }, { id: 'srv', label: 'SRV', built: true },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración', built: true }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie', built: true },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio', built: true }, { id: 'mineria', label: 'Minería', built: true }, { id: 'exobiologia', label: 'Exobiología', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
-  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR', built: true }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier', built: true }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
+  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR', built: true }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier', built: true }, { id: 'camara', label: 'Cámara', built: true }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
 
@@ -2109,6 +2109,46 @@ function screenCarrier(s, v) {
     </main>${right}</div>`;
 }
 
+/* ---------- Cámara: botones de la cámara de la nave y la cámara libre, y ayuda ---------- */
+function camBtn(id, label, big) {
+  const a = actAttrs(id);
+  return `<button type="button" class="act${a.cls || ''}" data-act="${id}" ${a.dis} title="${esc(a.title)}" style="${big ? 'min-height:64px;font-size:16px' : ''}">${label}${a.key ? `<span class="k">${esc(a.key)}</span>` : ''}</button>`;
+}
+function screenCamara(s, v) {
+  const fl = s.status.flags || {};
+  const where = fl.isOnFoot ? ['cam_foot', 'Cámara a pie'] : fl.isInSRV ? ['cam_srv', 'Cámara del SRV'] : ['cam_ship', 'Cámara de la nave'];
+  const main = `<main style="display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0">
+      <section class="pn card">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">Abrir la cámara</span><span class="eb">${fl.isOnFoot ? 'Vas a pie' : fl.isInSRV ? 'Vas en el SRV' : 'Vas en la nave'}</span></div>
+        <div style="display:grid;grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr));gap:8px">${camBtn(where[0], where[1], true)}${camBtn('cam_prev', '‹ Anterior', true)}${camBtn('cam_next', 'Siguiente ›', true)}${camBtn('cam_quit', 'Salir', true)}</div>
+      </section>
+      <section class="pn card">
+        <span class="ti" style="font-size:16px">Cámaras fijas</span>
+        <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => camBtn(`cam_${n}`, `Cámara ${n}`)).join('')}</div>
+        <span class="note">Las diez posiciones de la cámara de la nave (dentro y alrededor). Desde cualquiera de ellas puedes pasar a la cámara libre.</span>
+      </section>
+      <section class="pn card" style="flex:1;min-height:0">
+        <span class="ti" style="font-size:16px">Cámara libre</span>
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">${camBtn('cam_free', 'Cámara libre', true)}${camBtn('cam_hud', 'Ocultar interfaz', true)}${camBtn('cam_rel', 'Fijar a la nave', true)}${camBtn('cam_world', 'Fijar al mundo', true)}${camBtn('cam_fast', 'Más velocidad')}${camBtn('cam_slow', 'Menos velocidad')}${camBtn('cam_zin', 'Acercar')}${camBtn('cam_zout', 'Alejar')}${camBtn('cam_fup', 'Más desenfoque')}${camBtn('cam_fdown', 'Menos desenfoque')}</div>
+        <span style="margin-top:auto">${feedbackLine()}</span>
+      </section>
+    </main>`;
+  const H = ui.controls && ui.controls.cameraHelp;
+  const helpRows = H ? H.map((g) => `<span class="eb" style="margin-top:4px">${g.group}</span>${g.items.map((x) => `<div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:1px 0"><span class="nowrap">${esc(x.label.replace(/^Cámara( libre)?: /, ''))}</span><span class="num ${x.key ? (x.key === 'mando' ? 'soft' : 'cyan') : 'dim'}" style="font-size:12px">${x.key ? esc(x.key) : 'sin asignar'}</span></div>`).join('')}`).join('') : '<span class="soft" style="font-size:14px">Cargando tus controles…</span>';
+  const right = `<aside class="pn card" style="min-height:0;overflow:hidden">
+      <span class="ti" style="font-size:16px">Ayuda</span>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:13px;line-height:1.35">
+        <span>1. Abre la cámara de la nave y elige una de las diez posiciones fijas.</span>
+        <span>2. Pasa a la cámara libre para moverla por donde quieras; la nave se queda parada.</span>
+        <span>3. «Fijar a la nave» hace que la cámara viaje con ella; «Fijar al mundo», que se quede en su sitio mientras la nave se mueve.</span>
+        <span>4. Captura de pantalla: F10 (Alt+F10 en alta resolución). Ctrl+Alt+G oculta toda la interfaz fuera de la cámara.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1px">${helpRows}</div>
+      <span class="note" style="margin-top:auto">Teclas de tu preset de controles. «mando»: asignado solo al HOTAS o al mando.</span>
+    </aside>`;
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:12px;min-height:0">${main}${right}</div>`;
+}
+
 /* ---------- Comercio: mercado de la estación, bodega, Powerplay, sesión y ruta de comercio ---------- */
 const PP_KIND = { reinforcement: ['Refuerzo', 'Sistema de tu potencia'], undermining: ['Socavar', 'Sistema de otra potencia'], acquisition: ['Adquisición', 'Sin potencia que lo controle'] };
 const TRADE_PAGE = 9;
@@ -3474,7 +3514,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : ui.section === 'exobiologia' ? screenExobiologia(s, v) : ui.section === 'comercio' ? screenComercio(s, v) : ui.section === 'srv' ? screenSrv(s, v) : ui.section === 'cmdr' ? screenCmdr(s, v) : ui.section === 'carrier' ? screenCarrier(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : ui.section === 'exobiologia' ? screenExobiologia(s, v) : ui.section === 'comercio' ? screenComercio(s, v) : ui.section === 'srv' ? screenSrv(s, v) : ui.section === 'cmdr' ? screenCmdr(s, v) : ui.section === 'carrier' ? screenCarrier(s, v) : ui.section === 'camara' ? screenCamara(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 

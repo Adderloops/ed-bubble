@@ -56,6 +56,33 @@ const ACTIONS = {
   srv_galmap:   { label: 'Mapa galáctico (SRV)', steps: [press('GalaxyMapOpen_Buggy')] },
   srv_target:   { label: 'Fijar objetivo (SRV)', steps: [press('SelectTarget_Buggy')] },
   srv_eject:    { label: 'Expulsar toda la carga (SRV)', steps: [press('EjectAllCargo_Buggy')], confirm: true },
+  // Cámara de la nave y cámara libre
+  cam_ship:     { label: 'Cámara de la nave', steps: [press('PhotoCameraToggle')] },
+  cam_srv:      { label: 'Cámara del SRV', steps: [press('PhotoCameraToggle_Buggy')] },
+  cam_foot:     { label: 'Cámara a pie', steps: [press('PhotoCameraToggle_Humanoid')] },
+  cam_prev:     { label: 'Cámara anterior', steps: [press('VanityCameraScrollLeft')] },
+  cam_next:     { label: 'Cámara siguiente', steps: [press('VanityCameraScrollRight')] },
+  cam_1: { label: 'Cámara 1', steps: [press('VanityCameraOne')] },
+  cam_2: { label: 'Cámara 2', steps: [press('VanityCameraTwo')] },
+  cam_3: { label: 'Cámara 3', steps: [press('VanityCameraThree')] },
+  cam_4: { label: 'Cámara 4', steps: [press('VanityCameraFour')] },
+  cam_5: { label: 'Cámara 5', steps: [press('VanityCameraFive')] },
+  cam_6: { label: 'Cámara 6', steps: [press('VanityCameraSix')] },
+  cam_7: { label: 'Cámara 7', steps: [press('VanityCameraSeven')] },
+  cam_8: { label: 'Cámara 8', steps: [press('VanityCameraEight')] },
+  cam_9: { label: 'Cámara 9', steps: [press('VanityCameraNine')] },
+  cam_10: { label: 'Cámara 10', steps: [press('VanityCameraTen')] },
+  cam_free:     { label: 'Cámara libre', steps: [press('ToggleFreeCam')] },
+  cam_hud:      { label: 'Ocultar interfaz (cámara libre)', steps: [press('FreeCamToggleHUD')] },
+  cam_quit:     { label: 'Salir de la cámara', steps: [press('QuitCamera')] },
+  cam_rel:      { label: 'Fijar a la nave', steps: [press('FixCameraRelativeToggle')] },
+  cam_world:    { label: 'Fijar al mundo', steps: [press('FixCameraWorldToggle')] },
+  cam_fast:     { label: 'Más velocidad', steps: [press('FreeCamSpeedInc')] },
+  cam_slow:     { label: 'Menos velocidad', steps: [press('FreeCamSpeedDec')] },
+  cam_zin:      { label: 'Acercar', steps: [press('FreeCamZoomIn')] },
+  cam_zout:     { label: 'Alejar', steps: [press('FreeCamZoomOut')] },
+  cam_fup:      { label: 'Más desenfoque', steps: [press('FStopDec')] },
+  cam_fdown:    { label: 'Menos desenfoque', steps: [press('FStopInc')] },
   dock:        { label: 'Solicitar atraque', steps: [press('FocusLeftPanel'), wait(450), press('CyclePreviousPanel'), wait(250), press('CyclePreviousPanel'), wait(300), press('UI_Right'), wait(250), press('UI_Select')] },
 };
 
@@ -73,6 +100,12 @@ const BIND_NAMES = {
   GalaxyMapOpen: 'Mapa galáctico', CamZoomIn: 'Cámara: acercar', CamZoomOut: 'Cámara: alejar',
   AutoBreakBuggyButton: 'SRV: freno de mano', ToggleDriveAssist: 'SRV: asistencia a la conducción', ToggleBuggyTurretButton: 'SRV: torreta', HeadlightsBuggyButton: 'SRV: faros',
   ToggleCargoScoop_Buggy: 'SRV: recolector de carga', PlayerHUDModeToggle_Buggy: 'SRV: modo análisis', RecallDismissShip: 'Llamar / despedir la nave', SystemMapOpen_Buggy: 'SRV: mapa del sistema',
+  PhotoCameraToggle: 'Cámara de la nave', PhotoCameraToggle_Buggy: 'Cámara del SRV', PhotoCameraToggle_Humanoid: 'Cámara a pie', VanityCameraScrollLeft: 'Cámara anterior', VanityCameraScrollRight: 'Cámara siguiente',
+  ToggleFreeCam: 'Cámara libre', FreeCamToggleHUD: 'Cámara libre: ocultar interfaz', QuitCamera: 'Salir de la cámara', FixCameraRelativeToggle: 'Cámara: fijar a la nave', FixCameraWorldToggle: 'Cámara: fijar al mundo',
+  FreeCamSpeedInc: 'Cámara libre: más velocidad', FreeCamSpeedDec: 'Cámara libre: menos velocidad', FreeCamZoomIn: 'Cámara libre: acercar', FreeCamZoomOut: 'Cámara libre: alejar', FStopDec: 'Cámara: más desenfoque', FStopInc: 'Cámara: menos desenfoque',
+  MoveFreeCamForward: 'Cámara libre: adelante', MoveFreeCamBackwards: 'Cámara libre: atrás', MoveFreeCamLeft: 'Cámara libre: izquierda', MoveFreeCamRight: 'Cámara libre: derecha', MoveFreeCamUp: 'Cámara libre: subir', MoveFreeCamDown: 'Cámara libre: bajar',
+  PitchCameraUp: 'Cámara: mirar arriba', PitchCameraDown: 'Cámara: mirar abajo', YawCameraLeft: 'Cámara: girar a la izquierda', YawCameraRight: 'Cámara: girar a la derecha', RollCameraLeft: 'Cámara: inclinar a la izquierda', RollCameraRight: 'Cámara: inclinar a la derecha',
+  ToggleReverseThrottleInputFreeCam: 'Cámara libre: invertir avance',
   GalaxyMapOpen_Buggy: 'SRV: mapa galáctico', SelectTarget_Buggy: 'SRV: fijar objetivo', EjectAllCargo_Buggy: 'SRV: expulsar carga',
 };
 const CHECK_GROUPS = [
@@ -80,6 +113,7 @@ const CHECK_GROUPS = [
   { name: 'Combate', binds: ['CyclePreviousSubsystem', 'TargetWingman0', 'TargetWingman1', 'TargetWingman2', 'SelectTargetsTarget'] },
   { name: 'Caza', binds: ['OpenOrders', 'OrderDefensiveBehaviour', 'OrderAggressiveBehaviour', 'OrderFocusTarget', 'OrderHoldFire', 'OrderHoldPosition', 'OrderFollow', 'OrderRequestDock'] },
   { name: 'SRV', binds: ['AutoBreakBuggyButton', 'ToggleDriveAssist', 'ToggleBuggyTurretButton', 'HeadlightsBuggyButton', 'ToggleCargoScoop_Buggy', 'PlayerHUDModeToggle_Buggy', 'RecallDismissShip', 'SystemMapOpen_Buggy', 'GalaxyMapOpen_Buggy', 'SelectTarget_Buggy', 'EjectAllCargo_Buggy'] },
+  { name: 'Cámara', binds: ['PhotoCameraToggle', 'PhotoCameraToggle_Buggy', 'PhotoCameraToggle_Humanoid', 'VanityCameraScrollLeft', 'VanityCameraScrollRight', 'ToggleFreeCam', 'FreeCamToggleHUD', 'QuitCamera', 'FixCameraRelativeToggle', 'FixCameraWorldToggle', 'FreeCamSpeedInc', 'FreeCamSpeedDec', 'FreeCamZoomIn', 'FreeCamZoomOut', 'FStopDec', 'FStopInc'] },
   { name: 'Trazar ruta', binds: require('./plot').NEEDED },
 ];
 
@@ -149,4 +183,17 @@ function build(id, binds) {
   return { ops };
 }
 
-module.exports = { ACTIONS, CHECK_GROUPS, BIND_NAMES, describe, build, checkControls };
+/** Controles de la cámara para la ayuda de la sección Cámara: tecla de cada uno, «mando» o null. */
+const CAMERA_HELP = [
+  ['Abrir y cambiar', ['PhotoCameraToggle', 'VanityCameraScrollLeft', 'VanityCameraScrollRight', 'QuitCamera']],
+  ['Cámara libre', ['ToggleFreeCam', 'MoveFreeCamForward', 'MoveFreeCamBackwards', 'MoveFreeCamLeft', 'MoveFreeCamRight', 'MoveFreeCamUp', 'MoveFreeCamDown', 'FreeCamSpeedInc', 'FreeCamSpeedDec', 'ToggleReverseThrottleInputFreeCam']],
+  ['Mirar', ['PitchCameraUp', 'PitchCameraDown', 'YawCameraLeft', 'YawCameraRight', 'RollCameraLeft', 'RollCameraRight']],
+  ['Encuadre', ['FreeCamZoomIn', 'FreeCamZoomOut', 'FStopDec', 'FStopInc', 'FixCameraRelativeToggle', 'FixCameraWorldToggle', 'FreeCamToggleHUD']],
+];
+function cameraHelp(controls) {
+  const kb = (controls && controls.binds) || {};
+  const other = (controls && controls.otherDevices) || new Set();
+  return CAMERA_HELP.map(([group, list]) => ({ group, items: list.map((a) => ({ action: a, label: BIND_NAMES[a] || a, key: kb[a] ? bindLabel(kb[a]) : other.has(a) ? 'mando' : null })) }));
+}
+
+module.exports = { ACTIONS, CHECK_GROUPS, BIND_NAMES, describe, build, checkControls, cameraHelp };
