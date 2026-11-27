@@ -827,6 +827,7 @@ function screenColObras(s, v) {
   const typeLabel = STATION_TYPES[d.type] || (d.type ? d.type : 'Construcción');
   const tabs = `<div style="display:flex;gap:8px;flex-wrap:nowrap;overflow:hidden;align-items:center">${c.depots.length > 1 ? c.depots.slice(0, 6).map((x) => `<button type="button" class="tab small ${x.marketId === d.marketId ? 'on' : ''}" data-depot="${esc(x.marketId)}"><span class="nowrap" style="max-width:260px;display:inline-block;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom">${esc(siteName(x.name) || x.marketId)}</span> · ${pct(x.progress, 0)}</button>`).join('') : ''}</div>`;
   const shipCap = c.capacity;
+  const depotHere = !!(d.system && s.location.system && clean(d.system).toLowerCase() === clean(s.location.system).toLowerCase());
   const hero = `
     <section class="pn card" style="gap:10px">
       ${tabs}
@@ -836,8 +837,12 @@ function screenColObras(s, v) {
           <span class="ti nowrap" style="font-size:34px">${esc(siteName(d.name) || '—')}</span>
           <span class="eb dim">Datos del juego · última visita ${d.at ? `${String(d.at).slice(0, 10)} ${hhmm(d.at)} UTC` : '—'}</span>
         </div>
-        <div style="text-align:right"><span class="num amber" style="font-size:64px;line-height:1">${nf((d.progress || 0) * 100, 1)}<span style="font-size:30px"> %</span></span></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+          <span class="num amber" style="font-size:64px;line-height:1">${nf((d.progress || 0) * 100, 1)}<span style="font-size:30px"> %</span></span>
+          ${d.system && !depotHere ? `<button type="button" class="plot-btn" style="width:240px;height:40px" data-depotplot="1" ${(ui.plot && ui.plot.running) || !plotReady() ? 'disabled' : ''} title="${!plotReady() ? 'Tienes que asignar en el juego las teclas para trazar ruta: mira Teclas pendientes en Ajustes' : `Trazar ruta a ${esc(clean(d.system))}`}">Trazar ruta de vuelta</button>` : ''}
+        </div>
       </div>
+      ${d.system && !depotHere ? plotLine() : ''}
       <span class="bar" style="height:14px"><span style="width:${(d.progress || 0) * 100}%;background:var(--amber)"></span></span>
       <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px">
         ${stat('Faltan', `${nf(d.remaining)} t`, 'amber')}${stat('Entregado', `${nf(d.provided)} t`)}${stat('Total', `${nf(d.required)} t`)}${stat('Materiales completos', `${d.done} / ${d.resources.length}`)}${stat(`Viajes${shipCap ? ` (${nf(shipCap)} t)` : ''}`, d.trips != null ? `≈ ${nf(d.trips)}` : '—', 'cyan')}
@@ -4020,6 +4025,16 @@ document.addEventListener('pointerdown', (ev) => {
   if (mp) { ev.preventDefault(); ui.mk.pick = Number(mp.dataset.mkpick); render(); return; }
   const mpg = ev.target.closest('button[data-pager="mk"]');
   if (mpg && !mpg.disabled) { ev.preventDefault(); ui.mk.page = Math.max(0, ui.mk.page + Number(mpg.dataset.d)); ui.mk.pick = null; render(); return; }
+  const dpl = ev.target.closest('button[data-depotplot]');
+  if (dpl && !dpl.disabled) {
+    ev.preventDefault();
+    const d = ui.snap && ui.snap.view.col.depots.find((x) => x.marketId === ui.colDepot);
+    if (d && d.system) {
+      ui.finalDest = { station: d.name, system: clean(d.system), label: 'Construcción' };
+      window.edbubble.plot(clean(d.system), 0);
+    }
+    return;
+  }
   const mpl = ev.target.closest('button[data-mkplot]');
   if (mpl && !mpl.disabled) {
     ev.preventDefault();
