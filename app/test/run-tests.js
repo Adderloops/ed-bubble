@@ -750,7 +750,7 @@ test('casco: el del caza no cuenta como el de tu nave; se guarda la hora del dat
 test('cuerpo: se sabe en qué planeta estás aunque no haya ApproachBody (Location, SupercruiseExit, Touchdown)', () => {
   const s = model.createState();
   model.applyEvent(s, ev('Location', { StarSystem: 'X', SystemAddress: 100, Body: 'X AB 1', BodyID: 7, BodyType: 'Planet', Docked: false }));
-  assert.deepStrictEqual(s.location.approach, { body: 'X AB 1', bodyId: 7, systemAddress: 100 });
+  assert.deepStrictEqual(s.location.approach, { body: 'X AB 1', bodyId: 7, systemAddress: 100, near: true });
   const s2 = model.createState();
   model.applyEvent(s2, ev('Location', { StarSystem: 'X', SystemAddress: 100, Body: 'X', BodyID: 0, BodyType: 'Star', Docked: false }));
   assert.strictEqual(s2.location.approach, null, 'una estrella no');
@@ -1037,6 +1037,22 @@ test('controles: la misma tecla en la nave y en la cámara libre no cuenta como 
   assert.strictEqual(c.items.find((x) => x.action === 'FreeCamSpeedInc').status, 'ok');
   assert.strictEqual(c.items.find((x) => x.action === 'GalaxyMapOpen').status, 'shared', 'con otra tecla de la nave sí choca');
   assert.ok(plot.ready < plot.total);
+});
+
+test('#27: al despegar de una estación orbital junto a un planeta no salta a Órbita', () => {
+  const m = require('../../core/model');
+  const d = require('../../core/derive');
+  const s = m.createState();
+  const ev = (e) => m.applyEvent(s, { timestamp: '2026-11-27T19:00:00Z', ...e });
+  ev({ event: 'FSDJump', StarSystem: 'P', SystemAddress: 1, StarPos: [0, 0, 0] });
+  ev({ event: 'SupercruiseExit', StarSystem: 'P', SystemAddress: 1, Body: 'P A 2', BodyID: 7, BodyType: 'Planet' });
+  ev({ event: 'Docked', StationName: 'Sitio', StationType: 'SpaceConstructionDepot', StarSystem: 'P', SystemAddress: 1, MarketID: 5 });
+  ev({ event: 'Undocked', StationName: 'Sitio', StationType: 'SpaceConstructionDepot', MarketID: 5 });
+  s.status.flags = { isInMainShip: true, isShieldsUp: true };
+  assert.notStrictEqual(d.flightMode(s).section, 'orbita');
+  assert.strictEqual(s.location.approach.body, 'P A 2', 'sigue sabiendo el cuerpo cercano para Spansh');
+  ev({ event: 'ApproachBody', StarSystem: 'P', SystemAddress: 1, Body: 'P A 2', BodyID: 7 });
+  assert.strictEqual(d.flightMode(s).section, 'orbita', 'con ApproachBody sí');
 });
 
 test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {

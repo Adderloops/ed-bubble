@@ -55,7 +55,8 @@ function flightMode(state) {
   }
   if (f.isLanded || state.location.landed) return { key: 'landed', label: 'Aterrizado', section: 'orbita' };
   // cerca de un planeta (vuelo orbital o planeo): coordenadas en Status.json o aproximación a un cuerpo
-  if (!state.docking.active && (f.hasLatLong || (state.location.approach && !f.isSupercruise))) return { key: 'orbit', label: 'Órbita planetaria', section: 'orbita' };
+  const ap = state.location.approach;
+  if (!state.docking.active && (f.hasLatLong || (ap && !ap.near && !f.isSupercruise))) return { key: 'orbit', label: 'Órbita planetaria', section: 'orbita' };
   if (f.isSupercruise) return { key: 'supercruise', label: 'Supercrucero', section: 'vuelo' };
   if (state.docking.active) return { key: 'approach', label: 'Aproximación', section: 'vuelo' };
   if (f.isFSDCharging) return { key: 'charging', label: 'Cargando FSD', section: 'vuelo' };

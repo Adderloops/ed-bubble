@@ -35,7 +35,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 24 | Colonización › Comprar: con la Anaconda Mk II (y Clipper, Orca, Caspian Explorer) no filtraba por plataforma L | Revisión al añadir «Dónde comprar» en Comercio | 0.7.0-beta.1 | 0.7.0-beta.5 | Publicado |
 | 25 | Órbita planetaria y Exobiología: la página fallaba («Error al pintar») en un cuerpo cuya ficha de Spansh no traía anillos | Prueba de todas las secciones antes de la beta 5 | 0.7.0-beta.4 | 0.7.0-beta.5 | Publicado |
 | 26 | «Trazar ruta» desactivado en todas las páginas: la tecla del mapa galáctico se daba por repetida porque la misma tecla sirve en la cámara libre | Adder (Colonización › Comprar) | 0.7.0-beta.5 | 0.7.0-beta.6 | Corregido |
-| 27 | Salto automático: a veces cambia a Órbita planetaria sin estar en órbita | Adder | 0.7.0-beta.5 | — | Abierto |
+| 27 | Salto automático: a veces cambia a Órbita planetaria sin estar en órbita (al despegar de una estación orbital junto a un planeta) | Adder | 0.7.0-beta.5 | 0.7.0-beta.6 | Corregido |
 
 ## Detalle
 
@@ -174,9 +174,10 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 
 ### 27 · Salto automático a Órbita sin estar en órbita
 
-- **Encontrado:** Adder (27-11-2026): el salto automático entre Vuelo y Órbita planetaria a veces cambia a Órbita sin estar en ella.
-- **Encontrado en:** 0.7.0-beta.5 · **Corregido en:** — (para la semana del 30-11-2026)
-- **Qué revisar:** qué decide el modo «órbita» en `core/derive.js` (cuerpo cercano, Status.json con latitud y longitud, altitud, `ApproachBody` / `LeaveBody`) y si queda colgado tras salir de la gravedad del planeta o al pasar cerca de uno en supercrucero. Pedir a Adder el diario y Status.json de un momento en que pase.
+- **Encontrado:** Adder (27-11-2026), al despegar de Sisters' Pride (construcción orbital junto al planeta Pegasi Sector IH-V c2-28 A 2).
+- **Encontrado en:** 0.7.0-beta.5 · **Corregido en:** 0.7.0-beta.6
+- **Qué pasaba:** al salir del supercrucero junto a una estación orbital, el juego da como cuerpo el planeta cercano (`SupercruiseExit` con `BodyType: Planet`). La app lo guardaba como si te acercaras a ese planeta y, al despegar, el modo pasaba a «Órbita planetaria» aunque no estabas en su órbita (sin `ApproachBody` ni coordenadas en Status.json).
+- **Arreglo:** ese cuerpo se guarda como «cercano»: sirve para buscar su ficha en Spansh, pero no para saltar a Órbita. Solo cuentan `ApproachBody` o las coordenadas de Status.json. Comprobado reproduciendo el diario de Adder: antes daba Órbita, ahora Vuelo normal.
 
 ### 26 · «Trazar ruta» desactivado por la cámara libre
 

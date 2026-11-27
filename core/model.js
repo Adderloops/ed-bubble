@@ -248,7 +248,7 @@ const HANDLERS = {
     state.location.docked = !!e.Docked;
     state.location.station = e.Docked ? (e.StationName || null) : null;
     state.location.stationType = e.Docked ? (e.StationType || null) : null;
-    if (e.BodyType === 'Planet') setApproachFrom(state, e);
+    if (e.BodyType === 'Planet') setApproachFrom(state, e, true);
     pushLog(state, e, 'Posición', e.Docked ? `${e.StationName} · ${e.StarSystem}` : e.StarSystem);
   },
   FSDJump(state, e) {
@@ -287,7 +287,7 @@ const HANDLERS = {
   SupercruiseEntry(state, e) { state.location.body = null; state.shipSurface = null; pushLog(state, e, 'Supercrucero', 'Entrada'); },
   SupercruiseExit(state, e) {
     if (e.Body) { state.location.body = e.Body; state.location.bodyType = e.BodyType || null; }
-    if (e.BodyType === 'Planet') setApproachFrom(state, e);
+    if (e.BodyType === 'Planet') setApproachFrom(state, e, true);
     pushLog(state, e, 'Supercrucero', `Salida · ${e.Body || ''}`);
   },
   ApproachBody(state, e) {
@@ -566,12 +566,14 @@ function addMat(state, name, n) {
 }
 // ranuras de aspecto (pintura, cabina, voz…) que no son módulos
 /** Cuerpo planetario en el que estás (para buscar su ficha en Spansh) aunque no haya ApproachBody. */
-function setApproachFrom(state, e) {
+// near: solo es el cuerpo más cercano (SupercruiseExit, Location), no que estés en su órbita; p. ej. al salir del
+// supercrucero junto a una estación orbital. No cuenta para el salto automático a Órbita (#27).
+function setApproachFrom(state, e, near = false) {
   if (!e.Body || e.BodyID == null) return;
   if (e.BodyType && e.BodyType !== 'Planet') return;
   const a = state.location.approach;
-  if (a && a.body === e.Body && a.bodyId != null) return;
-  state.location.approach = { body: e.Body, bodyId: e.BodyID, systemAddress: e.SystemAddress ?? state.location.systemAddress };
+  if (a && a.body === e.Body && a.bodyId != null) { if (!near && a.near) a.near = false; return; }
+  state.location.approach = { body: e.Body, bodyId: e.BodyID, systemAddress: e.SystemAddress ?? state.location.systemAddress, near };
 }
 const COSMETIC = /^(PaintJob|ShipCockpit|CargoHatch|VesselVoice|Decal\d*|ShipName\d*|ShipID\d*|Bobble\d*|WeaponColour|EngineColour|StringLights|ShipKitSpoiler|ShipKitWings|ShipKitTail|ShipKitBumper)$/i;
 function suitFrom(raw, id, mods) { return { id, key: String(raw || '').toLowerCase(), name: suitName(raw), grade: gradeOf(raw), mods: mods || [] }; }
