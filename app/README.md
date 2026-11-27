@@ -55,6 +55,7 @@ La primera vez se abre en la segunda pantalla si la hay; después recuerda posic
 - `../core/engine.js` sigue el Journal más reciente (lo relee entero al arrancar para reconstruir la sesión) y los JSON del juego, y mantiene un único estado (`../core/model.js`). Las alertas, el modo de vuelo y los datos calculados están en `../core/derive.js`.
 - `main.js` (Electron) arranca el motor y envía cada actualización a la ventana; `renderer/` dibuja las pantallas.
 - Salto automático a la sección: al cambiar el estado del juego (por ejemplo, de atracado a supercrucero) la ventana va sola a la sección que corresponde, si ya está construida. Se activa o desactiva pulsando el texto del pie del menú.
+- Fijar una página: mantén pulsado su botón del menú 2 s (una barra cian se llena mientras tanto). La página queda fijada (botón cian con chincheta) y el salto automático espera hasta que pinchas en otra página, vuelves a mantenerla pulsada 2 s o pulsas el texto del pie («Página fijada»). No se guarda al cerrar la app.
 
 ## Pruebas
 

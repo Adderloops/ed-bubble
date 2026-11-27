@@ -122,16 +122,24 @@ function renderHeader(s, v) {
 
 function renderRail(v) {
   const live = v ? v.mode.section : null;
-  $('rail').innerHTML = SECTIONS.map((x) => {
+  const html = SECTIONS.map((x) => {
     if (x.group) return `<span class="gp">${x.group}</span>`;
     if (x.hidden) return '';
     const on = x.id === ui.section ? ' on' : '';
+    const pin = x.id === ui.pinned ? ' pinned' : '';
     const dis = x.built ? '' : ' disabled title="Próximamente"';
     const dot = live === x.id ? '<span class="dot on"></span>' : '';
-    return `<button type="button" class="nv${on}${x.home ? ' home' : ''}" data-sec="${x.id}"${dis}>${x.label}${dot}</button>`;
-  }).join('') + `<span class="note foot" id="autojump"></span>`;
-  $('autojump').innerHTML = `Salto automático a la sección: <b class="${ui.autoJump ? 'cyan' : 'dim'}">${ui.autoJump ? 'activado' : 'desactivado'}</b>`;
+    const ico = pin ? PIN_ICON : '';
+    const tip = x.built ? ` title="${pin ? 'Fijada: mantén pulsado 2 s para soltarla' : 'Mantén pulsado 2 s para fijar esta página'}"` : '';
+    return `<button type="button" class="nv${on}${pin}${x.home ? ' home' : ''}" data-sec="${x.id}"${dis}${tip}>${x.label}${ico || dot}</button>`;
+  }).join('') + `<span class="note foot" id="autojump">${ui.pinned ? `Página fijada: <b class="cyan">${esc((SECTIONS.find((x) => x.id === ui.pinned) || {}).label || '')}</b> · el salto automático espera` : `Salto automático a la sección: <b class="${ui.autoJump ? 'cyan' : 'dim'}">${ui.autoJump ? 'activado' : 'desactivado'}</b>`}</span>`;
+  // solo se repinta si cambia: así la barra de la pulsación larga no se reinicia cada segundo
+  if (html !== ui.railHtml) {
+    ui.railHtml = html; $('rail').innerHTML = html;
+    if (ui.hold) { const b = $('rail').querySelector(`button[data-sec="${ui.hold.sec}"]`); if (b) b.classList.add('holding'); }
+  }
 }
+const PIN_ICON = '<svg class="pin" viewBox="0 0 16 16" width="15" height="15" aria-label="Fijada"><path d="M10.5 1.5l4 4-2 1-2.5 2.5.5 3.5-1.5 1.5L6 11l-4 4-1-1 4-4-3-3 1.5-1.5 3.5.5L9.5 3.5z" fill="currentColor"/></svg>';
 
 /* ---------- Puente de mando ---------- */
 function screenPuente(s, v) {
@@ -3667,7 +3675,7 @@ function renderNow() {
   const { state: s, view: v } = snap;
   const typing = document.activeElement && document.activeElement.tagName === 'INPUT' && !!document.activeElement.id;
   if (ui.autoJump && v.mode.key !== ui.lastModeKey && !typing) {
-    if (ui.lastModeKey !== null && BUILT.has(v.mode.section) && v.mode.section !== ui.section && ui.section !== 'ajustes' && jumpAllowed(v.mode.key)) goSection(v.mode.section);
+    if (!ui.pinned && ui.lastModeKey !== null && BUILT.has(v.mode.section) && v.mode.section !== ui.section && ui.section !== 'ajustes' && jumpAllowed(v.mode.key)) goSection(v.mode.section);
     ui.lastModeKey = v.mode.key;
   }
   // diagnóstico: qué veía la app al conceder un atraque
@@ -3690,12 +3698,33 @@ function fit() {
   st.style.top = `${Math.round((window.innerHeight - 1080 * k) / 2)}px`;
 }
 
+/* Pulsación larga (2 s) en un botón de página: la fija hasta que pinchas en otra o vuelves a mantenerla pulsada */
+const PIN_HOLD_MS = 2000;
+function holdEnd() { if (ui.hold) { clearTimeout(ui.hold.timer); ui.hold = null; } $('rail').querySelectorAll('.nv.holding').forEach((b) => b.classList.remove('holding')); }
+$('rail').addEventListener('pointerdown', (ev) => {
+  const b = ev.target.closest('button[data-sec]');
+  if (!b || b.disabled || ev.button > 0) return;
+  holdEnd(); ui.holdFired = null;
+  const sec = b.dataset.sec;
+  ui.hold = { sec, timer: setTimeout(() => {
+    holdEnd(); ui.holdFired = sec;
+    if (ui.pinned === sec) ui.pinned = null;
+    else { ui.pinned = sec; goSection(sec); }
+    render();
+  }, PIN_HOLD_MS) };
+  b.classList.add('holding');
+});
+for (const t of ['pointerup', 'pointercancel', 'pointerleave']) $('rail').addEventListener(t, () => { if (ui.hold) holdEnd(); });
+$('rail').addEventListener('contextmenu', (ev) => ev.preventDefault());
 $('rail').addEventListener('click', (ev) => {
   const b = ev.target.closest('button[data-sec]');
-  if (b && !b.disabled) { goSection(b.dataset.sec); render(); }
+  if (!b || b.disabled) return;
+  if (ui.holdFired) { ui.holdFired = null; return; } // el clic que cierra la pulsación larga
+  if (ui.pinned && ui.pinned !== b.dataset.sec) ui.pinned = null; // pinchar en otra página la suelta
+  goSection(b.dataset.sec); render();
 });
 document.addEventListener('click', (ev) => {
-  if (ev.target.closest('#autojump')) setPref('autoJump', !ui.autoJump);
+  if (ev.target.closest('#autojump')) { if (ui.pinned) { ui.pinned = null; render(); } else setPref('autoJump', !ui.autoJump); }
   if (ev.target.closest('#hdr-settings')) { goSection(ui.section === 'ajustes' ? (ui.prevSection || 'puente') : 'ajustes'); render(); }
 });
 // Buscador: sugerencias de Spansh mientras se escribe (con pausa de 300 ms)
