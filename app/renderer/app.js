@@ -675,6 +675,15 @@ const PLOT_ERRORS = {
   'plot-busy': 'Ya se está trazando una ruta', timeout: 'El ayudante de teclas no responde',
 };
 
+/** Pestañas de construcciones: primero las que están en curso, luego las terminadas o fallidas; la elegida siempre se ve. */
+function depotTabs(depots, sel) {
+  const done = (x) => x.complete || x.failed || (x.progress || 0) >= 1;
+  const list = [...depots.filter((x) => !done(x)), ...depots.filter(done)];
+  const shown = list.slice(0, 6);
+  if (sel && !shown.includes(sel)) shown[shown.length - 1] = sel;
+  return shown;
+}
+
 function plotLine() {
   const p = ui.plot;
   if (!p) return '';
@@ -825,7 +834,7 @@ function screenColObras(s, v) {
   if (!ui.colDepot || !c.depots.find((d) => d.marketId === ui.colDepot)) ui.colDepot = c.current && c.depots.find((d) => d.marketId === c.current) ? c.current : c.depots[0].marketId;
   const d = c.depots.find((x) => x.marketId === ui.colDepot);
   const typeLabel = STATION_TYPES[d.type] || (d.type ? d.type : 'Construcción');
-  const tabs = `<div style="display:flex;gap:8px;flex-wrap:nowrap;overflow:hidden;align-items:center">${c.depots.length > 1 ? c.depots.slice(0, 6).map((x) => `<button type="button" class="tab small ${x.marketId === d.marketId ? 'on' : ''}" data-depot="${esc(x.marketId)}"><span class="nowrap" style="max-width:260px;display:inline-block;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom">${esc(siteName(x.name) || x.marketId)}</span> · ${pct(x.progress, 0)}</button>`).join('') : ''}</div>`;
+  const tabs = `<div style="display:flex;gap:8px;flex-wrap:nowrap;overflow:hidden;align-items:center">${c.depots.length > 1 ? depotTabs(c.depots, d).map((x) => `<button type="button" class="tab small ${x.marketId === d.marketId ? 'on' : ''}" data-depot="${esc(x.marketId)}"><span class="nowrap" style="max-width:260px;display:inline-block;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom">${esc(siteName(x.name) || x.marketId)}</span> · ${pct(x.progress, 0)}</button>`).join('') : ''}</div>`;
   const shipCap = c.capacity;
   const depotHere = !!(d.system && s.location.system && clean(d.system).toLowerCase() === clean(s.location.system).toLowerCase());
   const hero = `

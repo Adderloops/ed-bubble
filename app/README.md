@@ -183,7 +183,7 @@ Tu flota (los módulos de cada nave que has usado) se guarda en `fleet.json` par
 
 Botón «Planificar» en Colonización (y pantalla por defecto si aún no tienes construcciones): los 55 tipos de construcción (orbitales y de superficie) con su nivel, el total de toneladas y los viajes con tu bodega, y al elegir uno, la lista de mercancías con sus toneladas. Son cantidades de referencia: el juego puede pedir algo más o algo menos, y el puerto primario cuesta más; en cuanto la construcción existe, la app usa lo que dice el juego. Datos: `core/data/colonization-costs.json`, de SrvSurvey (autor de Raven Colonial), GPLv3.
 
-**Trazar ruta de vuelta:** si estás en otro sistema, la construcción elegida tiene el botón «Trazar ruta de vuelta», que traza la ruta a su sistema en el mapa galáctico y la deja como destino final.
+**Pestañas:** una por construcción (hasta 6 a la vista): primero las que están en curso y después las terminadas; la elegida siempre se ve. **Trazar ruta de vuelta:** si estás en otro sistema, la construcción elegida tiene el botón «Trazar ruta de vuelta», que traza la ruta a su sistema en el mapa galáctico y la deja como destino final.
 
 ## Ingenieros
 
