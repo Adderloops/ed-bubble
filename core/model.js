@@ -57,6 +57,7 @@ function createState() {
     // a pie (Odyssey): equipo actual, equipos y trajes/armas vistos, taquilla y mochila
     onfoot: { loadout: null, loadouts: {}, suits: {}, weapons: {}, locker: null, backpack: null },
     srv: { type: null, name: null, launchedAt: null, collected: {} }, // SRV desplegado (LaunchSRV): 'mev_rhino' es el Rhino de minería; collected: materiales recogidos en esta salida
+    carrier: require('./carrier').create(), // tu fleet carrier (core/carrier.js)
     shipSurface: null, // dónde está la nave aparcada en la superficie: { body, lat, lon, present } (present false = despedida, en órbita)
     marketOpenedAt: null, marketOpenedStation: null, dockedAt: null,
     tradeRoute: null, // ruta de comercio de Spansh: { at, params, hops: [...] }
@@ -640,8 +641,9 @@ function applyEvent(state, e) {
   const xc = exploration.apply(state, e);
   const tc = trade.apply(state, e);
   const cc = require('./cmdr').apply(state, e);
+  const fc = require('./carrier').apply(state, e);
   const h = HANDLERS[e.event];
-  if (!h) return xc || tc || cc;
+  if (!h) return xc || tc || cc || fc;
   h(state, e);
   if (e.event === 'FSDJump' && !state.location.starClass && state.fsdTarget.starClass) {
     state.location.starClass = state.fsdTarget.starClass;

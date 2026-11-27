@@ -1002,6 +1002,32 @@ test('CMDR: rangos, reputación y flota con los cambios de nave', () => {
   assert.strictEqual(V.fleet.find((x) => x.id === 1).station, 'A');
 });
 
+test('Carrier: estadísticas, salto programado, tritio y carrier de otro', () => {
+  const m = require('../../core/model');
+  const C = require('../../core/carrier');
+  const s = m.createState();
+  const ev = (e) => m.applyEvent(s, { timestamp: '2026-11-27T10:00:00Z', ...e });
+  ev({ event: 'CarrierLocation', CarrierType: 'FleetCarrier', CarrierID: 7, StarSystem: 'A', SystemAddress: 1, BodyID: 2 });
+  ev({ event: 'CarrierLocation', CarrierType: 'SquadronCarrier', CarrierID: 9, StarSystem: 'Q', SystemAddress: 5, BodyID: 1 });
+  ev({ event: 'CarrierStats', CarrierID: 7, Callsign: 'X1Y-23Z', Name: 'NAVE', DockingAccess: 'all', AllowNotorious: false, FuelLevel: 500, JumpRangeCurr: 500, SpaceUsage: { TotalCapacity: 25000, Crew: 1000, Cargo: 10, FreeSpace: 23990 }, Finance: { CarrierBalance: 100 }, Crew: [{ CrewRole: 'Refuel', Activated: true, Enabled: true, CrewName: 'Ana' }] });
+  ev({ event: 'CarrierJumpRequest', CarrierType: 'FleetCarrier', CarrierID: 7, SystemName: 'B', SystemAddress: 3, DepartureTime: '2026-11-27T10:15:00Z' });
+  let V = C.view(s, Date.parse('2026-11-27T10:05:00Z'));
+  assert.strictEqual(V.jump.system, 'B');
+  assert.strictEqual(V.jump.left, 600000);
+  assert.strictEqual(V.location.system, 'A');
+  V = C.view(s, Date.parse('2026-11-27T10:20:00Z'));
+  assert.strictEqual(V.location.system, 'B', 'pasada la hora de salida, ya está en B');
+  ev({ event: 'CarrierJump', StarSystem: 'Z', MarketID: 99 });
+  assert.strictEqual(C.view(s, Date.parse('2026-11-27T10:20:00Z')).location.system, 'B', 'el carrier de otro no mueve el tuyo');
+  ev({ event: 'CarrierDepositFuel', CarrierID: 7, Amount: 100, Total: 600 });
+  ev({ event: 'CarrierDepositFuel', CarrierID: 7, Amount: 100, Total: 600 });
+  V = C.view(s);
+  assert.strictEqual(V.fuel, 600);
+  assert.strictEqual(V.log.filter((x) => /Tritio/.test(x.text)).length, 1, 'sin duplicados al repasar el historial');
+  assert.strictEqual(V.squadron.system, 'Q');
+  assert.strictEqual(V.docking, 'Todos');
+});
+
 test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {
   const m = require('../../core/model');
   const s = m.createState();

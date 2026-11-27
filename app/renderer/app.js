@@ -7,7 +7,7 @@ const SECTIONS = [
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate', built: true }, { id: 'equipo', label: 'Equipo', built: true }, { id: 'srv', label: 'SRV', built: true },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración', built: true }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie', built: true },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio', built: true }, { id: 'mineria', label: 'Minería', built: true }, { id: 'exobiologia', label: 'Exobiología', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
-  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR', built: true }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
+  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR', built: true }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier', built: true }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
 
@@ -2011,6 +2011,104 @@ function screenCmdr(s, v) {
     </main>${fleet}</div>`;
 }
 
+/* ---------- Carrier: tu fleet carrier ---------- */
+const fmtLeft = (ms) => { if (ms == null) return '—'; const t = Math.round(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+function carrierDistance(sys) {
+  if (!sys) return null;
+  ui.fcDist = ui.fcDist || {};
+  if (!(sys in ui.fcDist)) {
+    ui.fcDist[sys] = undefined;
+    window.edbubble.system(sys).then((r) => { ui.fcDist[sys] = r && r.ok && r.system ? r.system.distance : null; render(); }).catch(() => { ui.fcDist[sys] = null; });
+  }
+  return ui.fcDist[sys];
+}
+function screenCarrier(s, v) {
+  const F = v.carrier;
+  if (!F.has) {
+    return `<section class="pn card"><span class="ti" style="font-size:16px">Carrier</span><div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:20px;color:var(--soft)">No veo ningún fleet carrier tuyo</span><span style="font-size:15px">Si tienes uno, aparece al iniciar el juego (evento CarrierLocation). Los datos de combustible, espacio, finanzas y servicios llegan al abrir la gestión del carrier.</span></div></section>`;
+  }
+  const L = F.location || {};
+  const dist = F.here ? 0 : carrierDistance(L.system);
+  const box = (label, value, cls) => `<div class="in" style="display:flex;flex-direction:column;gap:2px;padding:10px 12px;min-width:0"><span class="eb" style="font-size:10px">${label}</span><span class="va nowrap ${cls || ''}" style="font-size:19px">${value}</span></div>`;
+  const head = `<section class="pn card" style="border-left:3px solid var(--amber)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+        <span style="display:flex;flex-direction:column;gap:4px;min-width:0"><span class="eb">Fleet carrier${F.decommission ? ' · <span class="red">desmantelamiento pendiente</span>' : ''}</span><span class="ti nowrap" style="font-size:34px">${esc(F.name || 'Tu carrier')}</span><span class="num amber" style="font-size:18px">${esc(F.callsign || '')}</span></span>
+        <span style="display:flex;gap:8px">${F.callsign ? `<button type="button" class="tab small" data-copy="1" data-name="${esc(F.callsign)}">Copiar indicativo</button>` : ''}${L.system ? `<button type="button" class="tab small" data-copy="1" data-name="${esc(L.system)}">Copiar sistema</button>` : ''}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr));gap:8px">
+        ${box('Está en', `${esc(L.system || '—')}${L.assumed ? ' <span class="soft" style="font-size:12px">(salto hecho)</span>' : ''}`)}${box('Distancia', F.here ? 'En tu sistema' : dist == null ? '—' : `${nf(dist, 1)} al`, F.here ? 'cyan' : '')}${box('Atraque', esc(F.docking || '—'))}${box('Capitán', esc(F.captain || '—'))}
+      </div>
+    </section>`;
+
+  const J = F.jump;
+  const jumpCard = `<section class="pn card" style="${J ? 'border-color:#8a5a1e' : ''}">
+      <span class="ti" style="font-size:16px">Salto</span>
+      ${J ? `<span class="eb">Salto programado a</span><span class="va nowrap" style="font-size:22px">${esc(J.system || '—')}</span><span class="soft nowrap" style="font-size:13px">${esc(J.body || '')}</span>
+        <span class="num amber" style="font-size:48px;line-height:1">${fmtLeft(J.left)}</span><span class="soft" style="font-size:13px">Salida a las ${hhmm(J.departure)} UTC. Si estás a bordo, quédate atracado o despega antes.</span>`
+      : `<span class="va" style="font-size:18px;color:var(--soft)">Sin salto programado</span>${F.lastJump ? `<span class="soft" style="font-size:14px">Último salto: ${esc(F.lastJump.system)} · ${String(F.lastJump.at).slice(0, 10)} ${hhmm(F.lastJump.at)}</span>` : ''}<span class="note" style="margin-top:auto">Al programar un salto en el juego, aquí verás la cuenta atrás.</span>`}
+    </section>`;
+
+  const fuelPct = F.fuel != null ? F.fuel / F.fuelMax : null;
+  const fuelCard = `<section class="pn card">
+      <span class="ti" style="font-size:16px">Tritio</span>
+      <span class="num ${fuelPct != null && fuelPct < 0.2 ? 'red' : 'cyan'}" style="font-size:40px;line-height:1">${F.fuel != null ? `${nf(F.fuel)} t` : '—'}</span>
+      <span class="bar" style="height:12px"><span style="width:${(fuelPct || 0) * 100}%;background:${fuelPct != null && fuelPct < 0.2 ? 'var(--red,#ff4b4b)' : 'var(--cyan)'}"></span></span>
+      <span class="soft" style="font-size:13px">de ${nf(F.fuelMax)} t en el depósito · alcance ${F.jumpRange != null ? `${nf(F.jumpRange)} al` : '—'}</span>
+      <span class="note" style="margin-top:auto">El tritio que llevas en la bodega del carrier no cuenta hasta que lo pasas al depósito.</span>
+    </section>`;
+
+  const S = F.space;
+  const seg = (n, col, label) => (n ? `<span title="${label}" style="flex:${n};background:${col}"></span>` : '');
+  const spaceCard = `<section class="pn card">
+      <span class="ti" style="font-size:16px">Espacio</span>
+      ${S ? `<span style="display:flex;height:16px;border:1px solid var(--line2);border-radius:2px;overflow:hidden;background:#0c1b2e">${seg(S.crew, '#56708e', 'Tripulación')}${seg(S.cargo, 'var(--amber)', 'Carga')}${seg(S.reserved, '#8a5a1e', 'Reservado')}${seg(S.ships, '#2a7fa3', 'Paquetes de naves')}${seg(S.modules, 'var(--cyan)', 'Paquetes de módulos')}${seg(S.free, '#0c1b2e', 'Libre')}</span>
+        <div class="kv" style="font-size:15px">
+          <span class="eb" style="font-size:10px">Libre</span><span class="num cyan">${nf(S.free)} t</span>
+          <span class="eb" style="font-size:10px">Carga</span><span class="num amber">${nf(S.cargo)} t</span>
+          <span class="eb" style="font-size:10px">Tripulación</span><span class="num">${nf(S.crew)} t</span>
+          ${S.reserved ? `<span class="eb" style="font-size:10px">Reservado</span><span class="num">${nf(S.reserved)} t</span>` : ''}
+          ${S.ships || S.modules ? `<span class="eb" style="font-size:10px">Paquetes</span><span class="num">${nf((S.ships || 0) + (S.modules || 0))} t</span>` : ''}
+          <span class="eb" style="font-size:10px">Total</span><span class="num">${nf(S.total)} t</span>
+        </div>` : '<div class="empty" style="font-size:14px">Abre la gestión del carrier en el juego para ver el espacio.</div>'}
+    </section>`;
+
+  const Fi = F.finance;
+  const finCard = `<section class="pn card">
+      <span class="ti" style="font-size:16px">Finanzas</span>
+      ${Fi ? `<div class="kv" style="font-size:15px">
+          <span class="eb" style="font-size:10px">Saldo</span><span class="num cyan">${fmtCr(Fi.balance)}</span>
+          <span class="eb" style="font-size:10px">Reserva</span><span class="num">${fmtCr(Fi.reserve)}${Fi.reservePct != null ? ` <span class="soft" style="font-size:12px">(${nf(Fi.reservePct)} %)</span>` : ''}</span>
+          <span class="eb" style="font-size:10px">Disponible</span><span class="num">${fmtCr(Fi.available)}</span>
+          <span class="eb" style="font-size:10px">Tasas</span><span class="num soft">rearme ${nf(Fi.taxes.rearm || 0)} % · repostaje ${nf(Fi.taxes.refuel || 0)} % · reparación ${nf(Fi.taxes.repair || 0)} %</span>
+        </div>` : '<div class="empty" style="font-size:14px">Abre la gestión del carrier para ver las finanzas.</div>'}
+      ${F.statsAt ? `<span class="note" style="margin-top:auto">Datos de la gestión del carrier del ${String(F.statsAt).slice(0, 10)} ${hhmm(F.statsAt)} UTC.</span>` : ''}
+    </section>`;
+
+  const crew = F.crew.length ? F.crew.map((c) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 12px">
+      <span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:15px;${c.active ? '' : 'color:var(--soft)'}">${esc(c.label)}</span>${c.name ? `<span class="soft nowrap" style="font-size:12px">${esc(c.name)}</span>` : ''}</span>
+      <span class="eb ${c.active ? (c.enabled ? 'cyan' : 'yellow') : 'dim'}" style="font-size:10px">${c.active ? (c.enabled ? 'Activo' : 'En pausa') : 'No instalado'}</span>
+    </div>`).join('') : '<div class="empty" style="font-size:14px">Abre la gestión del carrier para ver los servicios.</div>';
+  const per = 5; const LG = F.log;
+  const lpages = Math.max(1, Math.ceil(LG.length / per)); ui.fcLogPage = Math.min(ui.fcLogPage || 0, lpages - 1);
+  const logRows = LG.slice(ui.fcLogPage * per, (ui.fcLogPage + 1) * per).map((x) => `<div style="display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;font-size:13px"><span class="num soft">${String(x.at).slice(5, 10)} ${hhmm(x.at)}</span><span class="nowrap">${esc(x.text)}</span></div>`).join('');
+  const right = `<aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">
+      <section class="pn card" style="min-height:0;overflow:hidden">
+        <span class="ti" style="font-size:16px">Servicios</span>
+        <div style="display:flex;flex-direction:column;gap:3px">${crew}</div>
+      </section>
+      <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Registro</span>${pager2('fclog', ui.fcLogPage, lpages)}</div>
+        ${LG.length ? `<div style="display:flex;flex-direction:column;gap:6px">${logRows}</div>` : '<span class="soft" style="font-size:14px">Saltos, tritio, servicios y movimientos de dinero del carrier.</span>'}
+        ${F.squadron ? `<span class="note" style="margin-top:auto">Carrier del escuadrón: en ${esc(F.squadron.system || '—')}.</span>` : ''}
+      </section>
+    </aside>`;
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:12px;min-height:0">
+    <main style="display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0">${head}
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">${jumpCard}${fuelCard}</div>
+      <div style="flex:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;min-height:0">${spaceCard}${finCard}</div>
+    </main>${right}</div>`;
+}
+
 /* ---------- Comercio: mercado de la estación, bodega, Powerplay, sesión y ruta de comercio ---------- */
 const PP_KIND = { reinforcement: ['Refuerzo', 'Sistema de tu potencia'], undermining: ['Socavar', 'Sistema de otra potencia'], acquisition: ['Adquisición', 'Sin potencia que lo controle'] };
 const TRADE_PAGE = 9;
@@ -3376,7 +3474,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : ui.section === 'exobiologia' ? screenExobiologia(s, v) : ui.section === 'comercio' ? screenComercio(s, v) : ui.section === 'srv' ? screenSrv(s, v) : ui.section === 'cmdr' ? screenCmdr(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : ui.section === 'exobiologia' ? screenExobiologia(s, v) : ui.section === 'comercio' ? screenComercio(s, v) : ui.section === 'srv' ? screenSrv(s, v) : ui.section === 'cmdr' ? screenCmdr(s, v) : ui.section === 'carrier' ? screenCarrier(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -3547,7 +3645,7 @@ document.addEventListener('pointerdown', (ev) => {
     if (d.nrclear) { window.edbubble.neutronClear(); ui.nr = null; return; }
   }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage', trade: 'trPage', trwhere: 'trWherePage', trroute: 'trRoutePage', trbuy: 'trBuyPage', ppmine: 'ppMinePage', cmdrfleet: 'cmdrFleetPage' }[minPgBtn.dataset.mpager];
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage', trade: 'trPage', trwhere: 'trWherePage', trroute: 'trRoutePage', trbuy: 'trBuyPage', ppmine: 'ppMinePage', cmdrfleet: 'cmdrFleetPage', fclog: 'fcLogPage' }[minPgBtn.dataset.mpager];
     if (!k && /^eq(core|hard|opt)$/.test(minPgBtn.dataset.mpager)) { const kk = minPgBtn.dataset.mpager.slice(2); ui.eqPages[kk] = Math.max(0, (ui.eqPages[kk] || 0) + Number(minPgBtn.dataset.d)); render(); return; } ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {

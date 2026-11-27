@@ -624,6 +624,12 @@ app.whenReady().then(() => {
   const NEUTRON_FILE = path.join(app.getPath('userData'), 'neutron.json');
   try { engine.learnBioValues(JSON.parse(fs.readFileSync(BIOVAL_FILE, 'utf8'))); } catch (e) { /* aún no hay */ }
   try { engine.setNeutronRoute(JSON.parse(fs.readFileSync(NEUTRON_FILE, 'utf8'))); } catch (e) { /* sin ruta */ }
+  // carrier y CMDR: lo último conocido (CarrierStats o la flota pueden ser de hace semanas); el historial lo pone al día
+  const CARRIER_FILE = path.join(app.getPath('userData'), 'carrier.json');
+  const CMDR_FILE = path.join(app.getPath('userData'), 'cmdr.json');
+  try { const c = JSON.parse(fs.readFileSync(CARRIER_FILE, 'utf8')); if (c && typeof c === 'object') engine.state.carrier = { ...engine.state.carrier, ...c, jump: null }; } catch (e) { /* aún no hay */ }
+  try { const c = JSON.parse(fs.readFileSync(CMDR_FILE, 'utf8')); if (c && typeof c === 'object') engine.state.cmdr.extra = { ...engine.state.cmdr.extra, ...c }; } catch (e) { /* aún no hay */ }
+  let carrierSaved = null; let cmdrSaved = null;
   let bioSaved = -1; let neutronSaved = JSON.stringify(engine.state.neutron || null);
   const SAMPLES_FILE = path.join(app.getPath('userData'), 'biosamples.json');
   let samplesRestored = false; let samplesSaved = null;
@@ -640,6 +646,10 @@ app.whenReady().then(() => {
     const X = snap.state.exploration;
     if (X.bioValuesChanged !== bioSaved) { bioSaved = X.bioValuesChanged; try { fs.writeFileSync(BIOVAL_FILE, JSON.stringify(X.bioValues)); } catch (e) { /* no se guarda */ } }
     learnCommodityNames(snap.state);
+    const cj = JSON.stringify(snap.state.carrier || null);
+    if (cj !== carrierSaved) { carrierSaved = cj; try { fs.writeFileSync(CARRIER_FILE, cj); } catch (e) { /* no se guarda */ } }
+    const mj = JSON.stringify(snap.state.cmdr.extra || null);
+    if (mj !== cmdrSaved) { cmdrSaved = mj; try { fs.writeFileSync(CMDR_FILE, mj); } catch (e) { /* no se guarda */ } }
     const nj = JSON.stringify(snap.state.neutron || null);
     if (nj !== neutronSaved) { neutronSaved = nj; try { if (snap.state.neutron) fs.writeFileSync(NEUTRON_FILE, nj); else fs.unlinkSync(NEUTRON_FILE); } catch (e) { /* no se guarda */ } }
   };
