@@ -26,14 +26,14 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 15 | Combate › Tu nave: el casco marcaba 100 % con la nave al 53 % | Adder (captura del juego) | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado (limitación del juego) |
 | 16 | Minería › Sitios de la flota: «Usar la conexión de Skull Mining (EDMC)» no encuentra la URL ni la clave | Adder (captura) | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado |
 | 17 | Órbita planetaria › Cuerpo: sin gravedad, temperatura ni radio | Specter A.G. (captura vía Adder) | 0.7.0-beta.3 | 0.7.0-beta.4 | Publicado |
-| 18 | Vuelo › Próximo salto y Navegación: el nombre del sistema de destino salía cortado («Pegasi Sector…») | Adder (captura) | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
-| 19 | Exobiología: predecía especies en un cuerpo cuyas señales (FSS o Spansh) no tienen ninguna biológica; nombres repetidos («Roseum Sinuous Tubers Roseum Sinuous Tubers») | Adder (en HIP 109677 A 2, comparando con SrvSurvey) | desarrollo | 0.7.0-beta.5 | Corregido |
-| 20 | Minería › Superficie: frente a un planeta con 9 zonas de minería no mostraba nada hasta aterrizar; Órbita › Zonas de minería salía «—» con el cuerpo escaneado | Adder (captura en Pegasi Sector IH-V c2-28 A 1) | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
-| 21 | Exobiología: en la Nomad la app no iba a Exobiología (se quedaba en A pie, sin minimapa) | Adder (captura en Pegasi Sector JN-S b4-7 C 5) | desarrollo | 0.7.0-beta.5 | Corregido |
-| 22 | Exobiología: la 3.ª muestra se contaba como la 2.ª y el análisis como otra muestra en el mismo sitio | Adder (prueba con la Nomad, Bacterium Tela) | desarrollo | 0.7.0-beta.5 | Corregido |
-| 23 | Colonización: la construcción seguía con su nombre antiguo («Watabe Depot») después de ponerle uno nuevo («Sisters' Pride») | Adder | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
-| 24 | Colonización › Comprar: con la Anaconda Mk II (y Clipper, Orca, Caspian Explorer) no filtraba por plataforma L | Revisión al añadir «Dónde comprar» en Comercio | 0.7.0-beta.1 | 0.7.0-beta.5 | Corregido |
-| 25 | Órbita planetaria y Exobiología: la página fallaba («Error al pintar») en un cuerpo cuya ficha de Spansh no traía anillos | Prueba de todas las secciones antes de la beta 5 | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
+| 18 | Vuelo › Próximo salto y Navegación: el nombre del sistema de destino salía cortado («Pegasi Sector…») | Adder (captura) | 0.7.0-beta.4 | 0.7.0-beta.5 | Publicado |
+| 19 | Exobiología: predecía especies en un cuerpo cuyas señales (FSS o Spansh) no tienen ninguna biológica; nombres repetidos («Roseum Sinuous Tubers Roseum Sinuous Tubers») | Adder (en HIP 109677 A 2, comparando con SrvSurvey) | desarrollo | 0.7.0-beta.5 | Publicado |
+| 20 | Minería › Superficie: frente a un planeta con 9 zonas de minería no mostraba nada hasta aterrizar; Órbita › Zonas de minería salía «—» con el cuerpo escaneado | Adder (captura en Pegasi Sector IH-V c2-28 A 1) | 0.7.0-beta.4 | 0.7.0-beta.5 | Publicado |
+| 21 | Exobiología: en la Nomad la app no iba a Exobiología (se quedaba en A pie, sin minimapa) | Adder (captura en Pegasi Sector JN-S b4-7 C 5) | desarrollo | 0.7.0-beta.5 | Publicado |
+| 22 | Exobiología: la 3.ª muestra se contaba como la 2.ª y el análisis como otra muestra en el mismo sitio | Adder (prueba con la Nomad, Bacterium Tela) | desarrollo | 0.7.0-beta.5 | Publicado |
+| 23 | Colonización: la construcción seguía con su nombre antiguo («Watabe Depot») después de ponerle uno nuevo («Sisters' Pride») | Adder | 0.7.0-beta.4 | 0.7.0-beta.5 | Publicado |
+| 24 | Colonización › Comprar: con la Anaconda Mk II (y Clipper, Orca, Caspian Explorer) no filtraba por plataforma L | Revisión al añadir «Dónde comprar» en Comercio | 0.7.0-beta.1 | 0.7.0-beta.5 | Publicado |
+| 25 | Órbita planetaria y Exobiología: la página fallaba («Error al pintar») en un cuerpo cuya ficha de Spansh no traía anillos | Prueba de todas las secciones antes de la beta 5 | 0.7.0-beta.4 | 0.7.0-beta.5 | Publicado |
 
 ## Detalle
 
