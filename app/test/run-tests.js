@@ -1031,11 +1031,11 @@ test('Carrier: estadísticas, salto programado, tritio y carrier de otro', () =>
 test('controles: la misma tecla en la nave y en la cámara libre no cuenta como repetida', () => {
   const a = require('../../core/actions');
   const k = (key) => ({ key, modifiers: [] });
-  const binds = { GalaxyMapOpen: k('Key_L'), FreeCamSpeedInc: k('Key_L'), CamZoomIn: k('Key_Insert'), CamZoomOut: k('Key_Delete'), UI_Up: k('Key_W'), UI_Right: k('Key_D'), UI_Select: k('Key_Space'), SystemMapOpen: k('Key_L') };
+  const binds = { GalaxyMapOpen: k('Key_L'), FreeCamSpeedInc: k('Key_L'), CamZoomIn: k('Key_Insert'), CamZoomOut: k('Key_Delete'), UI_Up: k('Key_W'), UI_Right: k('Key_D'), UI_Select: k('Key_L') };
   const c = a.checkControls({ binds, otherDevices: new Set() });
   const plot = c.groups.find((g) => g.name === 'Trazar ruta');
   assert.strictEqual(c.items.find((x) => x.action === 'FreeCamSpeedInc').status, 'ok');
-  assert.strictEqual(c.items.find((x) => x.action === 'GalaxyMapOpen').status, 'shared', 'con el mapa del sistema sí choca');
+  assert.strictEqual(c.items.find((x) => x.action === 'GalaxyMapOpen').status, 'shared', 'con otra tecla de la nave sí choca');
   assert.ok(plot.ready < plot.total);
 });
 
