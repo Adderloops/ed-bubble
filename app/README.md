@@ -260,6 +260,7 @@ No está firmado: la primera vez Windows SmartScreen avisa («Windows protegió 
 
 ## Pendiente
 
+- **Consejos al abrir (semana del 30-11-2026):** al arrancar la app, un consejo breve sobre una función poco conocida (por ejemplo, fijar una página con una pulsación larga de 2 s, la ayuda de los botones desactivados o los accesos directos de Utilidades). Uno distinto cada vez, con «Siguiente» y la opción de no mostrarlos más en Ajustes. Pedido por Adder el 27-11-2026.
 - **Alertas personalizables (semana del 30-11-2026):** en Ajustes, elegir el color de cada alerta de la cabecera (hoy unas salen en rojo y otras en amarillo, fijo) y marcar las más importantes para que parpadeen (animación tipo «tilting») y llamen más la atención. Pedido por Adder el 27-11-2026.
 
 - `core/data/materials.json`: falta el símbolo del diario de 9 materiales thargoides recientes (marcados «verificar»); en las recetas salen ya en español, buscados por su nombre en inglés.
