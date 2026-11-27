@@ -260,6 +260,8 @@ No está firmado: la primera vez Windows SmartScreen avisa («Windows protegió 
 
 ## Pendiente
 
+- **Alertas personalizables (semana del 30-11-2026):** en Ajustes, elegir el color de cada alerta de la cabecera (hoy unas salen en rojo y otras en amarillo, fijo) y marcar las más importantes para que parpadeen (animación tipo «tilting») y llamen más la atención. Pedido por Adder el 27-11-2026.
+
 - `core/data/materials.json`: falta el símbolo del diario de 9 materiales thargoides recientes (marcados «verificar»); en las recetas salen ya en español, buscados por su nombre en inglés.
 
 - Masa, energía y demás datos de los módulos Mk II recientes (cabinas de pasajeros MkII, Mk II Vessel Hangar, Large Planetary Vehicle Hangar y su Mk II, Mk II Cargo Rack 6D): Inara solo da el precio. Fuentes posibles: la pantalla de Equipamiento del juego o EDSY. Añadirlos a `core/data/shipdata.json`.
