@@ -251,7 +251,7 @@ function routeCard(r, perPage) {
 }
 
 /* ---------- revisión de controles (Puente de mando) ---------- */
-const CTL_PAGE = 3;
+const CTL_PAGE = 2;
 const CTL_ORDER = { unbound: 0, hotas: 1, unsupported: 2, shared: 3, ok: 4 };
 const CTL_STATUS = {
   unbound: ['Sin asignar', 'red'],
@@ -269,8 +269,8 @@ function controlsPanel() {
   const k = c.check;
   const groups = k.groups.map((g) => {
     const full = g.ready === g.total;
-    return `<div class="in" style="padding:8px 12px;display:flex;justify-content:space-between;align-items:center">
-      <span class="va nowrap" style="font-size:15px">${esc(g.name)}${g.soon ? ' <span class="eb dim" style="font-size:10px">entrega 3</span>' : ''}</span>
+    return `<div class="in" style="padding:6px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px">
+      <span class="va nowrap" style="font-size:14px">${esc(g.name)}${g.soon ? ' <span class="eb dim" style="font-size:10px">entrega 3</span>' : ''}</span>
       <span class="num ${full ? 'cyan' : 'yellow'}" style="font-size:16px">${full ? '✓ ' : ''}${g.ready} / ${g.total}</span></div>`;
   }).join('');
   let body;
@@ -292,7 +292,7 @@ function controlsPanel() {
   }
   return `<section class="pn card" style="flex:1;min-height:0;overflow:hidden">
     ${head(`<span style="display:flex;align-items:center;gap:10px"><span class="eb dim">Preset ${esc(c.preset)}</span><button type="button" class="tab small" data-goto="controles">Guía</button></span>`)}
-    <div style="display:flex;flex-direction:column;gap:6px">${groups}</div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">${groups}</div>
     ${body}
     <span class="note nowrap" style="margin-top:auto">Corrígelas en Opciones › Controles; se releen solas.</span>
   </section>`;
