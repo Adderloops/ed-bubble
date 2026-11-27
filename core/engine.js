@@ -164,6 +164,33 @@ class Engine extends EventEmitter {
   setNeutronRoute(r) { this.state.neutron = r || null; this.changed(); }
 
   /** Cuerpos del sistema según Spansh (volcado), para Exploración. bodies null: Spansh no lo tiene. */
+  /**
+   * Carrier: si no hay datos de gestión (CarrierStats) en el historial reciente, busca el último en
+   * diarios más antiguos, del más nuevo al más viejo, y para en cuanto lo encuentra.
+   */
+  findOldCarrierStats() {
+    const C = this.state.carrier;
+    if (C && C.own && C.own.at) return false;
+    let files = [];
+    try { files = fs.readdirSync(this.folder).filter((f) => /^Journal\..*\.log$/.test(f)).sort().reverse(); } catch (e) { return false; }
+    const want = C && C.own && C.own.id;
+    for (const f of files) {
+      let txt;
+      try { txt = fs.readFileSync(path.join(this.folder, f), 'utf8'); } catch (e) { continue; }
+      if (!txt.includes('"CarrierStats"')) continue;
+      const lines = txt.split('\n').filter((l) => l.includes('"event":"CarrierStats"')).reverse();
+      for (const l of lines) {
+        let e; try { e = JSON.parse(l); } catch (err) { continue; }
+        if (/squadron/i.test(String(e.CarrierType || ''))) continue;
+        if (want && e.CarrierID !== want) continue;
+        require('./carrier').apply(this.state, e);
+        this.changed();
+        return true;
+      }
+    }
+    return false;
+  }
+
   setSpanshSystem(address, bodies, error) { this.state.exploration.spansh = { address, bodies: bodies || null, error: error || null, at: Date.now() }; this.changed(); }
 
   /** Especies posibles de cada cuerpo con señales biológicas del sistema actual: { bodyId: [{ genus, species }] }. */

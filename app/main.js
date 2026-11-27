@@ -606,6 +606,8 @@ app.whenReady().then(() => {
     for (const i of (st.cargo && st.cargo.inventory) || []) add(i.key, i.name);
     if (changed) { try { fs.writeFileSync(CNAMES_FILE, JSON.stringify(commNames)); } catch (e) { /* no se guarda */ } }
   };
+  // Carrier: si el historial reciente no trae su gestión (CarrierStats), buscarla en diarios más antiguos
+  setTimeout(() => { try { if (engine.findOldCarrierStats()) logLine('[carrier] datos de gestión recuperados de un diario antiguo'); } catch (e) { logLine(`[carrier] ${e.message}`); } }, 6000);
   // y de los diarios (compras, ventas, bodega, recogidas): una sola pasada al arrancar, en segundo plano
   setTimeout(() => {
     try {

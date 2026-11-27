@@ -1055,6 +1055,21 @@ test('#27: al despegar de una estación orbital junto a un planeta no salta a Ó
   assert.strictEqual(d.flightMode(s).section, 'orbita', 'con ApproachBody sí');
 });
 
+test('#28: Carrier recupera la gestión (CarrierStats) de un diario antiguo', () => {
+  const fs = require('fs'); const os = require('os'); const path = require('path');
+  const { Engine } = require('../../core/engine');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'edb-fc-'));
+  fs.writeFileSync(path.join(dir, 'Journal.2026-01-01T000000.01.log'), JSON.stringify({ timestamp: '2026-01-01T00:00:00Z', event: 'CarrierStats', CarrierID: 7, Callsign: 'AAA-111', Name: 'VIEJO', FuelLevel: 100 }) + '\n' + JSON.stringify({ timestamp: '2026-01-01T01:00:00Z', event: 'CarrierStats', CarrierID: 7, Callsign: 'AAA-111', Name: 'NUEVO', FuelLevel: 200 }) + '\n');
+  fs.writeFileSync(path.join(dir, 'Journal.2026-11-27T000000.01.log'), JSON.stringify({ timestamp: '2026-11-27T00:00:00Z', event: 'CarrierLocation', CarrierType: 'FleetCarrier', CarrierID: 7, StarSystem: 'A', SystemAddress: 1, BodyID: 1 }) + '\n');
+  const e = new Engine({ folder: dir });
+  require('../../core/carrier').apply(e.state, { timestamp: '2026-11-27T00:00:00Z', event: 'CarrierLocation', CarrierType: 'FleetCarrier', CarrierID: 7, StarSystem: 'A', SystemAddress: 1, BodyID: 1 });
+  assert.strictEqual(e.findOldCarrierStats(), true);
+  assert.strictEqual(e.state.carrier.own.name, 'NUEVO', 'el más reciente de ese diario');
+  assert.strictEqual(e.state.carrier.own.fuel, 200);
+  assert.strictEqual(e.findOldCarrierStats(), false, 'ya tiene datos: no vuelve a buscar');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {
   const m = require('../../core/model');
   const s = m.createState();

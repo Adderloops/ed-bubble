@@ -36,6 +36,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 25 | Órbita planetaria y Exobiología: la página fallaba («Error al pintar») en un cuerpo cuya ficha de Spansh no traía anillos | Prueba de todas las secciones antes de la beta 5 | 0.7.0-beta.4 | 0.7.0-beta.5 | Publicado |
 | 26 | «Trazar ruta» desactivado en todas las páginas: la tecla del mapa galáctico se daba por repetida porque la misma tecla sirve en la cámara libre | Adder (Colonización › Comprar) | 0.7.0-beta.5 | 0.7.0-beta.6 | Corregido |
 | 27 | Salto automático: a veces cambia a Órbita planetaria sin estar en órbita (al despegar de una estación orbital junto a un planeta) | Adder | 0.7.0-beta.5 | 0.7.0-beta.6 | Corregido |
+| 28 | Carrier: sin tritio, espacio, finanzas ni servicios si la última vez que abriste la gestión del carrier fue hace más de 25 diarios | Adder | 0.7.0-beta.5 | 0.7.0-beta.6 | Corregido |
 
 ## Detalle
 
@@ -171,6 +172,13 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 - **Encontrado en:** 0.7.0-beta.1 · **Corregido en:** 0.7.0-beta.5
 - **Qué pasaba:** la lista de naves grandes de Colonización › Comprar no tenía la Anaconda Mk II, la Imperial Clipper, la Orca ni la Caspian Explorer, así que con ellas el filtro «Plataforma L» salía apagado y podía mostrar estaciones donde no cabes.
 - **Arreglo:** la lista incluye todas las naves de clase 3 de los datos de naves.
+
+### 28 · Carrier sin datos de gestión
+
+- **Encontrado:** Adder (27-11-2026): la página Carrier solo mostraba dónde está el carrier.
+- **Encontrado en:** 0.7.0-beta.5 · **Corregido en:** 0.7.0-beta.6
+- **Qué pasaba:** el tritio, el espacio, las finanzas y los servicios salen de `CarrierStats`, que el juego solo escribe al abrir la gestión del carrier. La última vez de Adder fue el 08-11-2026, fuera de los 25 diarios que la app repasa al arrancar.
+- **Arreglo:** si no hay datos de gestión, la app busca el último `CarrierStats` de tu carrier en diarios más antiguos (del más nuevo al más viejo, y para al encontrarlo) y lo guarda en `carrier.json`. La página dice de qué fecha son.
 
 ### 27 · Salto automático a Órbita sin estar en órbita
 
