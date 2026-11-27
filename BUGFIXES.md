@@ -33,6 +33,7 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 | 22 | Exobiología: la 3.ª muestra se contaba como la 2.ª y el análisis como otra muestra en el mismo sitio | Adder (prueba con la Nomad, Bacterium Tela) | desarrollo | 0.7.0-beta.5 | Corregido |
 | 23 | Colonización: la construcción seguía con su nombre antiguo («Watabe Depot») después de ponerle uno nuevo («Sisters' Pride») | Adder | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
 | 24 | Colonización › Comprar: con la Anaconda Mk II (y Clipper, Orca, Caspian Explorer) no filtraba por plataforma L | Revisión al añadir «Dónde comprar» en Comercio | 0.7.0-beta.1 | 0.7.0-beta.5 | Corregido |
+| 25 | Órbita planetaria y Exobiología: la página fallaba («Error al pintar») en un cuerpo cuya ficha de Spansh no traía anillos | Prueba de todas las secciones antes de la beta 5 | 0.7.0-beta.4 | 0.7.0-beta.5 | Corregido |
 
 ## Detalle
 
@@ -168,6 +169,13 @@ Estados: **Abierto** (anotado, sin corregir) · **Corregido** (hecho en el repo,
 - **Encontrado en:** 0.7.0-beta.1 · **Corregido en:** 0.7.0-beta.5
 - **Qué pasaba:** la lista de naves grandes de Colonización › Comprar no tenía la Anaconda Mk II, la Imperial Clipper, la Orca ni la Caspian Explorer, así que con ellas el filtro «Plataforma L» salía apagado y podía mostrar estaciones donde no cabes.
 - **Arreglo:** la lista incluye todas las naves de clase 3 de los datos de naves.
+
+### 25 · Órbita y Exobiología sin anillos de Spansh
+
+- **Encontrado:** prueba de todas las secciones con diarios de prueba (27-11-2026), en Pegasi Sector JN-S b4-7 C 5 yendo en SRV.
+- **Encontrado en:** 0.7.0-beta.4 · **Corregido en:** 0.7.0-beta.5
+- **Qué pasaba:** si la ficha del cuerpo que llega de Spansh no tenía la lista de anillos, la tarjeta del cuerpo daba un error y la página no se pintaba.
+- **Arreglo:** sin anillos en la ficha, la tarjeta sigue sin ellos.
 
 ## Revisión: el juego en otros idiomas (24-11-2026)
 

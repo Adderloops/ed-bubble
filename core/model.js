@@ -72,7 +72,17 @@ function createState() {
 
 /* ---------- utilidades ---------- */
 
-const loc = (e, key) => e[`${key}_Localised`] || e[key] || null;
+// sin texto localizado, el valor interno del juego («$government_Criminal;») se deja legible («Criminal»)
+const tidyRaw = (x) => {
+  if (typeof x !== 'string' || !/^\$.*;$/.test(x)) return x;
+  let t = x.slice(1, -1);
+  const known = t.replace(/^(SYSTEM_SECURITY|GAlAXY_MAP_INFO_state|government|economy|Faction_State|SAA_SignalType)_/i, '');
+  t = known !== t ? known : t.replace(/^[A-Za-z]+_(?=[A-Za-z])/, '');
+  return t.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+};
+const loc = (e, key) => e[`${key}_Localised`] || tidyRaw(e[key]) || null;
+const DENIED = { NoSpace: 'no hay plataforma libre', TooLarge: 'tu nave es demasiado grande', Hostile: 'la estación te es hostil', Offences: 'tienes delitos pendientes aquí', Distance: 'estás demasiado lejos', ActiveFighter: 'tienes un caza fuera', NoReason: 'sin motivo', RestrictedAccess: 'acceso restringido', JumpImminent: 'el carrier va a saltar', DockOffline: 'atraque fuera de servicio' };
+const deniedText = (r) => DENIED[r] || (r ? String(r).replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase() : '');
 
 function pushLog(state, e, title, detail, level) {
   state.log.unshift({ at: e.timestamp || null, event: e.event, title, detail: detail || '', level: level || 'info' });
@@ -331,7 +341,7 @@ const HANDLERS = {
     state.docking = { active: true, pad: e.LandingPad ?? null, station: e.StationName || null, stationType: e.StationType || null, at: e.timestamp || null };
     pushLog(state, e, 'Atraque concedido', `${e.StationName} · plataforma ${e.LandingPad}`);
   },
-  DockingDenied(state, e) { clearDocking(state); pushLog(state, e, 'Atraque denegado', `${e.StationName} · ${e.Reason || ''}`, 'warn'); },
+  DockingDenied(state, e) { clearDocking(state); pushLog(state, e, 'Atraque denegado', `${e.StationName} · ${deniedText(e.Reason)}`, 'warn'); },
   DockingCancelled(state, e) { clearDocking(state); pushLog(state, e, 'Atraque cancelado', e.StationName); },
   DockingTimeout(state, e) { clearDocking(state); pushLog(state, e, 'Atraque caducado', e.StationName, 'warn'); },
   Docked(state, e) {

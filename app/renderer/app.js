@@ -1174,10 +1174,10 @@ function orbitBody(s) {
   };
   const signals = jb.signals || (sp && sp.signals) || [];
   // anillos: puntos calientes del Journal (DSS) o de Spansh
-  const ringNames = jb.rings && jb.rings.length ? jb.rings : sp ? sp.rings.map((r) => r.name) : [];
+  const ringNames = jb.rings && jb.rings.length ? jb.rings : sp && sp.rings ? sp.rings.map((r) => r.name) : [];
   const rings = ringNames.map((rn) => {
     const jr = s.bodies && s.bodies[rn];
-    const spr = sp && sp.rings.find((r) => r.name === rn);
+    const spr = sp && sp.rings && sp.rings.find((r) => r.name === rn);
     const hot = jr && jr.signals && jr.signals.length ? jr.signals : spr ? spr.signals : [];
     return { name: rn, short: rn.startsWith(name) ? rn.slice(name.length).trim() : rn, type: spr && spr.type, hotspots: hot };
   });
