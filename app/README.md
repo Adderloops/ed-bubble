@@ -258,6 +258,8 @@ No está firmado: la primera vez Windows SmartScreen avisa («Windows protegió 
 
 ## Pendiente
 
+- **Powerplay, imágenes de las potencias:** Adder ha dejado en `D:\Proyectos ELITE\ED BUBBLE\Icons` los 12 emblemas de las potencias (`d75ee3….avif`, en dos filas de seis) y un cartel con 10 retratos de líderes (`ED-Powerplay-puissances.jpg`; faltan dos de las 12 potencias actuales). Idea: mostrar el emblema (y el retrato) de tu potencia en Powerplay y en la cabecera, y quizá los de las potencias de cada sistema. Antes, confirmar con Adder qué emblema y qué retrato es de cada potencia. Son imágenes de Frontier, como los retratos de los ingenieros.
+
 - `core/data/materials.json`: falta el símbolo del diario de 9 materiales thargoides recientes (marcados «verificar»); en las recetas salen ya en español, buscados por su nombre en inglés.
 
 - Masa, energía y demás datos de los módulos Mk II recientes (cabinas de pasajeros MkII, Mk II Vessel Hangar, Large Planetary Vehicle Hangar y su Mk II, Mk II Cargo Rack 6D): Inara solo da el precio. Fuentes posibles: la pantalla de Equipamiento del juego o EDSY. Añadirlos a `core/data/shipdata.json`.
