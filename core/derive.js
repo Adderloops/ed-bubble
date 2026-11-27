@@ -268,6 +268,24 @@ function powerplayView(state, now = Date.now()) {
   return { pilot, tracked: system ? tracked : (acquisition ? acquisition.name : tracked), system, acquisition, cycle, cut, nextCut: cut + 7 * 86400000, canTrackHere, here, pinned: !!pp.tracked };
 }
 
+/** SRV: vehículo, dónde está la nave aparcada y materiales en bruto. */
+const SRV_KIND = { mev_rhino: ['rhino', 'Rhino'], lander01: ['nomad', 'Nomad'], testbuggy: ['scarab', 'Scarab'], combat_multicrew_srv_01: ['scorpion', 'Scorpion'] };
+function srvView(state) {
+  const geo = require('./geo');
+  const t = state.srv && state.srv.type ? String(state.srv.type).toLowerCase() : null;
+  const k = t ? SRV_KIND[t] || ['srv', clean(state.srv.name) || 'SRV'] : null;
+  const S = state.status || {};
+  const sh = state.shipSurface;
+  const shipNav = sh && S.latitude != null ? geo.surfaceNav(S, { lat: sh.lat, lon: sh.lon, body: sh.body }) : null;
+  const M = require('./data/materials.json').materials;
+  const have = state.materials || {};
+  const raw = Object.entries(M).filter(([, m]) => m.type === 'Raw').map(([key, m]) => ({ key, name: m.es || m.en, cat: Number(String(m.category).replace(/\D/g, '')) || 0, grade: m.grade, max: m.max, count: state.materials ? have[key] || 0 : null, got: (state.srv && state.srv.collected && state.srv.collected[key]) || 0 }))
+    .sort((a, b) => a.cat - b.cat || a.grade - b.grade);
+  const collected = Object.entries((state.srv && state.srv.collected) || {}).map(([key, n]) => ({ key, name: (M[key] && (M[key].es || M[key].en)) || key, n })).sort((a, b) => b.n - a.n);
+  return { deployed: !!t, type: t, kind: k ? k[0] : null, name: k ? k[1] : null, launchedAt: state.srv && state.srv.launchedAt, ship: sh ? { ...sh } : null, shipNav, raw, collected };
+}
+const clean = (x) => (x ? String(x).replace(/^SRV\s+/i, '') : x);
+
 function view(state) {
   const { padInfo } = require('./pads');
   const dockPad = state.docking && state.docking.active ? padInfo(state.docking.stationType, state.docking.pad) : null;
@@ -319,6 +337,7 @@ function view(state) {
     col: colonisationView(state),
     station: stationView(state),
     powerplay: powerplayView(state),
+    srv: srvView(state),
     fuelPlan: require('./fuel').fuelPlan(state),
     surfaceNav: require('./geo').surfaceNav(state.status, state.surfaceTarget),
   };

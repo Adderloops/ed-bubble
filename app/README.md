@@ -82,6 +82,16 @@ Sección del grupo Viaje (Odyssey):
 
 Al acercarte a un planeta, la tarjeta Exobiología predice qué especies puede haber (`core/biopredict.js`), con las reglas de SrvSurvey (`core/data/bio-criteria`). Usa los datos del cuerpo de tu diario (escaneo FSS o sondas) y, si no lo has escaneado, los del volcado de Spansh del sistema (`/api/dump`), la estrella que más lo ilumina, la región de la galaxia, la distancia a la nebulosa más cercana y si estás en una burbuja guardiana. Si ya se conocen los géneros (tu DSS o los que otros subieron a Spansh), solo predice especies de esos géneros, y debajo de cada género sin muestras pone la especie posible. «Posible ?» (ámbar) indica que faltó algún dato del cuerpo para comprobar todas las reglas. Comprobado con 63 cuerpos con vida de los diarios de Adder: acierta el 95 % de los géneros que hay de verdad. Si Spansh no tenía la ficha del cuerpo, la gravedad, la temperatura y el radio salen también del volcado.
 
+## SRV
+
+Grupo Nave. La app salta aquí al desplegar un SRV que no es el Rhino (Minería) ni la Nomad o un SRV sobre un cuerpo con señales biológicas (Exobiología); se puede desactivar en Ajustes.
+
+- **Vehículo:** tipo (Scarab, Scorpion, Nomad, Rhino; de `LaunchSRV` / `LaunchVessel`), cuerpo, coordenadas y gravedad, y los interruptores de Status.json (freno de mano, asistencia, torreta, faros, largas, visión nocturna, análisis, recolector). Con el Rhino o la Nomad, botón a Minería o Exobiología.
+- **Tu nave:** dónde está aparcada (`Touchdown` con coordenadas; si la despides desde el SRV, `Liftoff` con `PlayerControlled: false`, queda «en órbita» hasta que vuelve a aterrizar) y la distancia.
+- **Brújula:** a la nave o al destino fijado, con la misma brújula de Órbita y A pie.
+- **Materiales en bruto:** los 28 elementos por categoría y grado, con lo que llevas y el máximo, y lo recogido en esta salida (`MaterialCollected` mientras vas en el SRV).
+- **Controles:** freno de mano, asistencia a la conducción, torreta, faros, visión nocturna, recolector, modo análisis, llamar o despedir la nave, fijar objetivo, mapas y expulsar carga (con confirmación). Usan las teclas del SRV de tu preset; en Controles hay un grupo «SRV» para revisarlas.
+
 ## Comercio
 
 Grupo Actividades. La app salta aquí al abrir el mercado de mercancías en una estación (se queda hasta que despegas; se puede desactivar en Ajustes).

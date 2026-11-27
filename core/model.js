@@ -56,7 +56,8 @@ function createState() {
     mining: { since: null, lastAt: null, refined: {}, prospects: [], drones: { prospector: 0, collection: 0 }, cracked: 0, motherlodes: 0 },
     // a pie (Odyssey): equipo actual, equipos y trajes/armas vistos, taquilla y mochila
     onfoot: { loadout: null, loadouts: {}, suits: {}, weapons: {}, locker: null, backpack: null },
-    srv: { type: null }, // SRV desplegado (LaunchSRV): 'mev_rhino' es el Rhino de minería
+    srv: { type: null, name: null, launchedAt: null, collected: {} }, // SRV desplegado (LaunchSRV): 'mev_rhino' es el Rhino de minería; collected: materiales recogidos en esta salida
+    shipSurface: null, // dónde está la nave aparcada en la superficie: { body, lat, lon, present } (present false = despedida, en órbita)
     marketOpenedAt: null, marketOpenedStation: null, dockedAt: null,
     tradeRoute: null, // ruta de comercio de Spansh: { at, params, hops: [...] }
     neutron: null, // ruta de neutrones de Spansh: { from, to, range, at, jumps: [{ system, jumps, neutron, left }] }
@@ -272,7 +273,7 @@ const HANDLERS = {
       state._pendingStarClass = e.StarClass;
     }
   },
-  SupercruiseEntry(state, e) { state.location.body = null; pushLog(state, e, 'Supercrucero', 'Entrada'); },
+  SupercruiseEntry(state, e) { state.location.body = null; state.shipSurface = null; pushLog(state, e, 'Supercrucero', 'Entrada'); },
   SupercruiseExit(state, e) {
     if (e.Body) { state.location.body = e.Body; state.location.bodyType = e.BodyType || null; }
     if (e.BodyType === 'Planet') setApproachFrom(state, e);
@@ -357,7 +358,10 @@ const HANDLERS = {
     for (const c of ['Raw', 'Manufactured', 'Encoded']) for (const x of e[c] || []) m[String(x.Name).toLowerCase()] = x.Count || 0;
     state.materials = m;
   },
-  MaterialCollected(state, e) { addMat(state, e.Name, e.Count); },
+  MaterialCollected(state, e) {
+    addMat(state, e.Name, e.Count);
+    if (state.srv && state.srv.type && e.Name) { const k = String(e.Name).toLowerCase(); state.srv.collected[k] = (state.srv.collected[k] || 0) + (Number(e.Count) || 0); }
+  },
   MaterialDiscarded(state, e) { addMat(state, e.Name, -(e.Count || 0)); },
   MaterialTrade(state, e) { if (e.Paid) addMat(state, e.Paid.Material, -(e.Paid.Quantity || 0)); if (e.Received) addMat(state, e.Received.Material, e.Received.Quantity); },
   Synthesis(state, e) { for (const x of e.Materials || []) addMat(state, x.Name, -(x.Count || 0)); },
@@ -375,8 +379,15 @@ const HANDLERS = {
     state.location.docked = false; state.location.station = null; state.location.stationType = null;
     pushLog(state, e, 'Despegue', e.StationName);
   },
-  Touchdown(state, e) { setApproachFrom(state, e); state.location.landed = true; pushLog(state, e, 'Aterrizaje', e.Body || ''); },
-  Liftoff(state, e) { setApproachFrom(state, e); state.location.landed = false; pushLog(state, e, 'Despegue', e.Body || ''); },
+  Touchdown(state, e) {
+    setApproachFrom(state, e); state.location.landed = true; pushLog(state, e, e.PlayerControlled === false ? 'La nave ha aterrizado' : 'Aterrizaje', e.Body || '');
+    if (e.Latitude != null && e.Longitude != null) state.shipSurface = { body: e.Body || null, lat: e.Latitude, lon: e.Longitude, present: true };
+  },
+  Liftoff(state, e) {
+    setApproachFrom(state, e); state.location.landed = false; pushLog(state, e, e.PlayerControlled === false ? 'Nave despedida' : 'Despegue', e.Body || '');
+    // despedida desde el SRV: se queda en órbita y vuelve al llamarla; si despegas tú, ya no está aparcada
+    if (e.PlayerControlled === false) { if (state.shipSurface) state.shipSurface.present = false; } else state.shipSurface = null;
+  },
   FuelScoop(state, e) { pushLog(state, e, 'Recogida de combustible', `${fmtNum(e.Scooped, 1)} t`); },
   RefuelAll(state, e) { pushLog(state, e, 'Repostaje', `${fmtNum(e.Amount, 1)} t`); },
   Interdicted(state, e) { pushLog(state, e, 'Interdicción', e.Submitted ? 'Sometido' : (e.Interdictor || ''), 'warn'); },
@@ -463,13 +474,22 @@ const HANDLERS = {
   Backpack(state, e) { if (Array.isArray(e.Items)) state.onfoot.backpack = lockerFrom(e); },
   // abrir el mercado de mercancías (para el salto automático a Comercio)
   Market(state, e) { state.marketOpenedAt = e.timestamp || null; state.marketOpenedStation = e.StationName || null; },
-  LaunchSRV(state, e) { state.srv.type = e.SRVType || null; },
-  DockSRV(state, e) { state.srv.type = null; },
-  SRVDestroyed(state, e) { state.srv.type = null; },
+  LaunchSRV(state, e) {
+    if (e.PlayerControlled === false) return;
+    state.srv = { type: e.SRVType || null, name: e.SRVType_Localised || null, launchedAt: e.timestamp || null, collected: {} };
+    const S = state.status;
+    if (!state.shipSurface && S && S.latitude != null) state.shipSurface = { body: S.bodyName || state.location.body || null, lat: S.latitude, lon: S.longitude, present: true };
+  },
+  DockSRV(state, e) { state.srv = { type: null, name: null, launchedAt: null, collected: {} }; },
+  SRVDestroyed(state, e) { state.srv = { type: null, name: null, launchedAt: null, collected: {} }; },
   // vehículos nuevos (p. ej. la Nomad, «lander01»): LaunchVessel / DockVessel / VesselDestroyed
-  LaunchVessel(state, e) { state.srv.type = e.VesselType || null; state.srv.name = e.VesselType_Localised || null; },
-  DockVessel(state, e) { state.srv.type = null; state.srv.name = null; },
-  VesselDestroyed(state, e) { state.srv.type = null; state.srv.name = null; },
+  LaunchVessel(state, e) {
+    state.srv = { type: e.VesselType || null, name: e.VesselType_Localised || null, launchedAt: e.timestamp || null, collected: {} };
+    const S = state.status;
+    if (!state.shipSurface && S && S.latitude != null) state.shipSurface = { body: S.bodyName || state.location.body || null, lat: S.latitude, lon: S.longitude, present: true };
+  },
+  DockVessel(state, e) { state.srv = { type: null, name: null, launchedAt: null, collected: {} }; },
+  VesselDestroyed(state, e) { state.srv = { type: null, name: null, launchedAt: null, collected: {} }; },
   ColonisationConstructionDepot(state, e) {
     const id = String(e.MarketID);
     const prev = state.colonisation.depots[id] || {};

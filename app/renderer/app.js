@@ -4,7 +4,7 @@
 
 const SECTIONS = [
   { id: 'puente', label: 'Puente de mando', home: true, built: true },
-  { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate', built: true }, { id: 'equipo', label: 'Equipo', built: true }, { id: 'srv', label: 'SRV' },
+  { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate', built: true }, { id: 'equipo', label: 'Equipo', built: true }, { id: 'srv', label: 'SRV', built: true },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración', built: true }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie', built: true },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio', built: true }, { id: 'mineria', label: 'Minería', built: true }, { id: 'exobiologia', label: 'Exobiología', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
   { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
@@ -53,7 +53,7 @@ function setPref(key, value) {
 }
 /** ¿Se salta solo a la sección de esta situación? */
 function jumpAllowed(key) {
-  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : key === 'rhino' || key === 'mining' ? 'mineria' : key === 'combat' ? 'combate' : key === 'explore' ? 'exploracion' : key === 'exobio' || key === 'exobio-srv' ? 'exobiologia' : key === 'docked-market' ? 'comercio' : 'vuelo';
+  const g = key === 'approach' ? 'approach' : key === 'docked' ? 'docked' : key === 'docked-depot' ? 'depot' : key === 'orbit' || key === 'landed' ? 'orbita' : key === 'rhino' || key === 'mining' ? 'mineria' : key === 'combat' ? 'combate' : key === 'explore' ? 'exploracion' : key === 'exobio' || key === 'exobio-srv' ? 'exobiologia' : key === 'docked-market' ? 'comercio' : key === 'srv' ? 'srv' : 'vuelo';
   return ui.prefs.jump[g] !== false;
 }
 /** Abre una sección (y la recuerda para la próxima vez). */
@@ -1854,6 +1854,89 @@ function cbAct(id, label, extra = '') {
   return `<button type="button" class="act${a.cls || ''} ${extra}" data-act="${id}" ${a.dis} title="${esc(a.title)}">${label}${a.key ? `<span class="k">${esc(a.key)}</span>` : ''}</button>`;
 }
 const FIGHTER = [['f_focus', 'Atacar mi objetivo'], ['f_attack', 'Atacar a discreción'], ['f_defend', 'Defenderme'], ['f_hold', 'Alto el fuego'], ['f_pos', 'Mantener posición'], ['f_follow', 'Seguirme'], ['f_dock', 'Volver a la nave'], ['f_orders', 'Abrir órdenes']];
+/* ---------- SRV: vehículo, volver a la nave, materiales en bruto y controles ---------- */
+const SRV_TOGGLES = [['Freno de mano', 'isSRVHandbrake', 'srv_brake'], ['Asist. conducción', 'isSRVDriveAssist', 'srv_assist'], ['Torreta', 'isSRVUsingTurretView', 'srv_turret'], ['Faros', 'areLightsOn', 'srv_lights'], ['Visión noct.', 'isNightVision', 'nightvision'], ['Recolector', 'isCargoScoopDeployed', 'srv_scoop'], ['Modo análisis', 'isHUDInAnalysisMode', 'srv_analysis']];
+const SRV_ACTIONS = [['Llamar / despedir nave', 'srv_ship'], ['Fijar objetivo', 'srv_target'], ['Mapa del sistema', 'srv_sysmap'], ['Mapa galáctico', 'srv_galmap'], ['Expulsar carga', 'srv_eject']];
+function screenSrv(s, v) {
+  const V = v.srv; const st = s.status; const fl = st.flags || {};
+  const inSrv = !!fl.isInSRV || V.deployed;
+  const chip = (on, t, warn) => `<span class="chip ${on ? (warn ? 'warnon' : 'on') : ''}"><span class="dot ${on ? (warn ? 'warn' : 'on') : ''}"></span>${t}</span>`;
+  const chips = [chip(fl.isSRVHandbrake, 'Freno de mano'), chip(fl.isSRVDriveAssist, 'Asistencia'), chip(fl.isSRVUsingTurretView, 'Torreta'), chip(fl.isSRVTurretRetracted, 'Torreta recogida'), chip(fl.areLightsOn, 'Faros'), chip(fl.isSRVHighBeam, 'Largas'), chip(fl.isNightVision, 'Visión nocturna'), chip(fl.isHUDInAnalysisMode, 'Análisis'), chip(fl.isCargoScoopDeployed, 'Recolector')].join('');
+  const sh = V.ship;
+  const shipLine = !sh ? 'Sin datos de dónde está tu nave (aparece al aterrizar).' : sh.present ? `Aparcada en ${esc(clean(sh.body) || 'la superficie')}` : 'Despedida: está en órbita hasta que la llames';
+  const since = V.launchedAt ? ` · fuera desde las ${hhmm(V.launchedAt)}` : '';
+  const head = `<section class="pn card" style="border-left:3px solid ${inSrv ? 'var(--cyan)' : 'var(--line2)'}">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:end">
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+          <span class="eb">Vehículo de superficie${since}</span>
+          <span class="ti nowrap" style="font-size:34px">${inSrv ? esc(V.name || 'SRV') : 'Sin SRV desplegado'}</span>
+          <span class="soft nowrap" style="font-size:15px">${st.bodyName ? `${esc(clean(st.bodyName))}${st.latitude != null ? ` · ${nf(st.latitude, 4)}, ${nf(st.longitude, 4)}` : ''} · gravedad ${fmtGravity(s)}` : 'Baja a la superficie y despliega un SRV desde el panel derecho de la nave.'}</span>
+        </div>
+        <div class="in" style="display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-left:3px solid ${sh && sh.present ? 'var(--cyan)' : 'var(--amber)'}">
+          <span class="eb">Tu nave</span>
+          <span class="va" style="font-size:17px">${shipLine}</span>
+          ${V.shipNav && V.shipNav.sameBody && sh && sh.present ? `<span class="num cyan" style="font-size:20px">${fmtDist(V.shipNav.distance)} · rumbo ${nf(V.shipNav.bearing, 0)}°</span>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${chips}</div>
+      ${V.kind === 'rhino' ? '<span style="display:flex;gap:10px;align-items:center"><span class="soft" style="font-size:14px">Con el Rhino se mina en la superficie: las zonas y los taladros están en Minería.</span><button type="button" class="tab small" data-goto="mineria">Abrir Minería</button></span>' : V.kind === 'nomad' ? '<span style="display:flex;gap:10px;align-items:center"><span class="soft" style="font-size:14px">La Nomad es para exobiología: minimapa, muestras y brújula en Exobiología.</span><button type="button" class="tab small" data-goto="exobiologia">Abrir Exobiología</button></span>' : ''}
+    </section>`;
+
+  // Brújula: a la nave o al destino fijado
+  const hasTarget = !!(s.surfaceTarget && v.surfaceNav);
+  const shipOk = !!(V.shipNav && sh && sh.present);
+  let to = ui.srvTo || (hasTarget ? 'target' : 'ship');
+  if (to === 'target' && !hasTarget) to = 'ship';
+  const nav = to === 'target' ? v.surfaceNav : V.shipNav;
+  const navOk = to === 'target' ? hasTarget : shipOk;
+  const toTabs = `<span style="display:flex;gap:6px">${[['ship', 'A la nave', shipOk], ['target', 'Al destino', hasTarget]].map(([k, t, ok]) => `<button type="button" class="tab small ${to === k ? 'on' : ''}" data-srvto="${k}" ${ok ? '' : 'disabled'}>${t}</button>`).join('')}</span>`;
+  const compass = `<section class="pn card" style="min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Brújula</span>${toTabs}</div>
+      ${navOk ? compassBlock(s, nav) : `<div class="in empty" style="flex:1;flex-direction:column;gap:6px"><span class="va" style="font-size:18px;color:var(--soft)">${to === 'ship' ? (sh && !sh.present ? 'La nave está en órbita' : 'No sé dónde está tu nave') : 'Sin destino'}</span><span style="font-size:14px">${to === 'ship' ? (sh && !sh.present ? 'Llámala con «Llamar / despedir nave»: al aterrizar, la brújula te lleva hasta ella.' : 'La app guarda dónde aterriza la nave para guiarte de vuelta.') : 'Fija unas coordenadas en Órbita planetaria.'}</span></div>`}
+    </section>`;
+
+  // Materiales en bruto: 7 categorías × 4 grados
+  const raw = V.raw; const known = raw.some((x) => x.count != null);
+  const byCat = {}; for (const x of raw) (byCat[x.cat] = byCat[x.cat] || [])[x.grade - 1] = x;
+  const cell = (x) => {
+    if (!x) return '<span></span>';
+    const f = x.count != null ? x.count / x.max : 0;
+    const col = f >= 1 ? 'var(--cyan)' : f >= 0.5 ? '#2a7fa3' : f > 0 ? 'var(--amber)' : 'var(--line2)';
+    return `<div class="in" style="display:flex;flex-direction:column;gap:3px;padding:5px 8px;${x.got ? 'border-color:var(--cyan)' : ''}">
+      <span style="display:flex;justify-content:space-between;gap:6px"><span class="va nowrap" style="font-size:14px">${esc(x.name)}</span>${x.got ? `<span class="num cyan" style="font-size:12px">+${nf(x.got)}</span>` : ''}</span>
+      <span style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span class="bar" style="flex:1;height:5px"><span style="width:${Math.min(1, f) * 100}%;background:${col}"></span></span><span class="num soft" style="font-size:12px">${x.count != null ? nf(x.count) : '—'}/${x.max}</span></span>
+    </div>`;
+  };
+  const grid = Object.keys(byCat).sort((a, b) => a - b).map((c) => `<span class="eb dim" style="font-size:10px;align-self:center">Elem. ${c}</span>${[0, 1, 2, 3].map((g) => cell(byCat[c][g])).join('')}`).join('');
+  const mats = `<section class="pn card" style="min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">Materiales en bruto</span><span class="eb">${V.collected.length ? `Esta salida: +${nf(V.collected.reduce((t, x) => t + x.n, 0))}` : 'Grado 1 → 4'}</span></div>
+      <div style="display:grid;grid-template-columns:64px repeat(4,minmax(0,1fr));gap:5px">
+        <span></span>${[1, 2, 3, 4].map((g) => `<span class="eb dim" style="font-size:10px;text-align:center">Grado ${g}</span>`).join('')}
+        ${grid}
+      </div>
+      <span class="note" style="margin-top:auto">${known ? 'Cantidad que llevas / máximo. En cian, lo recogido en esta salida.' : 'Las cantidades aparecen al iniciar el juego (evento Materials).'} Los afloramientos y cristales se buscan con el escáner de ondas del SRV.</span>
+    </section>`;
+
+  const toggles = SRV_TOGGLES.map(([l, k, id]) => { const a = actAttrs(id); return `<button type="button" class="ctl ${fl[k] ? 'on' : ''}${a.cls || ''}" data-act="${id}" ${a.dis} title="${esc(a.title)}"><span style="display:flex;align-items:center;gap:8px"><span class="dot ${fl[k] ? 'on' : ''}"></span>${l}</span>${a.key ? `<span class="k">${esc(a.key)}</span>` : ''}</button>`; }).join('');
+  const actions = SRV_ACTIONS.map(([l, id]) => { const a = actAttrs(id); return `<button type="button" class="act${a.cls || ''}" data-act="${id}" ${a.dis} title="${esc(a.title)}">${l}${a.key ? `<span class="k">${esc(a.key)}</span>` : ''}</button>`; }).join('');
+  const right = `<aside style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">
+      <section class="pn card">
+        <span class="ti" style="font-size:16px">Controles del SRV</span>
+        <div style="display:grid;grid-template-columns:1fr;gap:6px">${toggles}</div>
+        ${feedbackLine()}
+      </section>
+      <section class="pn card" style="flex:1;min-height:0">
+        <span class="ti" style="font-size:16px">Acciones</span>
+        <div style="display:grid;grid-template-columns:1fr;gap:6px">${actions}</div>
+        <span class="note" style="margin-top:auto">Los botones pulsan tus teclas del juego (las del SRV). El estado de cada interruptor viene de Status.json.</span>
+      </section>
+    </aside>`;
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:12px;min-height:0">
+    <main style="display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0">${head}
+      <div style="flex:1;display:grid;grid-template-columns:440px minmax(0,1fr);gap:12px;min-height:0">${compass}${mats}</div>
+    </main>${right}</div>`;
+}
+
 /* ---------- Comercio: mercado de la estación, bodega, Powerplay, sesión y ruta de comercio ---------- */
 const PP_KIND = { reinforcement: ['Refuerzo', 'Sistema de tu potencia'], undermining: ['Socavar', 'Sistema de otra potencia'], acquisition: ['Adquisición', 'Sin potencia que lo controle'] };
 const TRADE_PAGE = 9;
@@ -3136,6 +3219,7 @@ function screenAjustes(s, v) {
       ${setRow('jump.mineria', 'Minería', 'Minas con el Rhino o con la nave', p.jump.mineria, off)}
       ${setRow('jump.combate', 'Combate', 'Armamento desplegado, zona de combate o te atacan', p.jump.combate !== false, off)}
       ${setRow('jump.exobiologia', 'Exobiología', 'Sacas el escáner genético o vas en la Nomad', p.jump.exobiologia !== false, off)}
+      ${setRow('jump.srv', 'SRV', 'Bajas en un SRV (sin minería ni exobiología)', p.jump.srv !== false, off)}
       ${setRow('jump.exploracion', 'Exploración', 'Abres el escáner FSS o lanzas sondas DSS', p.jump.exploracion !== false, off)}
       ${setRow('jump.approach', 'Vuelo · plataformas', 'Te conceden el atraque', p.jump.approach, off)}
       ${setRow('jump.docked', 'Estación', 'Atracas en una estación', p.jump.docked, off)}
@@ -3218,7 +3302,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : ui.section === 'exobiologia' ? screenExobiologia(s, v) : ui.section === 'comercio' ? screenComercio(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : ui.section === 'exobiologia' ? screenExobiologia(s, v) : ui.section === 'comercio' ? screenComercio(s, v) : ui.section === 'srv' ? screenSrv(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -3324,6 +3408,8 @@ document.addEventListener('pointerdown', (ev) => {
     window.edbubble.plot(ui.sel.name, d || 0);
     return;
   }
+  const srvT = ev.target.closest('button[data-srvto]');
+  if (srvT) { ui.srvTo = srvT.dataset.srvto; render(); return; }
   const ppT = ev.target.closest('button[data-pptab], button[data-ppact]');
   if (ppT) { if (ppT.dataset.pptab) ui.ppTab = ppT.dataset.pptab; else ui.ppActKind = ppT.dataset.ppact; render(); return; }
   const pt = ev.target.closest('button[data-pptrack]');

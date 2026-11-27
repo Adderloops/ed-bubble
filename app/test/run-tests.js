@@ -955,6 +955,30 @@ test('powerplay: adquisición (120.000 PC, disputado a 35.000) y puntos de contr
   assert.strictEqual(p.pilot.sessionCp, 200);
 });
 
+test('SRV: nave aparcada, despedida y materiales recogidos en la salida', () => {
+  const m = require('../../core/model');
+  const d = require('../../core/derive');
+  const s = m.createState();
+  const ev = (e) => m.applyEvent(s, { timestamp: '2026-11-27T10:00:00Z', ...e });
+  ev({ event: 'Materials', Raw: [{ Name: 'iron', Count: 100 }], Manufactured: [], Encoded: [] });
+  ev({ event: 'Touchdown', PlayerControlled: true, Latitude: 10, Longitude: 20, Body: 'B 1', BodyID: 3 });
+  ev({ event: 'LaunchSRV', SRVType: 'testbuggy', SRVType_Localised: 'SRV Scarab', PlayerControlled: true });
+  ev({ event: 'MaterialCollected', Category: 'Raw', Name: 'iron', Count: 4 });
+  let V = d.view(s).srv;
+  assert.strictEqual(V.name, 'Scarab');
+  assert.strictEqual(V.ship.present, true);
+  assert.strictEqual(V.raw.find((x) => x.key === 'iron').count, 104);
+  assert.strictEqual(V.raw.find((x) => x.key === 'iron').got, 4);
+  ev({ event: 'Liftoff', PlayerControlled: false, Body: 'B 1', BodyID: 3 });
+  assert.strictEqual(d.view(s).srv.ship.present, false, 'despedida: en órbita');
+  ev({ event: 'Touchdown', PlayerControlled: false, Latitude: 11, Longitude: 21, Body: 'B 1', BodyID: 3 });
+  assert.strictEqual(d.view(s).srv.ship.lat, 11, 'vuelve donde aterriza');
+  ev({ event: 'DockSRV', SRVType: 'testbuggy' });
+  V = d.view(s).srv;
+  assert.strictEqual(V.deployed, false);
+  assert.strictEqual(V.collected.length, 0);
+});
+
 test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {
   const m = require('../../core/model');
   const s = m.createState();

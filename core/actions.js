@@ -44,6 +44,18 @@ const ACTIONS = {
   f_pos:       { label: 'Caza: mantener posición', steps: [press('OrderHoldPosition')] },
   f_follow:    { label: 'Caza: seguirme', steps: [press('OrderFollow')] },
   f_dock:      { label: 'Caza: volver a la nave', steps: [press('OrderRequestDock')] },
+  // SRV (Scarab, Scorpion, Nomad, Rhino)
+  srv_brake:    { label: 'Freno de mano', steps: [press('AutoBreakBuggyButton')] },
+  srv_assist:   { label: 'Asistencia a la conducción', steps: [press('ToggleDriveAssist')] },
+  srv_turret:   { label: 'Vista de torreta', steps: [press('ToggleBuggyTurretButton')] },
+  srv_lights:   { label: 'Faros', steps: [press('HeadlightsBuggyButton')] },
+  srv_scoop:    { label: 'Recolector de carga (SRV)', steps: [press('ToggleCargoScoop_Buggy')] },
+  srv_analysis: { label: 'Modo análisis (SRV)', steps: [press('PlayerHUDModeToggle_Buggy')] },
+  srv_ship:     { label: 'Llamar o despedir la nave', steps: [press('RecallDismissShip')] },
+  srv_sysmap:   { label: 'Mapa del sistema (SRV)', steps: [press('SystemMapOpen_Buggy')] },
+  srv_galmap:   { label: 'Mapa galáctico (SRV)', steps: [press('GalaxyMapOpen_Buggy')] },
+  srv_target:   { label: 'Fijar objetivo (SRV)', steps: [press('SelectTarget_Buggy')] },
+  srv_eject:    { label: 'Expulsar toda la carga (SRV)', steps: [press('EjectAllCargo_Buggy')], confirm: true },
   dock:        { label: 'Solicitar atraque', steps: [press('FocusLeftPanel'), wait(450), press('CyclePreviousPanel'), wait(250), press('CyclePreviousPanel'), wait(300), press('UI_Right'), wait(250), press('UI_Select')] },
 };
 
@@ -59,11 +71,15 @@ const BIND_NAMES = {
   OpenOrders: 'Órdenes del caza', OrderDefensiveBehaviour: 'Caza: defender', OrderAggressiveBehaviour: 'Caza: agresivo', OrderFocusTarget: 'Caza: atacar mi objetivo',
   OrderHoldFire: 'Caza: alto el fuego', OrderHoldPosition: 'Caza: mantener posición', OrderFollow: 'Caza: seguirme', OrderRequestDock: 'Caza: volver a la nave',
   GalaxyMapOpen: 'Mapa galáctico', CamZoomIn: 'Cámara: acercar', CamZoomOut: 'Cámara: alejar',
+  AutoBreakBuggyButton: 'SRV: freno de mano', ToggleDriveAssist: 'SRV: asistencia a la conducción', ToggleBuggyTurretButton: 'SRV: torreta', HeadlightsBuggyButton: 'SRV: faros',
+  ToggleCargoScoop_Buggy: 'SRV: recolector de carga', PlayerHUDModeToggle_Buggy: 'SRV: modo análisis', RecallDismissShip: 'Llamar / despedir la nave', SystemMapOpen_Buggy: 'SRV: mapa del sistema',
+  GalaxyMapOpen_Buggy: 'SRV: mapa galáctico', SelectTarget_Buggy: 'SRV: fijar objetivo', EjectAllCargo_Buggy: 'SRV: expulsar carga',
 };
 const CHECK_GROUPS = [
   { name: 'Vuelo', binds: ['LandingGearToggle', 'ToggleFlightAssist', 'DeployHardpointToggle', 'ShipSpotLightToggle', 'ToggleCargoScoop', 'NightVisionToggle', 'DeployHeatSink', 'ToggleButtonUpInput', 'EjectAllCargo', 'TargetNextRouteSystem', 'FocusLeftPanel', 'CyclePreviousPanel', 'UI_Right', 'UI_Select'] },
   { name: 'Combate', binds: ['CyclePreviousSubsystem', 'TargetWingman0', 'TargetWingman1', 'TargetWingman2', 'SelectTargetsTarget'] },
   { name: 'Caza', binds: ['OpenOrders', 'OrderDefensiveBehaviour', 'OrderAggressiveBehaviour', 'OrderFocusTarget', 'OrderHoldFire', 'OrderHoldPosition', 'OrderFollow', 'OrderRequestDock'] },
+  { name: 'SRV', binds: ['AutoBreakBuggyButton', 'ToggleDriveAssist', 'ToggleBuggyTurretButton', 'HeadlightsBuggyButton', 'ToggleCargoScoop_Buggy', 'PlayerHUDModeToggle_Buggy', 'RecallDismissShip', 'SystemMapOpen_Buggy', 'GalaxyMapOpen_Buggy', 'SelectTarget_Buggy', 'EjectAllCargo_Buggy'] },
   { name: 'Trazar ruta', binds: require('./plot').NEEDED },
 ];
 

@@ -55,7 +55,7 @@ function defaultBounds() {
 // Ajustes del comandante (settings.json en la carpeta de datos de la app)
 const DEFAULT_PREFS = {
   autoJump: true,
-  jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true, exploracion: true, exobiologia: true, comercio: true }, // a qué secciones salta solo
+  jump: { vuelo: true, approach: true, docked: true, depot: true, orbita: true, mineria: true, combate: true, exploracion: true, exobiologia: true, comercio: true, srv: true }, // a qué secciones salta solo
   startSection: 'puente', lastSection: 'puente', // al abrir: Puente o la última sección vista
   alerts: { dock: true, fuelRoute: true }, // avisos opcionales en la cabecera
   fullscreen: false,
@@ -69,7 +69,7 @@ function prefs() {
   delete p.ppTracked; delete p.skull; delete p.bindsFile; // datos internos, no son ajustes de la ventana
   return p;
 }
-const SECTION_IDS = ['puente', 'vuelo', 'orbita', 'combate', 'exploracion', 'exobiologia', 'comercio', 'equipo', 'mineria', 'apie', 'ingenieros', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles'];
+const SECTION_IDS = ['puente', 'vuelo', 'orbita', 'combate', 'exploracion', 'exobiologia', 'comercio', 'equipo', 'mineria', 'apie', 'ingenieros', 'navegacion', 'colonizacion', 'estacion', 'powerplay', 'ajustes', 'controles', 'srv', 'cmdr', 'carrier', 'camara', 'utilidades'];
 /** Valida un ajuste que llega de la ventana; devuelve el valor limpio o undefined. */
 function cleanPref(key, value) {
   const bool = (x) => (typeof x === 'boolean' ? x : undefined);
