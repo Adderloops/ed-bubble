@@ -338,6 +338,7 @@ function view(state) {
     station: stationView(state),
     powerplay: powerplayView(state),
     srv: srvView(state),
+    cmdr: require('./cmdr').view(state),
     fuelPlan: require('./fuel').fuelPlan(state),
     surfaceNav: require('./geo').surfaceNav(state.status, state.surfaceTarget),
   };

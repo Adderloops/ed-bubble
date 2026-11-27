@@ -979,6 +979,29 @@ test('SRV: nave aparcada, despedida y materiales recogidos en la salida', () => 
   assert.strictEqual(V.collected.length, 0);
 });
 
+test('CMDR: rangos, reputación y flota con los cambios de nave', () => {
+  const m = require('../../core/model');
+  const d = require('../../core/derive');
+  const C = require('../../core/cmdr');
+  assert.strictEqual(C.rankName('Trade', 13), 'Élite V');
+  assert.strictEqual(C.rankName('Federation', 14), 'Almirante');
+  assert.strictEqual(C.repLevel(99), 'Aliado');
+  const s = m.createState();
+  const ev = (e) => m.applyEvent(s, { timestamp: '2026-11-27T10:00:00Z', ...e });
+  ev({ event: 'Rank', Combat: 6, Trade: 13, Explore: 7, Soldier: 5, Exobiologist: 7, Empire: 9, Federation: 13, CQC: 0 });
+  ev({ event: 'Progress', Combat: 73, Trade: 100, Explore: 9, Soldier: 72, Exobiologist: 0, Empire: 29, Federation: 90, CQC: 0 });
+  ev({ event: 'Docked', StationName: 'A', StarSystem: 'S1', MarketID: 1, StationType: 'Coriolis' });
+  ev({ event: 'StoredShips', StationName: 'A', StarSystem: 'S1', ShipsHere: [{ ShipID: 2, ShipType: 'python', Name: 'Pi', Value: 10 }], ShipsRemote: [{ ShipID: 3, ShipType: 'adder', StarSystem: 'S2', Value: 5 }] });
+  ev({ event: 'Loadout', Ship: 'anaconda', ShipID: 1, ShipName: 'Ana', HullValue: 100, ModulesValue: 50, Modules: [] });
+  ev({ event: 'ShipyardSwap', ShipType: 'python', ShipID: 2, StoreOldShip: 'anaconda', StoreShipID: 1 });
+  ev({ event: 'Loadout', Ship: 'python', ShipID: 2, ShipName: 'Pi', HullValue: 8, ModulesValue: 2, Modules: [] });
+  const V = d.view(s).cmdr;
+  assert.strictEqual(V.ranks.find((r) => r.kind === 'Combat').name, 'Peligroso');
+  assert.strictEqual(V.ranks.find((r) => r.kind === 'Combat').next, 'Letal');
+  assert.deepStrictEqual(V.fleet.map((x) => x.id), [2, 3, 1], 'la actual primero; la Anaconda se queda en A');
+  assert.strictEqual(V.fleet.find((x) => x.id === 1).station, 'A');
+});
+
 test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {
   const m = require('../../core/model');
   const s = m.createState();

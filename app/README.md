@@ -92,6 +92,18 @@ Grupo Nave. La app salta aquí al desplegar un SRV que no es el Rhino (Minería)
 - **Materiales en bruto:** los 28 elementos por categoría y grado, con lo que llevas y el máximo, y lo recogido en esta salida (`MaterialCollected` mientras vas en el SRV).
 - **Controles:** freno de mano, asistencia a la conducción, torreta, faros, visión nocturna, recolector, modo análisis, llamar o despedir la nave, fijar objetivo, mapas y expulsar carga (con confirmación). Usan las teclas del SRV de tu preset; en Controles hay un grupo «SRV» para revisarlas.
 
+## CMDR
+
+Grupo Comandante. Datos de los eventos que el juego escribe al cargar la partida y de los cambios posteriores (`core/cmdr.js`):
+
+- **Cabecera:** nombre, créditos, patrimonio (`Statistics`), escuadrón y su rango (`SquadronStartup`), potencia y rango de Powerplay, estado legal.
+- **Rangos:** combate, comercio, exploración, mercenario, exobiología, CQC, Imperio y Federación, con el progreso al siguiente (`Rank`, `Progress`, `Promotion`).
+- **Reputación** con la Federación, el Imperio, la Alianza y los independientes (−100 a +100; Hostil, Poco amistoso, Neutral, Cordial, Amistoso, Aliado).
+- **Estadísticas** (`Statistics`): banco, combate, comercio, exploración, exobiología, minería, delitos, pasaje y rescate, ingeniería y carrier.
+- **Tu flota:** todas tus naves y dónde están, de `StoredShips` (al abrir el astillero) más la que pilotas, al día con los cambios de nave (`ShipyardSwap`, compra, venta, traslado, cambio de nombre). Valor total.
+
+Los nombres de los rangos están en español aproximado (no todos se han comprobado con el juego en español).
+
 ## Comercio
 
 Grupo Actividades. La app salta aquí al abrir el mercado de mercancías en una estación (se queda hasta que despegas; se puede desactivar en Ajustes).

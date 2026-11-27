@@ -7,7 +7,7 @@ const SECTIONS = [
   { group: 'Nave' }, { id: 'vuelo', label: 'Vuelo', built: true }, { id: 'orbita', label: 'Órbita planetaria', built: true }, { id: 'combate', label: 'Combate', built: true }, { id: 'equipo', label: 'Equipo', built: true }, { id: 'srv', label: 'SRV', built: true },
   { group: 'Viaje' }, { id: 'navegacion', label: 'Navegación', built: true }, { id: 'exploracion', label: 'Exploración', built: true }, { id: 'estacion', label: 'Estación', built: true }, { id: 'apie', label: 'A pie', built: true },
   { group: 'Actividades' }, { id: 'powerplay', label: 'Powerplay', built: true }, { id: 'comercio', label: 'Comercio', built: true }, { id: 'mineria', label: 'Minería', built: true }, { id: 'exobiologia', label: 'Exobiología', built: true }, { id: 'colonizacion', label: 'Colonización', built: true },
-  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR' }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
+  { group: 'Comandante' }, { id: 'cmdr', label: 'CMDR', built: true }, { id: 'ingenieros', label: 'Ingenieros', built: true }, { id: 'carrier', label: 'Carrier' }, { id: 'camara', label: 'Cámara' }, { id: 'utilidades', label: 'Utilidades' }, { id: 'controles', label: 'Controles', built: true }, { id: 'ajustes', label: 'Ajustes', built: true, hidden: true }, // se abre desde la cabecera
 ];
 const BUILT = new Set(SECTIONS.filter((s) => s.built).map((s) => s.id));
 
@@ -1937,6 +1937,80 @@ function screenSrv(s, v) {
     </main>${right}</div>`;
 }
 
+/* ---------- CMDR: rangos, reputación, estadísticas y flota ---------- */
+const LEGAL = { Clean: 'Limpio', IllegalCargo: 'Carga ilegal', Speeding: 'Exceso de velocidad', Wanted: 'Buscado', Hostile: 'Hostil', PassengerWanted: 'Pasajero buscado', Warrant: 'Orden de busca' };
+const fmtTime = (sec) => { if (!sec) return '—'; const h = Math.floor(sec / 3600); return h >= 48 ? `${nf(Math.floor(h / 24))} d ${h % 24} h` : `${h} h ${Math.floor((sec % 3600) / 60)} min`; };
+function fmtStat(r) {
+  if (r.unit === 'cr') return fmtCr(r.value);
+  if (r.unit === 'ly') return `${nf(r.value, 0)} al`;
+  if (r.unit === 'm') return r.value >= 1000 ? `${nf(r.value / 1000, 1)} km` : `${nf(r.value)} m`;
+  if (r.unit === 'time') return fmtTime(r.value);
+  return nf(r.value);
+}
+function screenCmdr(s, v) {
+  const C = v.cmdr;
+  const box = (label, value, cls) => `<div class="in" style="display:flex;flex-direction:column;gap:2px;padding:10px 12px;min-width:0"><span class="eb" style="font-size:10px">${label}</span><span class="va nowrap ${cls || ''}" style="font-size:19px">${value}</span></div>`;
+  const pp = v.powerplay.pilot;
+  const head = `<section class="pn card" style="border-left:3px solid var(--amber)">
+      <span class="eb">Comandante</span>
+      <span class="ti nowrap" style="font-size:36px">${esc(C.name || '—')}</span>
+      <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px">
+        ${box('Créditos', fmtCr(C.credits), 'cyan')}${box('Patrimonio', fmtCr(C.wealth))}${box('Escuadrón', C.squadron ? esc(C.squadron.name) : '—')}${box('Rango escuadrón', C.squadron && C.squadron.rank ? esc(C.squadron.rank) : '—')}${box('Powerplay', pp.power ? `${esc(pp.power)} · ${nf(pp.rank)}` : '—')}${box('Estado legal', esc(LEGAL[C.legalState] || C.legalState || '—'), C.legalState && C.legalState !== 'Clean' ? 'red' : '')}
+      </div>
+    </section>`;
+
+  const rk = C.ranks.length ? C.ranks.map((r) => `<div class="in" style="display:flex;flex-direction:column;gap:5px;padding:9px 12px;min-width:0">
+      <span style="display:flex;justify-content:space-between;gap:8px"><span class="eb">${r.label}</span><span class="num soft" style="font-size:12px">${r.progress != null ? `${nf(r.progress)} %` : ''}</span></span>
+      <span class="va nowrap ${/^Élite|Rey|Almirante/.test(r.name || '') ? 'amber' : ''}" style="font-size:19px">${esc(r.name || '—')}</span>
+      <span class="bar" style="height:6px"><span style="width:${r.progress || 0}%;background:var(--amber)"></span></span>
+      <span class="soft nowrap" style="font-size:12px">${r.next ? `Siguiente: ${esc(r.next)}` : 'Rango máximo'}</span>
+    </div>`).join('') : '<div class="empty" style="grid-column:1/-1">Los rangos aparecen al iniciar el juego (evento Rank).</div>';
+  const ranks = `<section class="pn card"><span class="ti" style="font-size:16px">Rangos</span><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">${rk}</div></section>`;
+
+  const repRows = C.rep.length ? C.rep.map((r) => {
+    const x = r.value == null ? 0 : r.value; const w = Math.abs(x) / 2; const pos = x >= 0;
+    const col = x >= 35 ? 'var(--cyan)' : x >= 4 ? '#2a7fa3' : x > -35 ? 'var(--soft)' : 'var(--red,#ff4b4b)';
+    return `<div style="display:grid;grid-template-columns:130px minmax(0,1fr) 140px;gap:10px;align-items:center">
+      <span class="va" style="font-size:16px">${r.label}</span>
+      <span style="position:relative;height:12px;background:#0c1b2e;border:1px solid var(--line2);border-radius:2px;display:block"><span style="position:absolute;top:0;bottom:0;${pos ? 'left:50%' : `left:${50 - w}%`};width:${w}%;background:${col}"></span><span style="position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:#56708e"></span></span>
+      <span class="num" style="text-align:right">${r.level ? esc(r.level) : '—'} <span class="soft" style="font-size:12px">${r.value != null ? nf(r.value, 0) : ''}</span></span></div>`;
+  }).join('') : '<div class="empty">Aparece al iniciar el juego (evento Reputation).</div>';
+  const rep = `<section class="pn card"><span class="ti" style="font-size:16px">Reputación con las superpotencias</span>${repRows}<span class="note" style="margin-top:auto">De −100 (hostil) a +100 (aliado). Sube con misiones para cada superpotencia; los rangos de la Federación y el Imperio se ganan con sus misiones de ascenso.</span></section>`;
+
+  const G = C.stats; let statCard;
+  if (!G.length) statCard = '<section class="pn card"><span class="ti" style="font-size:16px">Estadísticas</span><div class="empty">Aparecen al iniciar el juego (evento Statistics).</div></section>';
+  else {
+    ui.cmdrStat = Math.max(0, Math.min(ui.cmdrStat || 0, G.length - 1));
+    const g = G[ui.cmdrStat];
+    statCard = `<section class="pn card" style="min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Estadísticas · ${g.label}</span>
+        <span style="display:flex;align-items:center;gap:8px"><button type="button" class="pg" data-cmdrstat="-1">‹</button><span class="num soft" style="font-size:13px">${ui.cmdrStat + 1}/${G.length}</span><button type="button" class="pg" data-cmdrstat="1">›</button></span></div>
+      <span style="display:flex;gap:4px;flex-wrap:wrap">${G.map((x, i) => `<button type="button" class="tab small ${i === ui.cmdrStat ? 'on' : ''}" data-cmdrstatgo="${i}">${x.label}</button>`).join('')}</span>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">${g.rows.map((r) => `<div class="in" style="display:flex;justify-content:space-between;gap:10px;padding:7px 12px;font-size:14px"><span class="nowrap">${esc(r.name)}</span><span class="num">${fmtStat(r)}</span></div>`).join('')}</div>
+      <span class="note" style="margin-top:auto">Datos del juego al iniciar la partida${C.statsAt ? ` (${String(C.statsAt).slice(0, 10)} ${hhmm(C.statsAt)} UTC)` : ''}. Tiempo jugado: ${fmtTime(C.timePlayed)}.</span>
+    </section>`;
+  }
+
+  // Flota
+  const per = 9; const F = C.fleet;
+  const pages = Math.max(1, Math.ceil(F.length / per)); ui.cmdrFleetPage = Math.min(ui.cmdrFleetPage || 0, pages - 1);
+  const rows = F.slice(ui.cmdrFleetPage * per, (ui.cmdrFleetPage + 1) * per).map((x) => `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 12px;${x.current ? 'border-color:var(--amber);border-left:3px solid var(--amber)' : ''}">
+      <span style="display:flex;flex-direction:column;min-width:0"><span class="va nowrap" style="font-size:16px">${esc(x.name || shipName(x.type, x.typeName))}${x.current ? ' <span class="eb amber" style="font-size:10px">· pilotando</span>' : ''}</span>
+      <span class="soft nowrap" style="font-size:12px">${x.name ? `${esc(shipName(x.type, x.typeName))} · ` : ''}${x.inTransit ? 'en traslado' : esc(x.station ? `${x.station} · ${x.system || ''}` : x.system || '—')}</span></span>
+      <span class="num soft" style="font-size:13px;text-align:right">${x.value ? fmtCr(x.value) : ''}${x.hot ? '<br><span class="red" style="font-size:11px">caliente</span>' : ''}</span>
+    </div>`).join('');
+  const fleet = `<aside class="pn card" style="min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">Tu flota · ${nf(F.length)}</span><span class="eb">${C.fleetValue ? fmtCr(C.fleetValue) : ''}</span></div>
+      ${F.length ? `<div style="display:flex;flex-direction:column;gap:4px">${rows}</div>` : '<div class="empty" style="flex-direction:column;gap:6px;font-size:14px"><span>Abre el astillero en cualquier estación y la app verá todas tus naves y dónde están.</span></div>'}
+      <span style="display:flex;justify-content:space-between;align-items:center;margin-top:auto"><span class="note">${C.fleetAt ? `Del astillero de ${esc(C.fleetStation || '—')} (${String(C.fleetAt).slice(0, 10)}), con los cambios de nave posteriores.` : ''}</span>${pager2('cmdrfleet', ui.cmdrFleetPage, pages)}</span>
+    </aside>`;
+
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 520px;gap:12px;min-height:0">
+    <main style="display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0">${head}${ranks}
+      <div style="flex:1;display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr);gap:12px;min-height:0">${rep}${statCard}</div>
+    </main>${fleet}</div>`;
+}
+
 /* ---------- Comercio: mercado de la estación, bodega, Powerplay, sesión y ruta de comercio ---------- */
 const PP_KIND = { reinforcement: ['Refuerzo', 'Sistema de tu potencia'], undermining: ['Socavar', 'Sistema de otra potencia'], acquisition: ['Adquisición', 'Sin potencia que lo controle'] };
 const TRADE_PAGE = 9;
@@ -3302,7 +3376,7 @@ function renderNow() {
   renderRail(v);
   const typingId = typing ? document.activeElement.id : null;
   const sel = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
-  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : ui.section === 'exobiologia' ? screenExobiologia(s, v) : ui.section === 'comercio' ? screenComercio(s, v) : ui.section === 'srv' ? screenSrv(s, v) : screenPuente(s, v);
+  $('screen').innerHTML = ui.section === 'vuelo' ? screenVuelo(s, v) : ui.section === 'orbita' ? screenOrbita(s, v) : ui.section === 'mineria' ? screenMineria(s, v) : ui.section === 'apie' ? screenApie(s, v) : ui.section === 'navegacion' ? screenNavegacion(s, v) : ui.section === 'colonizacion' ? screenColonizacion(s, v) : ui.section === 'estacion' ? screenEstacion(s, v) : ui.section === 'powerplay' ? screenPowerplay(s, v) : ui.section === 'ajustes' ? screenAjustes(s, v) : ui.section === 'controles' ? screenControles(s, v) : ui.section === 'equipo' ? screenEquipo(s, v) : ui.section === 'ingenieros' ? screenIngenieros(s, v) : ui.section === 'combate' ? screenCombate(s, v) : ui.section === 'exploracion' ? screenExploracion(s, v) : ui.section === 'exobiologia' ? screenExobiologia(s, v) : ui.section === 'comercio' ? screenComercio(s, v) : ui.section === 'srv' ? screenSrv(s, v) : ui.section === 'cmdr' ? screenCmdr(s, v) : screenPuente(s, v);
   if (sel) { const el = $(typingId); if (el) { el.focus(); el.setSelectionRange(sel[0], sel[1]); } }
 }
 
@@ -3408,6 +3482,8 @@ document.addEventListener('pointerdown', (ev) => {
     window.edbubble.plot(ui.sel.name, d || 0);
     return;
   }
+  const cmS = ev.target.closest('button[data-cmdrstat], button[data-cmdrstatgo]');
+  if (cmS) { const n = (v0) => ((ui.snap && ui.snap.view.cmdr.stats.length) || 1); if (cmS.dataset.cmdrstatgo != null) ui.cmdrStat = Number(cmS.dataset.cmdrstatgo); else ui.cmdrStat = ((ui.cmdrStat || 0) + Number(cmS.dataset.cmdrstat) + n()) % n(); render(); return; }
   const srvT = ev.target.closest('button[data-srvto]');
   if (srvT) { ui.srvTo = srvT.dataset.srvto; render(); return; }
   const ppT = ev.target.closest('button[data-pptab], button[data-ppact]');
@@ -3471,7 +3547,7 @@ document.addEventListener('pointerdown', (ev) => {
     if (d.nrclear) { window.edbubble.neutronClear(); ui.nr = null; return; }
   }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage', trade: 'trPage', trwhere: 'trWherePage', trroute: 'trRoutePage', trbuy: 'trBuyPage', ppmine: 'ppMinePage' }[minPgBtn.dataset.mpager];
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage', trade: 'trPage', trwhere: 'trWherePage', trroute: 'trRoutePage', trbuy: 'trBuyPage', ppmine: 'ppMinePage', cmdrfleet: 'cmdrFleetPage' }[minPgBtn.dataset.mpager];
     if (!k && /^eq(core|hard|opt)$/.test(minPgBtn.dataset.mpager)) { const kk = minPgBtn.dataset.mpager.slice(2); ui.eqPages[kk] = Math.max(0, (ui.eqPages[kk] || 0) + Number(minPgBtn.dataset.d)); render(); return; } ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {

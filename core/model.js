@@ -18,7 +18,7 @@ function createState() {
   return {
     updatedAt: null,
     connection: { journal: false, journalFile: null, lastEventAt: null, status: false },
-    cmdr: { name: null, credits: null, legalState: 'Clean' },
+    cmdr: { name: null, credits: null, legalState: 'Clean', extra: require('./cmdr').create() }, // extra: rangos, reputación, estadísticas, escuadrón y flota (core/cmdr.js)
     ship: { type: null, typeLocalised: null, name: null, ident: null, maxJumpRange: null, fuelCapacity: null, reserveCapacity: null, cargoCapacity: null, hull: null, rebuy: null, fsdSize: null, hasFuelScoop: null },
     location: {
       system: null, body: null, bodyType: null, station: null, stationType: null, docked: false, landed: false,
@@ -639,8 +639,9 @@ function applyEvent(state, e) {
   combat.apply(state, e);
   const xc = exploration.apply(state, e);
   const tc = trade.apply(state, e);
+  const cc = require('./cmdr').apply(state, e);
   const h = HANDLERS[e.event];
-  if (!h) return xc || tc;
+  if (!h) return xc || tc || cc;
   h(state, e);
   if (e.event === 'FSDJump' && !state.location.starClass && state.fsdTarget.starClass) {
     state.location.starClass = state.fsdTarget.starClass;
