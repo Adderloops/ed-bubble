@@ -230,6 +230,8 @@ Sección **Controles** (menú, grupo Comandante; también el botón «Guía» de
 
 Botón **Ajustes** de la cabecera (vuelve a pulsarlo para regresar a la sección anterior). Se guardan en `settings.json`, en la carpeta de datos de la app.
 
+- **Teclas pendientes de asignar**: las acciones de ED BUBBLE que no se pueden pulsar con tu preset (sin asignar, solo en el mando o con la tecla repetida en el mismo contexto), con su grupo; se asignan en el juego y la app relee los controles sola.
+- Al pasar el ratón por un botón desactivado sale un cuadro que explica por qué (por ejemplo, que hay que asignar una tecla del teclado dentro del juego).
 - **Salto automático**: activarlo o no, y a qué secciones salta (vuelo, órbita, minería, combate, atraque concedido, estación, construcción de colonización).
 - **Pantalla**: llevar la ventana a otra pantalla y pantalla completa. La ventana nunca se pone por encima del juego.
 - **Al abrir**: empezar en Puente de mando o en la última sección vista.

@@ -375,7 +375,7 @@ const ERRORS = {
 function actAttrs(id) {
   const a = ui.controls && ui.controls.actions && ui.controls.actions[id];
   if (!a) return { dis: 'disabled', key: '…', title: 'Cargando controles' };
-  if (!a.available) return { dis: 'disabled', key: 'sin tecla', title: `Asigna una tecla de teclado en el juego a: ${a.missing.join(', ')}` };
+  if (!a.available) return { dis: 'disabled', key: 'sin tecla', title: `Tienes que asignar una tecla del teclado dentro del juego para que funcione (Opciones › Controles): ${a.missing.map((m) => (ui.controls.names && ui.controls.names[m]) || m).join(', ')}. Las pendientes están en Ajustes.` };
   const armed = ui.armed && ui.armed.id === id;
   return { dis: '', key: armed ? 'pulsa otra vez' : '', title: a.macro ? `${a.label} (macro de varias teclas)` : `${a.label} · ${a.key}`, cls: `${armed ? ' armed' : ''}${ui.flash && ui.flash.id === id ? (ui.flash.ok ? ' sent' : ' failed') : ''}` };
 }
@@ -3679,7 +3679,23 @@ function screenAjustes(s, v) {
       <button type="button" class="tab" data-opendata style="align-self:flex-start">Abrir carpeta de datos</button>
     </section>`;
 
-  return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto minmax(0,1fr);gap:12px;min-height:0;height:100%">${jump}${screens}${start}${about}</div>`;
+  // Teclas pendientes: acciones de ED BUBBLE que no se pueden pulsar con tu preset
+  const PSTAT = { unbound: 'Sin asignar', hotas: 'Solo en el mando: falta tecla de teclado', unsupported: 'La app no puede pulsar esa tecla', shared: 'Tecla repetida' };
+  const probs = (c.check && c.check.problems) || [];
+  const per = 7; const kpages = Math.max(1, Math.ceil(probs.length / per)); ui.keysPage = Math.min(ui.keysPage || 0, kpages - 1);
+  const keys = `
+    <section class="pn card" style="min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="ti" style="font-size:16px">Teclas pendientes de asignar</span>${pager2('keys', ui.keysPage, kpages)}</div>
+      ${!c.check ? `<span class="soft" style="font-size:14px">${c.error ? esc(c.error) : 'Cargando tus controles…'}</span>`
+        : probs.length ? `<div style="display:flex;flex-direction:column;gap:4px">${probs.slice(ui.keysPage * per, (ui.keysPage + 1) * per).map((x) => `<div class="in" style="display:flex;flex-direction:column;gap:2px;padding:6px 12px">
+            <span style="display:flex;justify-content:space-between;gap:8px"><span class="va nowrap" style="font-size:15px">${esc(x.label)}</span><span class="eb dim nowrap" style="font-size:10px">${esc(x.groups.join(' · '))}</span></span>
+            <span class="${x.status === 'unbound' ? 'yellow' : 'soft'}" style="font-size:12px">${esc(PSTAT[x.status] || x.status)}${x.key ? ` · ${esc(x.key)}` : ''}${x.with ? ` con ${esc(x.with.join(', '))}` : ''}</span></div>`).join('')}</div>`
+        : '<span class="cyan" style="font-size:15px">Todas las teclas que usa la app están asignadas.</span>'}
+      <span class="note" style="margin-top:auto">Asígnalas en el juego (Opciones › Controles, preset ${esc(c.preset || '—')}). La app relee los controles sola al guardarlos.</span>
+    </section>`;
+
+  const col = (x) => `<div style="display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0">${x}</div>`;
+  return `<div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,0.9fr);gap:12px;min-height:0;height:100%">${col(jump + about)}${col(screens + start)}${col(keys.replace('<section class="pn card" style="min-height:0;overflow:hidden">', '<section class="pn card" style="min-height:0;overflow:hidden;flex:1">'))}</div>`;
 }
 
 function render() {
@@ -3717,6 +3733,29 @@ function fit() {
   st.style.left = `${Math.round((window.innerWidth - 1920 * k) / 2)}px`;
   st.style.top = `${Math.round((window.innerHeight - 1080 * k) / 2)}px`;
 }
+
+/* Cuadro de información al pasar el ratón por un botón desactivado (usa su title) */
+(function disabledTip() {
+  const tip = document.createElement('div'); tip.id = 'tip'; tip.className = 'tipbox'; document.body.appendChild(tip);
+  let cur = null;
+  const hide = () => { if (cur && cur.dataset.tipTitle != null && !cur.title) cur.title = cur.dataset.tipTitle; cur = null; tip.style.display = 'none'; };
+  document.addEventListener('mousemove', (ev) => {
+    const el = document.elementFromPoint(ev.clientX, ev.clientY);
+    const b = el && el.closest('button:disabled[title], button:disabled[data-tip-title]');
+    if (!b) { if (cur) hide(); return; }
+    if (b !== cur) {
+      hide(); cur = b;
+      if (b.title) { b.dataset.tipTitle = b.title; b.removeAttribute('title'); } // sin el globo del sistema
+      tip.textContent = b.dataset.tipTitle; tip.style.display = 'block';
+    }
+    const k = document.getElementById('stage') ? document.getElementById('stage').getBoundingClientRect().width / 1920 : 1;
+    const w = tip.offsetWidth * k; const h = tip.offsetHeight * k;
+    tip.style.transform = `scale(${k})`; tip.style.transformOrigin = '0 0';
+    tip.style.left = `${Math.min(window.innerWidth - w - 8, ev.clientX + 14)}px`;
+    tip.style.top = `${ev.clientY + 18 + h > window.innerHeight ? ev.clientY - h - 10 : ev.clientY + 18}px`;
+  });
+  document.addEventListener('mouseleave', hide);
+})();
 
 /* Pulsación larga (2 s) en un botón de página: la fija hasta que pinchas en otra o vuelves a mantenerla pulsada */
 const PIN_HOLD_MS = 2000;
@@ -3904,7 +3943,7 @@ document.addEventListener('pointerdown', (ev) => {
     if (d.nrclear) { window.edbubble.neutronClear(); ui.nr = null; return; }
   }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage', trade: 'trPage', trwhere: 'trWherePage', trroute: 'trRoutePage', trbuy: 'trBuyPage', ppmine: 'ppMinePage', cmdrfleet: 'cmdrFleetPage', fclog: 'fcLogPage', links: 'linkPage' }[minPgBtn.dataset.mpager];
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage', trade: 'trPage', trwhere: 'trWherePage', trroute: 'trRoutePage', trbuy: 'trBuyPage', ppmine: 'ppMinePage', cmdrfleet: 'cmdrFleetPage', fclog: 'fcLogPage', links: 'linkPage', keys: 'keysPage' }[minPgBtn.dataset.mpager];
     if (!k && /^eq(core|hard|opt)$/.test(minPgBtn.dataset.mpager)) { const kk = minPgBtn.dataset.mpager.slice(2); ui.eqPages[kk] = Math.max(0, (ui.eqPages[kk] || 0) + Number(minPgBtn.dataset.d)); render(); return; } ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {
