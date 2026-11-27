@@ -187,6 +187,7 @@ function apply(state, e) {
       return true;
     }
     case 'SellExplorationData': case 'MultiSellExplorationData': {
+      if (state.powerplay) state.powerplay.lastExploreSale = e.timestamp || null;
       const names = new Set([...(e.Systems || []), ...(e.Discovered || []).map((d) => (typeof d === 'string' ? d : d.SystemName))].filter(Boolean).map((n) => n.toLowerCase()));
       for (const [k, s] of Object.entries(X.unsold.carto)) if (s.name && names.has(s.name.toLowerCase())) delete X.unsold.carto[k];
       X.lastSale = { at: e.timestamp || null, kind: 'carto', total: e.TotalEarnings ?? null };

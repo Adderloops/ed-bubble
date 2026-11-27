@@ -76,7 +76,9 @@ class Engine extends EventEmitter {
       // exploración: datos sin vender desde la última venta (cartografía y exobiología)
       'Scan', 'SAAScanComplete', 'ScanOrganic', 'SellOrganicData', 'SellExplorationData', 'MultiSellExplorationData', 'FSSDiscoveryScan', 'FSSAllBodiesFound', 'FSSBodySignals', 'SAASignalsFound',
       // comercio: lo que pagaste por la bodega y dónde minaste
-      'MarketBuy', 'MarketSell', 'MiningRefined', 'EjectCargo'];
+      'MarketBuy', 'MarketSell', 'MiningRefined', 'EjectCargo',
+      // Powerplay: méritos ganados en cada sistema (para los puntos de control del ciclo)
+      'PowerplayMerits'];
     const TRADE = new Set(['MarketBuy', 'MarketSell', 'MiningRefined', 'EjectCargo']);
     // (si al arrancar sigues en el último sistema del historial, sus cuerpos ya escaneados se conservan)
     const EXPLORE = new Set(['Scan', 'SAAScanComplete', 'ScanOrganic', 'SellOrganicData', 'SellExplorationData', 'MultiSellExplorationData', 'FSSDiscoveryScan', 'FSSAllBodiesFound', 'FSSBodySignals', 'SAASignalsFound']);
@@ -106,6 +108,7 @@ class Engine extends EventEmitter {
         if (e.event === 'FSDJump' || e.event === 'Location' || e.event === 'CarrierJump') histSys = { system: e.StarSystem || null, address: e.SystemAddress ?? null };
         if (TRADE.has(e.event)) { require('./trade').apply(this.state, { ...e, _system: histSys.system, _address: histSys.address }); n += 1; continue; }
         if (EXPLORE.has(e.event)) { n += 1; continue; }
+        if (e.event === 'PowerplayMerits') { model.applyEvent(this.state, { ...e, _system: histSys.system, _hist: true }); n += 1; continue; }
         if (e.event === 'FSDJump') { require('./exploration').apply(this.state, e); model.recordControl(this.state, e); model.recordJumpFuel(this.state, e); }
         else model.applyEvent(this.state, e);
         n += 1;

@@ -42,7 +42,7 @@ function createState() {
     routeFull: [],
     lastJump: { distance: null, fuelUsed: null, at: null },
     docking: { active: false, pad: null, station: null, stationType: null, at: null },
-    powerplay: { power: null, rank: null, merits: null, system: null, control: null, controlAt: null, systems: {}, tracked: null },
+    powerplay: { power: null, rank: null, merits: null, system: null, control: null, controlAt: null, systems: {}, tracked: null, conflicts: {}, earned: [], lastExploreSale: null },
     colonisation: { depots: {}, current: null, contributions: [] },
     jumpFuel: [], // saltos recientes { ship, fsd, dist, fuel } para calcular el consumo
     surfaceTarget: null, // coordenadas fijadas en un planeta: { lat, lon, body, at }
@@ -146,12 +146,38 @@ function recordJumpFuel(state, e) {
  */
 function recordControl(state, e, control = computeControl(e)) {
   const name = e.StarSystem;
+  recordConflict(state, e);
   if (!name || !control) return;
   const list = state.powerplay.systems[name] || (state.powerplay.systems[name] = []);
   const last = list[list.length - 1];
   if (last && last.at === e.timestamp) return;
   list.push({ at: e.timestamp || null, control, power: e.ControllingPower || null, powers: e.Powers || [] });
   if (list.length > 40) list.splice(0, list.length - 40);
+}
+
+/**
+ * Adquisición: en un sistema sin potencia, cada potencia que intenta quedárselo
+ * trae su ConflictProgress (1,0 = 120.000 puntos de control, el umbral para reclamarlo).
+ */
+const ACQ_CAP = 120000;
+function recordConflict(state, e) {
+  const name = e.StarSystem;
+  if (!name || !Array.isArray(e.PowerplayConflictProgress) || !e.PowerplayConflictProgress.length) return;
+  const pp = state.powerplay;
+  if (!pp.conflicts) pp.conflicts = {};
+  const list = pp.conflicts[name] || (pp.conflicts[name] = []);
+  const last = list[list.length - 1];
+  if (last && last.at === e.timestamp) return;
+  list.push({
+    at: e.timestamp || null, state: e.PowerplayState || null,
+    powers: e.PowerplayConflictProgress.map((x) => ({ power: x.Power, progress: Number(x.ConflictProgress) || 0, cp: Math.round((Number(x.ConflictProgress) || 0) * ACQ_CAP) })).sort((a, b) => b.progress - a.progress),
+  });
+  if (list.length > 20) list.splice(0, list.length - 20);
+  const names = Object.keys(pp.conflicts);
+  if (names.length > 120) { // los más antiguos fuera
+    names.sort((a, b) => String(pp.conflicts[a][pp.conflicts[a].length - 1].at).localeCompare(String(pp.conflicts[b][pp.conflicts[b].length - 1].at)));
+    for (const n of names.slice(0, names.length - 120)) delete pp.conflicts[n];
+  }
 }
 
 function clearDocking(state) {
@@ -366,8 +392,18 @@ const HANDLERS = {
   NavRouteClear(state, e) { state.route = []; state.routeFull = []; pushLog(state, e, 'Ruta borrada', ''); },
   Powerplay(state, e) { state.powerplay.power = e.Power || null; state.powerplay.rank = e.Rank ?? null; state.powerplay.merits = e.Merits ?? null; },
   PowerplayMerits(state, e) {
-    state.powerplay.merits = e.TotalMerits ?? state.powerplay.merits;
-    state.session.merits += Number(e.MeritsGained) || 0;
+    const pp = state.powerplay;
+    pp.merits = e.TotalMerits ?? pp.merits;
+    const gained = Number(e.MeritsGained) || 0;
+    if (!e._hist) state.session.merits += gained;
+    if (gained > 0) {
+      // de dónde vienen: la exploración cuenta ÷ 6 en puntos de control; lo demás ÷ 4 (guía de Inara)
+      const t = Date.parse(e.timestamp || '');
+      const explore = !!(pp.lastExploreSale && t && t - Date.parse(pp.lastExploreSale) < 90000);
+      if (!pp.earned) pp.earned = [];
+      pp.earned.push({ at: e.timestamp || null, system: e._system || state.location.system || null, merits: gained, kind: explore ? 'explore' : 'other', hist: !!e._hist });
+      if (pp.earned.length > 400) pp.earned.splice(0, pp.earned.length - 400);
+    }
   },
   PowerplayRank(state, e) { state.powerplay.rank = e.Rank ?? state.powerplay.rank; },
   Bounty(state, e) { state.session.bounties += Number(e.TotalReward || e.Reward) || 0; },
@@ -648,4 +684,4 @@ function applyNavRoute(state, raw) {
   state.route = i >= 0 ? route.slice(i) : route;
 }
 
-module.exports = { applyLocker, suitName, recordJumpFuel, recordControl, createState, applyEvent, applyStatus, applyCargo, applyNavRoute, applyMarket, HANDLERS, fmtNum, commodityKey };
+module.exports = { ACQ_CAP, recordConflict, applyLocker, suitName, recordJumpFuel, recordControl, createState, applyEvent, applyStatus, applyCargo, applyNavRoute, applyMarket, HANDLERS, fmtNum, commodityKey };

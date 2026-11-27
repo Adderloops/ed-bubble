@@ -232,8 +232,40 @@ function powerplayView(state, now = Date.now()) {
     stale: !latestInCycle, // datos de un ciclo anterior: aún no has entrado esta semana
     previous: prev && prev !== latest ? { at: prev.at, reinforcement: prev.control.reinforcement, undermining: prev.control.undermining, net: prev.control.net, progress: prev.control.progress } : null,
   } : null;
-  const canTrackHere = !!(here && pp.systems[here] && here !== tracked);
-  return { pilot, tracked, system, cut, nextCut: cut + 7 * 86400000, canTrackHere, here, pinned: !!pp.tracked };
+  const canTrackHere = !!(here && (pp.systems[here] || (pp.conflicts && pp.conflicts[here])) && here !== tracked);
+  // Puntos de control que aportan tus méritos: ÷ 4 (exploración ÷ 6), guía de Inara
+  const cpOf = (x) => (x.kind === 'explore' ? x.merits / 6 : x.merits / 4);
+  const earned = (pp.earned || []).filter((x) => x.at && Date.parse(x.at) >= cut);
+  const bySys = {};
+  for (const x of earned) {
+    const k = x.system || '—';
+    const b = bySys[k] || (bySys[k] = { system: x.system, merits: 0, cp: 0, last: x.at });
+    b.merits += x.merits; b.cp += cpOf(x); if (String(x.at) > String(b.last)) b.last = x.at;
+  }
+  const cycle = Object.values(bySys).map((b) => ({ ...b, cp: Math.round(b.cp) })).sort((a, b) => String(b.last).localeCompare(String(a.last)));
+  const live = (pp.earned || []).filter((x) => !x.hist);
+  pilot.sessionCp = Math.round(live.reduce((t, x) => t + cpOf(x), 0));
+  pilot.cycleMerits = earned.reduce((t, x) => t + x.merits, 0);
+  pilot.cycleCp = Math.round(earned.reduce((t, x) => t + cpOf(x), 0));
+  // Adquisición: el sistema seguido (o el actual) si no es de nadie y alguna potencia lo intenta
+  const acqName = pp.tracked && pp.conflicts && pp.conflicts[pp.tracked] ? pp.tracked : (!system && here && pp.conflicts && pp.conflicts[here] ? here : null);
+  let acquisition = null;
+  if (acqName) {
+    const list = pp.conflicts[acqName];
+    const last = list[list.length - 1];
+    const { ACQ_CAP } = require('./model');
+    const CONTEST = 35000;
+    const over = last.powers.filter((x) => x.cp >= CONTEST);
+    const prevA = [...list].reverse().find((x) => x.at && Date.parse(x.at) < cut) || null;
+    acquisition = {
+      name: acqName, at: last.at, stale: !(last.at && Date.parse(last.at) >= cut), cap: ACQ_CAP, contest: CONTEST,
+      powers: last.powers.map((x) => ({ ...x, mine: x.power === pp.power, toClaim: Math.max(0, ACQ_CAP - x.cp) })),
+      contested: over.length >= 2, leader: last.powers[0] || null,
+      mineIn: last.powers.some((x) => x.power === pp.power),
+      previous: prevA && prevA !== last ? { at: prevA.at, powers: prevA.powers } : null,
+    };
+  }
+  return { pilot, tracked: system ? tracked : (acquisition ? acquisition.name : tracked), system, acquisition, cycle, cut, nextCut: cut + 7 * 86400000, canTrackHere, here, pinned: !!pp.tracked };
 }
 
 function view(state) {

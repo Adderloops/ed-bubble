@@ -932,6 +932,29 @@ test('colonización: la construcción toma el nombre nuevo cuando lo cambias', (
   assert.strictEqual(s.colonisation.depots['3951365378'].name, "Orbital Construction Site: Sisters' Pride");
 });
 
+test('powerplay: adquisición (120.000 PC, disputado a 35.000) y puntos de control de tus méritos', () => {
+  const m = require('../../core/model');
+  const d = require('../../core/derive');
+  const s = m.createState();
+  const now = Date.parse('2026-11-27T12:00:00Z');
+  const ev = (e) => m.applyEvent(s, { timestamp: '2026-11-27T10:00:00Z', ...e });
+  ev({ event: 'Powerplay', Power: 'Li Yong-Rui', Rank: 100, Merits: 1000 });
+  ev({ event: 'FSDJump', StarSystem: 'Acq', SystemAddress: 9, Population: 1000, PowerplayState: 'Unoccupied', PowerplayConflictProgress: [{ Power: 'Archon Delaine', ConflictProgress: 0.3 }, { Power: 'Li Yong-Rui', ConflictProgress: 0.5 }] });
+  ev({ event: 'PowerplayMerits', Power: 'Li Yong-Rui', MeritsGained: 400, TotalMerits: 1400 });
+  ev({ event: 'MultiSellExplorationData', timestamp: '2026-11-27T10:05:00Z', Discovered: [], BaseValue: 1, Bonus: 0, TotalEarnings: 1 });
+  ev({ event: 'PowerplayMerits', timestamp: '2026-11-27T10:05:20Z', Power: 'Li Yong-Rui', MeritsGained: 600, TotalMerits: 2000 });
+  const p = d.powerplayView(s, now);
+  assert.ok(p.acquisition, 'hay adquisición');
+  assert.strictEqual(p.acquisition.powers[0].power, 'Li Yong-Rui');
+  assert.strictEqual(p.acquisition.powers[0].cp, 60000);
+  assert.strictEqual(p.acquisition.powers[0].toClaim, 60000);
+  assert.strictEqual(p.acquisition.contested, true, 'dos potencias por encima de 35.000');
+  assert.strictEqual(p.cycle[0].system, 'Acq');
+  assert.strictEqual(p.cycle[0].merits, 1000);
+  assert.strictEqual(p.cycle[0].cp, 200, '400 ÷ 4 + 600 ÷ 6 (exploración)');
+  assert.strictEqual(p.pilot.sessionCp, 200);
+});
+
 test('ruta de neutrones: recuerda el último punto alcanzado y el siguiente', () => {
   const m = require('../../core/model');
   const s = m.createState();

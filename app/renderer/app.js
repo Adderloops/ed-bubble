@@ -1620,7 +1620,8 @@ function screenPowerplay(s, v) {
           <span class="eb" style="font-size:10px">Rango</span><span class="num">${or(pilot.rank)}</span>
           <span class="eb" style="font-size:10px">Para subir</span><span class="num">${pilot.toNext ? `${nf(pilot.toNext.remainingMerits)} méritos` : '—'}</span>
           <span class="eb" style="font-size:10px">Méritos</span><span class="num">${nf(pilot.merits)}</span>
-          <span class="eb" style="font-size:10px">Esta sesión</span><span class="num cyan">+${nf(pilot.session)}</span>
+          <span class="eb" style="font-size:10px">Esta sesión</span><span class="num cyan">+${nf(pilot.session)}${pilot.sessionCp ? ` <span class="soft" style="font-size:13px">≈ ${nf(pilot.sessionCp)} PC</span>` : ''}</span>
+          <span class="eb" style="font-size:10px">Este ciclo</span><span class="num">${nf(pilot.cycleMerits || 0)}${pilot.cycleCp ? ` <span class="soft" style="font-size:13px">≈ ${nf(pilot.cycleCp)} PC</span>` : ''}</span>
         </div>
         ${pilot.toNext && pilot.rankStart != null ? `<span class="bar" style="height:8px"><span style="width:${Math.max(0, Math.min(1, (pilot.merits - pilot.rankStart) / Math.max(1, pilot.toNext.requiredMerits - pilot.rankStart))) * 100}%;background:var(--amber)"></span></span><span class="eb dim" style="font-size:10px">Rango ${pilot.toNext.nextRank} a ${nf(pilot.toNext.requiredMerits)} méritos</span>` : ''}
       </section>
@@ -1646,14 +1647,15 @@ function screenPowerplay(s, v) {
       <section class="pn card" style="flex:1;min-height:0;overflow:hidden">
         <span class="ti" style="font-size:16px">Sistemas con datos</span>
         <div style="display:flex;flex-direction:column;gap:4px">
-          ${Object.entries(s.powerplay.systems).map(([name, list]) => ({ name, x: list[list.length - 1] })).sort((a, b) => String(b.x.at).localeCompare(String(a.x.at))).slice(0, 4).map(({ name, x }) => `<button type="button" class="pick ${name === p.tracked ? 'on' : ''}" data-pptrack="${esc(name)}" title="Seguir este sistema"><span class="nowrap">${esc(name)}</span><span class="num soft" style="font-size:13px">${esc(PP_STATE[x.control.state] || x.control.state)} · ${nf(x.control.progress * 100, 1)} %</span></button>`).join('') || '<span class="soft" style="font-size:14px">Entra en un sistema con Powerplay para ver sus datos.</span>'}
+          ${ppKnownSystems(s, p).slice(0, 4).map((r) => `<button type="button" class="pick ${r.name === p.tracked ? 'on' : ''}" data-pptrack="${esc(r.name)}" title="Seguir este sistema"><span class="nowrap">${esc(r.name)}</span><span class="num soft nowrap" style="font-size:13px">${esc(r.label)}</span></button>`).join('') || '<span class="soft" style="font-size:14px">Entra en un sistema con Powerplay para ver sus datos.</span>'}
         </div>
-        <span class="note" style="margin-top:auto">Topes: Explotado 350.000 · Fortificado 650.000 · Stronghold 1.000.000 PC. El Journal solo da estos datos al entrar en el sistema.</span>
+        <span class="note" style="margin-top:auto">Topes medidos en tus diarios: Explotado 350.000 · Fortificado 650.000 · Stronghold 1.000.000 PC (la guía de Inara da cifras aproximadas: ~333.333 por tramo). Adquisición: 120.000 PC. El diario solo da estos datos al entrar en el sistema.</span>
       </section>
     </aside>`;
   if (!y) {
-    return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:12px;min-height:0">
-      <section class="pn card"><span class="ti" style="font-size:16px">Control del sistema</span><div class="empty" style="flex-direction:column;gap:8px"><span class="va" style="font-size:20px;color:var(--soft)">Sin sistema que seguir</span><span style="font-size:15px">Entra en un sistema con Powerplay (o elige uno de la lista) para ver su progreso de control.</span></div></section>${right}</div>`;
+    const A = p.acquisition;
+    const top = A ? ppAcquisitionCards(A, p) : `<section class="pn card"><span class="ti" style="font-size:16px">Control del sistema</span><div class="empty" style="flex-direction:column;gap:8px;padding:30px 0"><span class="va" style="font-size:20px;color:var(--soft)">Sin sistema que seguir</span><span style="font-size:15px">Entra en un sistema con Powerplay (o elige uno de la lista) para ver su progreso de control.</span></div></section>`;
+    return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:12px;min-height:0"><main style="display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0">${top}${ppTabsCard(s, v, p, null)}</main>${right}</div>`;
   }
   const pct = (x) => `${nf(x * 100, 1)} %`;
   const segColor = { 0: '#0c1b2e', 1: '#2a7fa3', 2: '#49c7e8', 3: '#ff4b4b' };
@@ -1689,24 +1691,146 @@ function screenPowerplay(s, v) {
           ${stat('Puntos de control', `${nf(y.totalCp)}`)}${stat('Refuerzo', `+${nf(y.reinforcement)}`, 'cyan')}${stat('Undermining', y.undermining ? `−${nf(y.undermining)}` : '0', y.undermining ? 'red' : '')}${stat('Neto del ciclo', `${y.net >= 0 ? '+' : '−'}${nf(Math.abs(y.net))}`, y.net >= 0 ? 'cyan' : 'red')}
         </div>
       </section>
-      <section class="pn card" style="flex:1;min-height:0">
-        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">Ciclo actual frente al anterior · historial</span><span class="eb">Corte semanal · jueves 07:00 UTC · faltan ${fmtCut(p.nextCut)}</span></div>
-        ${bar('Refuerzo', y.reinforcement, prev && { v: prev.reinforcement }, 'var(--cyan)')}
+      ${ppTabsCard(s, v, p, y)}
+    </main>`;
+  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:12px;min-height:0">${main}${right}</div>`;
+}
+
+/* Powerplay: sistemas conocidos (control y adquisición), de más reciente a más antiguo */
+function ppKnownSystems(s, p) {
+  const out = [];
+  for (const [name, list] of Object.entries(s.powerplay.systems || {})) { const x = list[list.length - 1]; out.push({ name, at: x.at, label: `${PP_STATE[x.control.state] || x.control.state} · ${nf(x.control.progress * 100, 1)} %` }); }
+  for (const [name, list] of Object.entries(s.powerplay.conflicts || {})) {
+    if (s.powerplay.systems && s.powerplay.systems[name]) continue;
+    const x = list[list.length - 1]; const mine = x.powers.find((q) => q.power === p.pilot.power); const lead = mine || x.powers[0];
+    out.push({ name, at: x.at, label: `Adquisición · ${lead ? `${mine ? 'tú' : esc(String(lead.power).split(' ').pop())} ${nf(lead.progress * 100, 1)} %` : '—'}` });
+  }
+  return out.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+}
+
+/* Adquisición: cada potencia frente a los 120.000 PC para reclamar el sistema */
+function ppAcquisitionCards(A, p) {
+  const pct = (x) => `${nf(x * 100, 1)} %`;
+  const mine = A.powers.find((x) => x.mine);
+  const head = mine
+    ? (mine.cp >= A.cap ? `<span class="num cyan" style="font-size:36px">Umbral alcanzado</span><span class="soft" style="font-size:15px">Tu potencia tiene ${nf(mine.cp)} PC. Si es la que más tiene en el corte del jueves, el sistema pasa a ser suyo.</span>`
+      : `<span class="num amber" style="font-size:36px">Faltan ${nf(mine.toClaim)} PC</span><span class="soft" style="font-size:15px">Tu potencia lleva ${nf(mine.cp)} de 120.000 PC. Al llegar, se lo queda en el corte del jueves si es la que más tiene; si no llega, lo hecho se guarda para el ciclo siguiente.</span>`)
+    : `<span class="num amber" style="font-size:36px">${A.leader ? `${esc(A.leader.power)} · ${pct(A.leader.progress)}` : 'Sin progreso'}</span><span class="soft" style="font-size:15px">${p.pilot.power ? `${esc(p.pilot.power)} no tiene progreso aquí todavía. Para empezar, el sistema debe estar a 20 al de un sistema fortificado de tu potencia o a 30 al de un Stronghold.` : 'Sistema sin potencia: las potencias compiten por quedárselo.'}</span>`;
+  const rows = A.powers.slice(0, 4).map((x) => {
+    const w = Math.min(1, x.cp / A.cap) * 100;
+    const prev = A.previous && A.previous.powers.find((q) => q.power === x.power);
+    return `<div style="display:grid;grid-template-columns:190px minmax(0,1fr) 150px;gap:12px;align-items:center">
+      <span class="va nowrap ${x.mine ? 'amber' : ''}" style="font-size:16px">${esc(x.power)}</span>
+      <span style="position:relative;height:16px;background:#0c1b2e;border:1px solid var(--line2);border-radius:2px;display:block">
+        <span style="position:absolute;left:0;top:0;bottom:0;width:${w}%;background:${x.mine ? 'var(--amber)' : 'var(--cyan)'}"></span>
+        <span style="position:absolute;left:${(A.contest / A.cap) * 100}%;top:-4px;bottom:-4px;width:2px;background:#ffcf5a" title="35.000 PC: disputado"></span>
+      </span>
+      <span class="num" style="text-align:right">${nf(x.cp)} PC<br><span class="soft" style="font-size:12px">${pct(x.progress)}${prev ? ` · antes ${pct(prev.progress)}` : ''}</span></span>
+    </div>`;
+  }).join('');
+  return `<section class="pn card" style="border-left:3px solid var(--amber)">
+      <span class="eb">Adquisición · sistema sin potencia${A.stale ? ' · <span class="yellow">datos de un ciclo anterior</span>' : ''}</span>
+      <span class="ti nowrap" style="font-size:32px">${esc(A.name)}</span>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:20px;align-items:end">
+        <div style="display:flex;flex-direction:column;gap:6px">${head}</div>
+        <div style="display:flex;flex-direction:column;gap:4px;text-align:right"><span class="eb">Estado</span><span class="va ${A.contested ? 'yellow' : ''}" style="font-size:22px">${A.contested ? 'Disputado' : 'En adquisición'}</span><span class="eb dim" style="font-size:10px">Reclamar 120.000 PC · datos ${String(A.at).slice(0, 10)} ${hhmm(A.at)} UTC</span></div>
+      </div>
+    </section>
+    <section class="pn card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ti" style="font-size:16px">Potencias que lo intentan</span><span class="eb">faltan ${fmtCut(p.nextCut)} para el corte</span></div>
+      ${rows}
+      <span class="note">Barra: puntos de control de cada potencia frente a 120.000. Marca amarilla: 35.000 PC; si dos potencias la pasan, el sistema queda disputado y se abren zonas de combate de Powerplay. En el corte se lo queda la que más tenga, si llega a 120.000; si no, el progreso sigue en el ciclo siguiente.</span>
+    </section>`;
+}
+
+/* Qué da méritos en cada tipo de sistema (guía de Powerplay 2.0 de Inara, logbook 84502; orientativa) */
+const PP_ACT = {
+  reinforcement: {
+    acts: [['Caza de recompensas (cuenta al matar, no al cobrar)', 'combat'], ['Cazar naves de otras potencias', 'combat'], ['Comercio con margen de al menos el 40 %, vendido aquí', 'finance'], ['Vender lo minado en este mismo sistema', 'finance'], ['Transportar mercancías de Powerplay', 'finance'], ['Vender datos de exploración (unos 450.000 CR o más)', 'finance'], ['Vender datos de exobiología', 'finance'], ['Escanear megabarcos (uplog)', 'covert'], ['Hackear holopantallas', 'covert'], ['Reactivar asentamientos apagados', null], ['Escanear naves y estelas', null], ['Misiones de donación', null]],
+    ethos: { combat: ['Jerome Archer', 'Arissa Lavigny-Duval', 'Denton Patreus', 'Yuri Grom', 'Archon Delaine'], finance: ['Felicia Winters', 'Aisling Duval', 'Edmund Mahon', 'Li Yong-Rui'], covert: ['Zemina Torval', 'Nakato Kaine', 'Pranav Antal'] },
+    no: 'Sin méritos ahora: mercancías raras, entregas de datos o bienes de Odyssey, cápsulas de escape y rescate.',
+  },
+  undermining: {
+    acts: [['Cazar naves de otras potencias (aquí es ilegal: recompensa, pero sin notoriedad)', 'combat'], ['Vender mercancías de menos de 500 CR/t', 'finance'], ['Vender lo minado en este mismo sistema', 'finance'], ['Transportar mercancías de Powerplay', 'finance'], ['Subir malware de Powerplay a puertos de datos', 'covert'], ['Hackear holopantallas', 'covert'], ['Escanear megabarcos (uplog)', 'covert'], ['Cometer delitos', 'covert'], ['Reactivar asentamientos apagados', 'social']],
+    ethos: { covert: ['Jerome Archer', 'Yuri Grom'], finance: ['Felicia Winters', 'Zemina Torval', 'Li Yong-Rui'], combat: ['Arissa Lavigny-Duval', 'Edmund Mahon', 'Denton Patreus', 'Archon Delaine'], social: ['Aisling Duval', 'Nakato Kaine', 'Pranav Antal'] },
+    no: 'Aquí la caza de recompensas no da méritos. Socavar rinde menos cuanto más fuerte es el sistema y más lejos está de los sistemas de tu potencia.',
+  },
+  acquisition: {
+    acts: [['Caza de recompensas', 'combat'], ['Zonas de combate de Powerplay (solo si está disputado)', 'combat'], ['Cazar naves de otras potencias', 'combat'], ['Vender lo minado en tu sistema fortificado (a 20 al o menos) o Stronghold (a 30 al)', 'finance'], ['Transportar mercancías de Powerplay desde un sistema tuyo en ese alcance', 'finance'], ['Reactivar asentamientos apagados', 'social'], ['Escanear megabarcos (uplog)', 'covert'], ['Hackear holopantallas', 'covert'], ['Subir malware recogido en un sistema tuyo en alcance', 'covert'], ['Escanear naves y estelas (solo si está disputado)', null], ['Comercio con mucho margen (la guía no lo confirma)', 'finance']],
+    ethos: { combat: ['Jerome Archer', 'Archon Delaine'], social: ['Felicia Winters', 'Arissa Lavigny-Duval', 'Aisling Duval', 'Nakato Kaine', 'Pranav Antal', 'Li Yong-Rui'], finance: ['Denton Patreus', 'Zemina Torval', 'Edmund Mahon'], covert: ['Yuri Grom'] },
+    no: 'El sistema tiene que estar a 20 al de uno fortificado de tu potencia o a 30 al de un Stronghold.',
+  },
+};
+const PP_ETHOS = { combat: 'Combate', finance: 'Finanzas', covert: 'Encubierto', social: 'Social' };
+
+function ppTabsCard(s, v, p, y) {
+  const tabs = y ? [['hist', 'Historial'], ['act', 'Qué da méritos'], ['mine', 'Tus méritos']] : [['act', 'Qué da méritos'], ['mine', 'Tus méritos']];
+  if (!tabs.some(([k]) => k === ui.ppTab)) ui.ppTab = tabs[0][0];
+  const tabRow = `<span style="display:flex;gap:6px">${tabs.map(([k, t]) => `<button type="button" class="tab small ${ui.ppTab === k ? 'on' : ''}" data-pptab="${k}">${t}</button>`).join('')}</span>`;
+  let right = ''; let body = '';
+  if (ui.ppTab === 'hist') {
+    right = `<span class="eb">Corte semanal · jueves 07:00 UTC · faltan ${fmtCut(p.nextCut)}</span>`;
+    body = ppHistBody(s, p, y);
+  } else if (ui.ppTab === 'act') {
+    const here = v.trade.pp.kind;
+    if (ui.ppActFor !== p.tracked) { ui.ppActFor = p.tracked; ui.ppActKind = null; }
+    // por defecto, el tipo del sistema que estás viendo (el seguido), no el de donde estás
+    const shown = p.acquisition ? 'acquisition' : y && y.power ? (y.power === p.pilot.power ? 'reinforcement' : 'undermining') : null;
+    const kind = ui.ppActKind || shown || here || 'reinforcement';
+    const D = PP_ACT[kind];
+    const power = p.pilot.power;
+    const myEthos = Object.keys(D.ethos).filter((k) => D.ethos[k].includes(power));
+    right = `<span style="display:flex;gap:6px">${Object.keys(PP_ACT).map((k) => `<button type="button" class="tab small ${kind === k ? 'on' : ''}" data-ppact="${k}">${PP_KIND[k][0]}${k === here ? ' · aquí' : ''}</button>`).join('')}</span>`;
+    const acts = D.acts.map(([t, e]) => {
+      const bonus = e && D.ethos[e] && D.ethos[e].includes(power);
+      return `<div class="in" style="display:grid;grid-template-columns:minmax(0,1fr) 110px 120px;gap:10px;align-items:center;padding:5px 12px;font-size:14px">
+        <span>${esc(t)}</span><span class="eb ${e ? '' : 'dim'}" style="font-size:10px">${e ? PP_ETHOS[e] : '—'}</span><span class="eb ${bonus ? 'cyan' : 'dim'}" style="font-size:11px;text-align:right">${bonus ? '+50 % estimado' : ''}</span></div>`;
+    }).join('');
+    body = `<div style="display:flex;flex-direction:column;gap:3px">${acts}</div>
+      <span class="note">${power ? (myEthos.length ? `${esc(power)} tiene aquí la ética ${myEthos.map((k) => PP_ETHOS[k]).join(' y ')}: esas actividades dan un 50 % más de méritos (estimado).` : `${esc(power)} no tiene ética con bonificación en este tipo de sistema.`) : 'No estás jurado a ninguna potencia.'} ${esc(D.no)} Datos de la guía de Powerplay 2.0 de Inara (orientativos).</span>`;
+  } else {
+    right = `<span class="eb">Desde el corte del jueves · ≈ PC = méritos ÷ 4 (exploración ÷ 6)</span>`;
+    const per = 6; const list = p.cycle || [];
+    const pages = Math.max(1, Math.ceil(list.length / per)); ui.ppMinePage = Math.min(ui.ppMinePage || 0, pages - 1);
+    const rows = list.slice(ui.ppMinePage * per, (ui.ppMinePage + 1) * per).map((b) => `<div class="in row" style="grid-template-columns:minmax(0,1fr) 140px 140px 150px;height:36px">
+      <span class="va nowrap" style="padding-left:12px">${esc(b.system || '—')}</span>
+      <span class="num" style="text-align:right">${nf(b.merits)}</span>
+      <span class="num cyan" style="text-align:right">≈ ${nf(b.cp)} PC</span>
+      <span class="num soft" style="text-align:right;padding-right:12px;font-size:13px">${String(b.last).slice(5, 10)} ${hhmm(b.last)}</span></div>`).join('');
+    body = list.length ? `<div class="eb dim" style="display:grid;grid-template-columns:minmax(0,1fr) 140px 140px 150px;font-size:10px;padding:0 12px"><span>Sistema</span><span style="text-align:right">Méritos</span><span style="text-align:right">Puntos de control</span><span style="text-align:right">Último</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px">${rows}</div>
+      <span style="display:flex;justify-content:space-between;align-items:center"><span class="note">Total del ciclo: ${nf(p.pilot.cycleMerits)} méritos ≈ ${nf(p.pilot.cycleCp)} PC. Lo que haces suma (refuerzo, adquisición) o resta (socavar) en el sistema donde lo ganas.</span>${pager2('ppmine', ui.ppMinePage, pages)}</span>`
+      : '<div class="empty" style="font-size:15px">Aún no has ganado méritos en este ciclo.</div>';
+  }
+  return `<section class="pn card" style="flex:1;min-height:0;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">${tabRow}${right}</div>
+    ${body}
+  </section>`;
+}
+
+function ppHistBody(s, p, y) {
+  const pct = (x) => `${nf(x * 100, 1)} %`;
+  const prev = y.previous;
+  const bar = (label, cur, old, col) => {
+    const mx = Math.max(cur || 0, (old && old.v) || 0, 1);
+    return `<div style="display:grid;grid-template-columns:120px minmax(0,1fr) 110px;gap:10px;align-items:center">
+      <span class="eb">${label}</span>
+      <span style="display:flex;flex-direction:column;gap:3px"><span class="bar" style="height:10px"><span style="width:${(cur / mx) * 100}%;background:${col}"></span></span>${old ? `<span class="bar" style="height:6px;opacity:.5"><span style="width:${(old.v / mx) * 100}%;background:${col}"></span></span>` : ''}</span>
+      <span class="num" style="text-align:right">${nf(cur)}${old ? `<br><span class="soft" style="font-size:12px">${nf(old.v)}</span>` : ''}</span></div>`;
+  };
+  return `${bar('Refuerzo', y.reinforcement, prev && { v: prev.reinforcement }, 'var(--cyan)')}
         ${bar('Undermining', y.undermining, prev && { v: prev.undermining }, 'var(--red,#ff4b4b)')}
         <span class="note">${prev ? `Barra clara: ciclo actual · barra oscura: ciclo anterior (datos del ${String(prev.at).slice(0, 10)}).` : 'Sin datos del ciclo anterior: aparecerán cuando entres en el sistema en dos semanas distintas.'}${y.stale ? ' Los datos son de antes del último corte: entra en el sistema para actualizarlos.' : ''}</span>
         <div style="display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden;margin-top:6px">
           <div class="eb dim" style="display:grid;grid-template-columns:190px 140px minmax(0,1fr) 130px 130px;font-size:10px;padding:0 12px"><span>Visita</span><span>Estado</span><span>Progreso</span><span style="text-align:right">Refuerzo</span><span style="text-align:right">Undermining</span></div>
-          ${(s.powerplay.systems[y.name] || []).slice().reverse().slice(0, 9).map((x) => `<div class="in row" style="grid-template-columns:190px 140px minmax(0,1fr) 130px 130px;height:34px">
+          ${(s.powerplay.systems[y.name] || []).slice().reverse().slice(0, 7).map((x) => `<div class="in row" style="grid-template-columns:190px 140px minmax(0,1fr) 130px 130px;height:34px">
             <span class="num soft" style="padding-left:12px">${String(x.at).slice(0, 10)} ${hhmm(x.at)}</span>
             <span>${esc(PP_STATE[x.control.state] || x.control.state)}</span>
             <span style="display:flex;align-items:center;gap:8px"><span class="bar" style="flex:1;height:6px"><span style="width:${Math.min(1, x.control.progress) * 100}%;background:var(--amber)"></span></span><span class="num" style="width:64px;text-align:right">${pct(x.control.progress)}</span></span>
             <span class="num cyan" style="text-align:right">+${nf(x.control.reinforcement)}</span>
             <span class="num ${x.control.undermining ? 'red' : 'soft'}" style="text-align:right;padding-right:12px">${x.control.undermining ? `−${nf(x.control.undermining)}` : '0'}</span>
           </div>`).join('')}
-        </div>
-      </section>
-    </main>`;
-  return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:12px;min-height:0">${main}${right}</div>`;
+        </div>`;
 }
 
 /* ---------- Combate ---------- */
@@ -3200,6 +3324,8 @@ document.addEventListener('pointerdown', (ev) => {
     window.edbubble.plot(ui.sel.name, d || 0);
     return;
   }
+  const ppT = ev.target.closest('button[data-pptab], button[data-ppact]');
+  if (ppT) { if (ppT.dataset.pptab) ui.ppTab = ppT.dataset.pptab; else ui.ppActKind = ppT.dataset.ppact; render(); return; }
   const pt = ev.target.closest('button[data-pptrack]');
   if (pt) { ev.preventDefault(); window.edbubble.ppTrack(pt.dataset.pptrack || null); return; }
   const hp = ev.target.closest('button[data-pager="here"], button[data-pager="bio"]');
@@ -3259,7 +3385,7 @@ document.addEventListener('pointerdown', (ev) => {
     if (d.nrclear) { window.edbubble.neutronClear(); ui.nr = null; return; }
   }
   const minPgBtn = ev.target.closest('button[data-mpager]');
-  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage', trade: 'trPage', trwhere: 'trWherePage', trroute: 'trRoutePage', trbuy: 'trBuyPage' }[minPgBtn.dataset.mpager];
+  if (minPgBtn && !minPgBtn.disabled) { ev.preventDefault(); const k = { sites: 'sitesPage', prosp: 'prospPage', lock: 'lockPage', mod: 'modPage', eng: 'engPage', plan: 'planPage', eqship: 'eqShipPage', eqgrp: 'eqGrpPage', engexp: 'engExpPage', xbody: 'xBodyPage', xcarto: 'xCartoPage', xbio: 'xBioPage', xnr: 'xNrPage', exobody: 'exoBodyPage', exoknown: 'exoKnownPage', exosys: 'exoSysPage', trade: 'trPage', trwhere: 'trWherePage', trroute: 'trRoutePage', trbuy: 'trBuyPage', ppmine: 'ppMinePage' }[minPgBtn.dataset.mpager];
     if (!k && /^eq(core|hard|opt)$/.test(minPgBtn.dataset.mpager)) { const kk = minPgBtn.dataset.mpager.slice(2); ui.eqPages[kk] = Math.max(0, (ui.eqPages[kk] || 0) + Number(minPgBtn.dataset.d)); render(); return; } ui[k] = Math.max(0, ui[k] + Number(minPgBtn.dataset.d)); render(); return; }
   const rigBtn = ev.target.closest('button[data-rig]');
   if (rigBtn && !rigBtn.disabled) {

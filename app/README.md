@@ -14,6 +14,8 @@ El panel **Controles** del Puente de mando revisa las teclas que usa ED BUBBLE (
 
 **Powerplay:** piloto (potencia, rango, méritos para subir, méritos de la sesión) y control del sistema seguido: estado, progreso con barra de 12 segmentos (antes del ciclo, ganado, perdido), puntos de control, refuerzo, undermining y neto, comparación con el ciclo anterior, cuenta atrás al corte del jueves 07:00 UTC e historial de visitas. El sistema seguido se elige en la lista de sistemas con datos o con "Seguir …" y se guarda en `settings.json`.
 
+En la parte de abajo, pestañas: **Historial** (lo anterior), **Qué da méritos** (actividades que dan méritos en sistemas de refuerzo, socavar y adquisición, con la ética de cada una y el +50 % estimado si es la de tu potencia; por defecto, el tipo del sistema que estás viendo) y **Tus méritos** (méritos ganados en cada sistema desde el corte del jueves, de `PowerplayMerits` de los diarios, con su equivalencia en puntos de control: méritos ÷ 4, o ÷ 6 si vienen de vender datos de exploración). En el Piloto, los puntos de control de la sesión y del ciclo. **Adquisición:** en un sistema sin potencia (o seguido desde la lista), cada potencia con su progreso (`PowerplayConflictProgress`, 1,0 = 120.000 PC para reclamarlo), la marca de 35.000 PC (disputado si dos la pasan), lo que le falta a la tuya y el valor del ciclo anterior. Reglas de la guía de Powerplay 2.0 de Inara (logbook 84502), orientativas. Los topes de control (350.000 · 650.000 · 1.000.000) se mantienen: salen de ajustar datos reales de los diarios y un cambio Fortificado → Stronghold; la guía da cifras aproximadas (~333.333 por tramo).
+
 **Combustible en ruta (naves sin recolector):** el consumo de cada salto se ajusta con tus saltos reales (fuel = k · distancia^p, con p según el tamaño del FSD y un 8 % de margen). Si con el combustible del tanque no llegas al destino, la cabecera avisa ("Combustible: solo N saltos · reposta antes"); Vuelo y Navegación dicen hasta qué sistema llegas, cuánto pide la ruta y la estación con repostaje más lejana a la que llegas (Spansh); la ruta muestra el combustible con el que llegas a cada sistema. "Saltos a alcance máx." en Combustible usa el mismo modelo.
 
 **Historial:** al arrancar, el motor repasa los Journals de las últimas semanas (máx. 25 archivos) para recuperar las construcciones de colonización, la última estación, los ingenieros y el control de Powerplay de los sistemas visitados, aunque hoy no hayas pasado por ellos.
@@ -215,13 +217,6 @@ El instalador no pide permisos de administrador: instala en `%LOCALAPPDATA%\Prog
 No está firmado: la primera vez Windows SmartScreen avisa («Windows protegió su PC» › Más información › Ejecutar de todas formas).
 
 ## Pendiente
-
-- **Powerplay, ideas de la guía de Inara (logbook 84502) para la página Powerplay** (lo siguiente):
-  - Puntos de control: tus méritos se convierten en puntos de control del sistema (méritos ÷ 4; exploración ÷ 6). Mostrar cuánto aporta lo que haces.
-  - Adquisición: hacen falta 120.000 puntos de control para reclamar un sistema; con 35.000 de dos potencias queda disputado; los puntos se arrastran entre ciclos hasta que alguien lo reclama.
-  - Tabla de qué actividades dan méritos en el sistema actual (refuerzo, socavar, adquisición) y cuáles tienen el +50 % de la ética de tu potencia.
-  - Socavar: rinde menos cuanto más fuerte es el sistema y más lejos está de los de tu potencia.
-  - Revisar los topes de la tarjeta «Sistemas con datos» (Explotado 350.000 · Fortificado 650.000 · Stronghold 1.000.000): la guía da unos 333.333 para fortificado y 1.000.000 para bastión.
 
 - `core/data/materials.json`: falta el símbolo del diario de 9 materiales thargoides recientes (marcados «verificar»); en las recetas salen ya en español, buscados por su nombre en inglés.
 
